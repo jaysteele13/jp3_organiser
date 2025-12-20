@@ -1,0 +1,10 @@
+.AboutAll {
+  min-height: 100vh;          /* Full screen height */
+  display: flex;
+  flex-direction: column;    /* Stack text vertically */
+  justify-content: center;   /* Vertical centering */
+  align-items: center;       /* Horizontal centering */
+  text-align: center;        /* Center text itself */
+  padding: 2rem;             /* Prevent text from touching edges */
+}
+
