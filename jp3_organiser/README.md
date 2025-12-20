@@ -10,3 +10,6 @@ This template should help get you started developing with Tauri and React in Vit
 On npm run tauri dev
 
 We must reload as there is a race condition where dev isn't finished loading them tauri tries to run giving th infamous white screen of death!
+
+
+This sometimes means issues with styles and imports: `SyntaxError: Importing binding name 'default' cannot be resolved by star export entries.`
