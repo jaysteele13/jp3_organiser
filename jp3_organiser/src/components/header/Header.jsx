@@ -4,8 +4,8 @@ import styles from './Header.module.css';
 export default function Header({ title, description }) {
   return (
     <>
-      <h1 className={styles.AboutHeader}>{title}</h1>
-      <p className={styles.AboutDescription}>{description}</p>
+      <h1 className={styles.Header}>{title}</h1>
+      <p className={styles.HeaderDescription}>{description}</p>
     </>
   );
 }

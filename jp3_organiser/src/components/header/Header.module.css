@@ -1,11 +1,11 @@
-.AboutHeader {
+.Header {
   font-size: 2rem;
   font-weight: bold;
   margin-bottom: 0.5rem;
   color: #333;
 }
 
-.AboutDescription {
+.HeaderDescription {
   font-size: 1rem;
   color: #666;
   line-height: 1.5;
