@@ -71,3 +71,27 @@ export async function initializeLibrary(basePath) {
 export async function getLibraryInfo(basePath) {
   return await invoke('get_library_info', { basePath });
 }
+
+/**
+ * Save audio files to the library.
+ * 
+ * Copies files to music buckets and builds library.bin with
+ * deduped artists, albums, and songs.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {FileToSave[]} files - Files to save with their metadata
+ * @returns {Promise<SaveToLibraryResult>} Result with counts
+ * 
+ * @typedef {Object} FileToSave
+ * @property {string} sourcePath - Original file path
+ * @property {Object} metadata - Metadata object with title, artist, album, etc.
+ * 
+ * @typedef {Object} SaveToLibraryResult
+ * @property {number} filesSaved - Number of files copied
+ * @property {number} artistsAdded - Number of artists in library
+ * @property {number} albumsAdded - Number of albums in library
+ * @property {number} songsAdded - Number of songs in library
+ */
+export async function saveToLibrary(basePath, files) {
+  return await invoke('save_to_library', { basePath, files });
+}

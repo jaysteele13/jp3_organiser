@@ -1,0 +1,131 @@
+/* MetadataForm component styles */
+
+.formContainer {
+  background-color: var(--quaternary);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-top: 1rem;
+}
+
+.header {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.title {
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.fileName {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.9);
+  word-break: break-all;
+}
+
+.missingInfo {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.75rem;
+  color: #f0ad4e;
+}
+
+/* Form layout */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.required {
+  color: var(--primary);
+}
+
+.input {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: #fff;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--tertiary);
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.inputError {
+  border-color: var(--primary);
+}
+
+.errorText {
+  font-size: 0.75rem;
+  color: var(--primary);
+}
+
+/* Action buttons */
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.saveButton {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  background-color: var(--secondary);
+}
+
+.saveButton:hover {
+  background-color: var(--secondary-hover);
+}
+
+.skipButton {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.skipButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.cancelButton {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.cancelButton:hover {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}

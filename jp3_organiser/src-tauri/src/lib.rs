@@ -27,6 +27,7 @@ use commands::{
     // Library commands
     get_library_info,
     initialize_library,
+    save_to_library,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -47,6 +48,7 @@ pub fn run() {
             // Library commands
             initialize_library,
             get_library_info,
+            save_to_library,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

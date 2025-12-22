@@ -100,6 +100,60 @@
   color: var(--primary);
 }
 
+/* Review button */
+.reviewButton {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  background-color: #f0ad4e;
+  color: #000;
+}
+
+.reviewButton:hover {
+  background-color: #ec971f;
+}
+
+/* Ready message */
+.readyMessage {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background-color: var(--secondary);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Review mode container */
+.reviewContainer {
+  margin-bottom: 1rem;
+}
+
+.reviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.reviewProgress {
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.reviewCancelButton {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.75rem;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.reviewCancelButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
 /* File list */
 .fileList {
   list-style: none;
@@ -118,10 +172,16 @@
   border-radius: 4px;
   margin-bottom: 0.5rem;
   gap: 1rem;
+  transition: background-color 0.15s ease;
 }
 
 .fileItem:last-child {
   margin-bottom: 0;
+}
+
+.fileItemActive {
+  background-color: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* File info (left side) */
@@ -149,7 +209,27 @@
   text-overflow: ellipsis;
 }
 
-/* File status (right side) */
+/* File actions (right side) */
+.fileActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.editButton {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+  background-color: #f0ad4e;
+  color: #000;
+  border-radius: 3px;
+}
+
+.editButton:hover {
+  background-color: #ec971f;
+}
+
+/* File status */
 .fileStatus {
   flex-shrink: 0;
 }
@@ -186,4 +266,58 @@
 .statusPending {
   background-color: rgba(255, 255, 255, 0.2);
   color: #fff;
+}
+
+/* Success message */
+.successMessage {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--secondary);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Ready container with button */
+.readyContainer {
+  margin-bottom: 1rem;
+}
+
+/* Add to Library buttons */
+.addToLibraryButton {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  margin-top: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background-color: var(--secondary);
+  color: #fff;
+}
+
+.addToLibraryButton:hover {
+  background-color: var(--secondary-hover);
+}
+
+.addToLibraryButton:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.addToLibraryButtonSecondary {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  background-color: transparent;
+  border: 1px solid var(--secondary);
+  color: var(--secondary);
+}
+
+.addToLibraryButtonSecondary:hover {
+  background-color: rgba(46, 125, 50, 0.1);
+}
+
+.addToLibraryButtonSecondary:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }

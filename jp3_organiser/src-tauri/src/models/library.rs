@@ -123,26 +123,161 @@ impl LibraryInfo {
     }
 }
 
-// Future: Add these structures as needed
-//
-// #[derive(Debug, Clone, Serialize)]
-// pub struct ArtistEntry {
-//     pub name_string_id: u32,
-// }
-//
-// #[derive(Debug, Clone, Serialize)]
-// pub struct AlbumEntry {
-//     pub name_string_id: u32,
-//     pub artist_id: u32,
-//     pub year: u16,
-// }
-//
-// #[derive(Debug, Clone, Serialize)]
-// pub struct SongEntry {
-//     pub title_string_id: u32,
-//     pub artist_id: u32,
-//     pub album_id: u32,
-//     pub path_string_id: u32,
-//     pub track_number: u16,
-//     pub duration_sec: u16,
-// }
+/// Artist table entry (8 bytes).
+///
+/// Binary layout:
+/// ```text
+/// Offset  Size  Field
+/// 0x00    4     name_string_id
+/// 0x04    4     reserved
+/// ```
+#[derive(Debug, Clone)]
+pub struct ArtistEntry {
+    pub name_string_id: u32,
+}
+
+impl ArtistEntry {
+    pub const SIZE: u32 = 8;
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(Self::SIZE as usize);
+        bytes.extend_from_slice(&self.name_string_id.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes()); // reserved
+        bytes
+    }
+}
+
+/// Album table entry (16 bytes).
+///
+/// Binary layout:
+/// ```text
+/// Offset  Size  Field
+/// 0x00    4     name_string_id
+/// 0x04    4     artist_id
+/// 0x08    2     year
+/// 0x0A    6     reserved
+/// ```
+#[derive(Debug, Clone)]
+pub struct AlbumEntry {
+    pub name_string_id: u32,
+    pub artist_id: u32,
+    pub year: u16,
+}
+
+impl AlbumEntry {
+    pub const SIZE: u32 = 16;
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(Self::SIZE as usize);
+        bytes.extend_from_slice(&self.name_string_id.to_le_bytes());
+        bytes.extend_from_slice(&self.artist_id.to_le_bytes());
+        bytes.extend_from_slice(&self.year.to_le_bytes());
+        bytes.extend_from_slice(&[0u8; 6]); // reserved
+        bytes
+    }
+}
+
+/// Song table entry (24 bytes).
+///
+/// Binary layout:
+/// ```text
+/// Offset  Size  Field
+/// 0x00    4     title_string_id
+/// 0x04    4     artist_id
+/// 0x08    4     album_id
+/// 0x0C    4     path_string_id (relative path in library)
+/// 0x10    2     track_number
+/// 0x12    2     duration_sec
+/// 0x14    4     reserved
+/// ```
+#[derive(Debug, Clone)]
+pub struct SongEntry {
+    pub title_string_id: u32,
+    pub artist_id: u32,
+    pub album_id: u32,
+    pub path_string_id: u32,
+    pub track_number: u16,
+    pub duration_sec: u16,
+}
+
+impl SongEntry {
+    pub const SIZE: u32 = 24;
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(Self::SIZE as usize);
+        bytes.extend_from_slice(&self.title_string_id.to_le_bytes());
+        bytes.extend_from_slice(&self.artist_id.to_le_bytes());
+        bytes.extend_from_slice(&self.album_id.to_le_bytes());
+        bytes.extend_from_slice(&self.path_string_id.to_le_bytes());
+        bytes.extend_from_slice(&self.track_number.to_le_bytes());
+        bytes.extend_from_slice(&self.duration_sec.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes()); // reserved
+        bytes
+    }
+}
+
+/// String table for deduplicating strings.
+/// 
+/// Binary format: Each string is stored as:
+/// - 2 bytes: length (u16)
+/// - N bytes: UTF-8 string data (NOT null-terminated)
+#[derive(Debug, Clone, Default)]
+pub struct StringTable {
+    strings: Vec<String>,
+    lookup: std::collections::HashMap<String, u32>,
+}
+
+impl StringTable {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Add a string and return its ID.
+    /// Returns existing ID if string already present (deduplication).
+    pub fn add(&mut self, s: &str) -> u32 {
+        if let Some(&id) = self.lookup.get(s) {
+            return id;
+        }
+        let id = self.strings.len() as u32;
+        self.strings.push(s.to_string());
+        self.lookup.insert(s.to_string(), id);
+        id
+    }
+
+    /// Get a string by ID.
+    #[allow(dead_code)]
+    pub fn get(&self, id: u32) -> Option<&str> {
+        self.strings.get(id as usize).map(|s| s.as_str())
+    }
+
+    /// Serialize to bytes.
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        for s in &self.strings {
+            let s_bytes = s.as_bytes();
+            let len = s_bytes.len() as u16;
+            bytes.extend_from_slice(&len.to_le_bytes());
+            bytes.extend_from_slice(s_bytes);
+        }
+        bytes
+    }
+
+    pub fn len(&self) -> usize {
+        self.strings.len()
+    }
+
+    #[allow(dead_code)]
+    pub fn is_empty(&self) -> bool {
+        self.strings.is_empty()
+    }
+}
+
+/// Result returned after saving files to the library.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveToLibraryResult {
+    pub files_saved: u32,
+    pub artists_added: u32,
+    pub albums_added: u32,
+    pub songs_added: u32,
+}
