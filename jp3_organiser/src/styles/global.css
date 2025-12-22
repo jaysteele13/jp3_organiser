@@ -1,0 +1,172 @@
+/* 
+ * Global Color Palette (Tetradic)
+ * 
+ * Usage:
+ *   color: var(--primary);
+ *   background-color: var(--secondary);
+ * 
+ * Palette:
+ *   --primary:     #B64963 (Rose)
+ *   --secondary:   #99B649 (Lime)
+ *   --tertiary:    #49B69C (Teal)
+ *   --quaternary:  #6649B6 (Purple)
+ */
+
+/* ===================
+   FONT FACE
+   =================== */
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('../assets/font/Geist_Mono/GeistMono-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('../assets/font/Geist_Mono/GeistMono-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: italic oblique 10deg;
+  font-display: swap;
+}
+
+/* ===================
+   CSS VARIABLES
+   =================== */
+:root {
+  /* Color Palette */
+  --primary: #B64963;
+  --primary-hover: #9e3d54;
+  --secondary: #99B649;
+  --secondary-hover: #849e3d;
+  --tertiary: #49B69C;
+  --tertiary-hover: #3d9e86;
+  --quaternary: #6649B6;
+  --quaternary-hover: #573d9e;
+
+  /* Typography */
+  font-family: 'Geist Mono', monospace;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+
+  /* Text rendering */
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ===================
+   GLOBAL ELEMENT STYLES
+   =================== */
+a {
+  font-weight: 500;
+  color: var(--primary);
+  text-decoration: inherit;
+}
+
+a:hover {
+  color: var(--primary-hover);
+}
+
+h1 {
+  text-align: center;
+}
+
+/* ===================
+   INPUT STYLES
+   =================== */
+input {
+  border-radius: 8px;
+  border: 1px solid var(--quaternary);
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.25s;
+}
+
+input:focus {
+  border-color: var(--primary);
+}
+
+/* ===================
+   DEFAULT BUTTON STYLES
+   =================== */
+button,
+.btn {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  background-color: var(--secondary);
+  color: #fff;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s ease, border-color 0.25s;
+}
+
+button:hover,
+.btn:hover {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+button:active,
+.btn:active {
+  background-color: var(--primary-hover);
+}
+
+/* Button variants - use these classes for different colors */
+.btn-primary {
+  background-color: var(--primary);
+}
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+.btn-tertiary {
+  background-color: var(--tertiary);
+}
+.btn-tertiary:hover {
+  background-color: var(--tertiary-hover);
+}
+
+.btn-quaternary {
+  background-color: var(--quaternary);
+}
+.btn-quaternary:hover {
+  background-color: var(--quaternary-hover);
+}
+
+/* ===================
+   CARD & SECTION STYLES
+   =================== */
+.card {
+  background-color: var(--tertiary);
+  color: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.card-alt {
+  background-color: var(--quaternary);
+}
+
+.section {
+  background-color: var(--quaternary);
+  color: #fff;
+  border-radius: 8px;
+  padding: 2rem;
+}
+
+.section-alt {
+  background-color: var(--tertiary);
+}
