@@ -219,3 +219,48 @@
   font-size: 0.75rem;
   max-width: 250px;
 }
+
+/* ===========================
+   RESPONSIVE: Small screens
+   =========================== */
+@media (max-width: 1180px) {
+  .compactContainer {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin-bottom: 1rem;
+    display: inline-block;
+  }
+
+  .compactCard {
+    width: auto;
+    flex-wrap: nowrap;
+  }
+
+  .compactContent {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .compactPath {
+    display: none;
+  }
+
+  .compactCard:hover .compactPath {
+    display: none;
+  }
+
+  .compactCard:hover .compactValue {
+    display: block;
+  }
+
+  /* Always show actions on mobile */
+  .compactActions {
+    opacity: 1;
+    max-width: none;
+  }
+
+  .compactError {
+    max-width: 100%;
+  }
+}
