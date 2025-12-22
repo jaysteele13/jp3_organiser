@@ -1,22 +1,60 @@
+import React from 'react';
+import Header from '../../components/Header';
+import DirectoryConfig from './components/DirectoryConfig';
+import UploadFile from './components/UploadFile';
+import { useLibraryConfig } from '../../hooks';
 
-import React from 'react'
-import Header from '../../components/Header'
-import UploadFile from './components/UploadFile' 
-// this is a place for where to upload FileSystem. With some advice about having atleast the song name on the mp3. If not there will be work arounds 
-// use extensive datasets, ID3 transformImage, APIs and AIs. If they can't find it we will ask you to clear up some things
-
+/**
+ * Upload Page
+ * 
+ * Main page for uploading music files to JP3 Organiser.
+ * 
+ * Flow:
+ * 1. User must first configure the library directory
+ * 2. Once configured, user can upload audio files
+ * 3. (Future) Files will be processed through metadata extraction pipeline
+ */
 export default function Upload() {
+  const { 
+    libraryPath, 
+    isLoading, 
+    error, 
+    isConfigured,
+    saveLibraryPath, 
+    clearLibraryPath 
+  } = useLibraryConfig();
 
-
+  if (isLoading) {
     return (
-        <>
-            <Header
-            title={"Upload Music"}
-            description={"Where you upload Files Prick"}/>
+      <>
+        <Header
+          title="Upload Music"
+          description="Prepare your music for the ESP32"
+        />
+        <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.7 }}>
+          Loading configuration...
+        </div>
+      </>
+    );
+  }
 
-            <UploadFile/>
+  return (
+    <>
+      <Header
+        title="Upload Music"
+        description="Prepare your music for the ESP32"
+      />
 
+      <DirectoryConfig
+        libraryPath={libraryPath}
+        onSave={saveLibraryPath}
+        onClear={clearLibraryPath}
+        error={error}
+      />
 
-        </>
-    )
+      {isConfigured && (
+        <UploadFile libraryPath={libraryPath} />
+      )}
+    </>
+  );
 }

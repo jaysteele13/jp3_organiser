@@ -1,2 +1,3 @@
-// API services and Tauri command wrappers go here
-// Example: audioService, fileService, etc.
+// API services and Tauri command wrappers
+
+export * from './libraryService';

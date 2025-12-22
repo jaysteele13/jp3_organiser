@@ -1,6 +1,6 @@
 ## Summary
 
-This Application is to be a lightwieght file organiser and local mp3 player.
+This Application is to be a lightweight file organiser and local mp3 player.
 
 This application will take songs and load them into a file /jp3
 
