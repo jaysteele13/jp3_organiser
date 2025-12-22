@@ -1,4 +1,33 @@
-## This Software has no right to be good BUT.
+## Summary
+
+This Application is to be a lightwieght file organiser and local mp3 player.
+
+This application will take songs and load them into a file /jp3
+
+These will be sorted by:
+music/
+metatdata/library.bin
+playlists/<playlist1>.bin, <playlist2>.bin etc.
+
+There will be a pipeline to ensure metadata is correctly extracted as these files will be formatted in such a way to make them highly efficient to parse.
+
+The ideal purpose is to transfer these music files into an SD card then my ESP32 mp3 player will be programmed to expect the binary file and files then play them.
+
+However. Because of this, this application can also be dual purpose. You can save the songs and also play them on this application.
+
+The sections so far are going to be
+
+Home (put about me links to GH and other stuff)
+Upload (place to upload Files that go through many steps and parsing)
+View (See what is in /jp3/ device)
+Play (acts as mp3 player client for computer where we can play what is jp3 file)
+
+SideNote:
+
+'Detect if MicroSD and mention the limited Write Cycles (dk how many or if there is a way to check this)'
+
+
+## This Software will be great and industry practice
 
 I want to:
 - experiment
@@ -25,6 +54,7 @@ Adding alot of songs would be nice but to actually sort them in the Tauri Applca
 - use AI or open source song API to gather the songName and assiogn it metadata (if not a match ask for clarification)
 - some other alternative chat gpt suggests?
 
+Upload Flow:
 A hybrid:
 
 1. Create a filter to ensure file type is compatible like .mp3, .wav etc. Assign each file a temporaryInternalID for tracking.
