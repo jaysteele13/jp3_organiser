@@ -5,6 +5,10 @@
  * will save their music library files. This is a prerequisite step before
  * uploading any music files.
  * 
+ * Display modes:
+ * - Large card: Shown when no library path is configured (initial setup)
+ * - Compact card: Shown in top-right when path is configured (hover for actions)
+ * 
  * The selected directory is persisted locally and will be used for:
  * - /jp3/music/     - Audio files organized in numbered folders
  * - /jp3/metadata/  - Binary metadata files (library.bin)
@@ -67,6 +71,49 @@ export default function DirectoryConfig({
     return path.split(/[/\\]/).pop() || path;
   };
 
+  // Compact card for configured state (top-right, hover for actions)
+  if (libraryPath) {
+    return (
+      <div className={styles.compactContainer}>
+        <div className={styles.compactCard}>
+          <div className={styles.compactContent}>
+            <span className={styles.compactLabel}>Library:</span>
+            <span className={styles.compactValue} title={libraryPath}>
+              {getFolderName(libraryPath)}
+            </span>
+            <span className={styles.compactPath}>{libraryPath}</span>
+          </div>
+          
+          <div className={styles.compactActions}>
+            <button 
+              className={styles.compactButton}
+              onClick={selectDirectory}
+              disabled={isSaving}
+              title="Change location"
+            >
+              {isSaving ? '...' : 'Change'}
+            </button>
+            <button 
+              className={styles.compactButtonClear}
+              onClick={handleClear}
+              disabled={isSaving}
+              title="Clear location"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+        
+        {error && (
+          <div className={styles.compactError}>
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Large card for unconfigured state (initial setup)
   return (
     <div className={styles.container}>
       <div className={styles.card}>
@@ -77,44 +124,15 @@ export default function DirectoryConfig({
           This folder will contain your organized music files, metadata, and playlists.
         </p>
 
-        {libraryPath ? (
-          <div className={styles.configured}>
-            <div className={styles.pathDisplay}>
-              <span className={styles.pathLabel}>Current location:</span>
-              <span className={styles.pathValue} title={libraryPath}>
-                {getFolderName(libraryPath)}
-              </span>
-              <span className={styles.fullPath}>{libraryPath}</span>
-            </div>
-            
-            <div className={styles.actions}>
-              <button 
-                className={styles.changeButton}
-                onClick={selectDirectory}
-                disabled={isSaving}
-              >
-                {isSaving ? 'Saving...' : 'Change Location'}
-              </button>
-              <button 
-                className={styles.clearButton}
-                onClick={handleClear}
-                disabled={isSaving}
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className={styles.unconfigured}>
-            <button 
-              className={styles.selectButton}
-              onClick={selectDirectory}
-              disabled={isSaving}
-            >
-              {isSaving ? 'Saving...' : 'Select Directory'}
-            </button>
-          </div>
-        )}
+        <div className={styles.unconfigured}>
+          <button 
+            className={styles.selectButton}
+            onClick={selectDirectory}
+            disabled={isSaving}
+          >
+            {isSaving ? 'Saving...' : 'Select Directory'}
+          </button>
+        </div>
 
         {error && (
           <div className={styles.error}>
