@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
+import styles from "./UploadFile.module.css";
 
 export default function UploadFile() {
   const [files, setFiles] = useState([]);
@@ -30,14 +31,14 @@ export default function UploadFile() {
   };
 
   return (
-    <div>
-      <button onClick={selectFiles}>
+    <div className={styles.uploadContainer}>
+      <button className={styles.selectButton} onClick={selectFiles}>
         Select Audio Files
       </button>
 
-      <ul>
+      <ul className={styles.fileList}>
         {files.map((file, index) => (
-          <li key={index}>{file}</li>
+          <li className={styles.fileItem} key={index}>{file}</li>
         ))}
       </ul>
     </div>

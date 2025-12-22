@@ -1,6 +1,5 @@
-import { useState } from "react";
-import About from './pages/About/About.jsx'
-import Upload from './pages/Upload/Upload.jsx'
+import About from './pages/About'
+import Upload from './pages/Upload'
 
 function App() {
 
