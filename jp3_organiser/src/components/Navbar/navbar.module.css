@@ -1,0 +1,118 @@
+/* Arc Browser inspired vertical navbar */
+
+.navbar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    width: 200px;
+    background-color: var(--quaternary);
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 0.5rem;
+    transition: width 0.25s ease;
+    z-index: 100;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+}
+
+.navbar.collapsed {
+    width: 60px;
+}
+
+/* Header / Logo */
+.header {
+    padding: 0.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.logo {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0.5rem 0;
+}
+
+/* Navigation Links */
+.navLinks {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.navLink {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.navLink:hover {
+    background-color: var(--quaternary-hover);
+    color: #fff;
+}
+
+.navLink.active {
+    background-color: var(--primary);
+    color: #fff;
+}
+
+.navLink.active:hover {
+    background-color: var(--primary-hover);
+}
+
+.icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.label {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Footer / Collapse button */
+.footer {
+    padding: 0.5rem;
+    padding-bottom: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: auto;
+}
+
+.collapseBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 36px;
+    padding: 0.5rem 0.75rem;
+    background-color: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.7);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    box-shadow: none;
+    line-height: 1;
+    
+}
+
+.collapseBtn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}

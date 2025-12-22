@@ -1,12 +1,24 @@
 /* App-specific scoped styles */
 
-.container {
-  margin: 0;
+.appLayout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.content {
+  margin-left: 200px;
+  flex: 1;
+  padding: 2rem;
   padding-top: 10vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
   text-align: center;
+  transition: margin-left 0.25s ease;
+}
+
+.contentCollapsed {
+  margin-left: 60px;
 }
 
 .row {

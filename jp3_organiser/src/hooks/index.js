@@ -1,2 +1,2 @@
-// Custom React hooks go here
-// Example: useLocalStorage, useDebounce, useFileUpload, etc.
+// Custom React hooks
+export { useKeyboardShortcut } from './useKeyboardShortcut';
