@@ -210,18 +210,21 @@ pub fn save_to_library(
                 .map_err(|e| format!("Failed to create bucket {:02}: {}", current_bucket, e))?;
         }
 
-        // Sanitize filename and copy
-        let original_name = source
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("unknown.mp3");
-        let sanitized_name = sanitize_filename(original_name);
-        let relative_path = format!("{:02}/{}", current_bucket, sanitized_name);
+        // Get file extension from source
+        let extension = source
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("mp3")
+            .to_lowercase();
+
+        // Generate sequential filename: 001.mp3, 002.mp3, etc.
+        let new_filename = format!("{:03}.{}", files_in_bucket + 1, extension);
+        let relative_path = format!("{:02}/{}", current_bucket, new_filename);
         let dest_path = music_path.join(&relative_path);
 
-        // Copy file
+        // Copy file with new name
         fs::copy(source, &dest_path)
-            .map_err(|e| format!("Failed to copy {}: {}", original_name, e))?;
+            .map_err(|e| format!("Failed to copy to {}: {}", relative_path, e))?;
 
         // Add song entry
         let title_string_id = string_table.add(title);
@@ -316,24 +319,4 @@ fn get_current_bucket(music_path: &Path) -> Result<(u32, usize), String> {
     };
 
     Ok((max_bucket, file_count))
-}
-
-/// Sanitize a filename for safe storage.
-/// Removes/replaces illegal characters and trims whitespace.
-fn sanitize_filename(name: &str) -> String {
-    let illegal_chars = ['/', '\\', ':', '*', '?', '"', '<', '>', '|'];
-    let mut result: String = name
-        .chars()
-        .map(|c| if illegal_chars.contains(&c) { '_' } else { c })
-        .collect();
-
-    // Trim whitespace
-    result = result.trim().to_string();
-
-    // Ensure non-empty
-    if result.is_empty() {
-        result = "unnamed.mp3".to_string();
-    }
-
-    result
 }
