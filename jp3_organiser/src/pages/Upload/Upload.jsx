@@ -12,16 +12,20 @@ import styles from './Upload.module.css';
  * 
  * Flow:
  * 1. User must first configure the library directory (large card)
- * 2. Once configured, compact card shows in top-right
- * 3. User can then upload audio files
- * 4. (Future) Files will be processed through metadata extraction pipeline
+ * 2. Directory is auto-initialized with jp3/music/, jp3/metadata/, jp3/playlists/
+ * 3. Once configured, compact card shows in top-right
+ * 4. User can then upload audio files
+ * 5. (Future) Files will be processed through metadata extraction pipeline
  */
 export default function Upload() {
   const { 
-    libraryPath, 
-    isLoading, 
+    libraryPath,
+    libraryInfo,
+    isLoading,
+    isInitializing,
     error, 
     isConfigured,
+    isInitialized,
     saveLibraryPath, 
     clearLibraryPath 
   } = useLibraryConfig();
@@ -49,12 +53,14 @@ export default function Upload() {
 
       <DirectoryConfig
         libraryPath={libraryPath}
+        libraryInfo={libraryInfo}
+        isInitializing={isInitializing}
         onSave={saveLibraryPath}
         onClear={clearLibraryPath}
         error={error}
       />
 
-      {isConfigured && (
+      {isConfigured && isInitialized && (
         <UploadFile libraryPath={libraryPath} />
       )}
     </div>

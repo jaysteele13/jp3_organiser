@@ -20,7 +20,9 @@ import { open } from '@tauri-apps/plugin-dialog';
 import styles from './DirectoryConfig.module.css';
 
 export default function DirectoryConfig({ 
-  libraryPath, 
+  libraryPath,
+  libraryInfo,
+  isInitializing,
   onSave, 
   onClear,
   error: externalError 
@@ -29,6 +31,7 @@ export default function DirectoryConfig({
   const [localError, setLocalError] = useState(null);
 
   const error = externalError || localError;
+  const isWorking = isSaving || isInitializing;
 
   const selectDirectory = async () => {
     try {
@@ -71,6 +74,13 @@ export default function DirectoryConfig({
     return path.split(/[/\\]/).pop() || path;
   };
 
+  // Get button text based on state
+  const getButtonText = () => {
+    if (isInitializing) return 'Initializing...';
+    if (isSaving) return 'Saving...';
+    return 'Select Directory';
+  };
+
   // Compact card for configured state (top-right, hover for actions)
   if (libraryPath) {
     return (
@@ -79,24 +89,30 @@ export default function DirectoryConfig({
           <div className={styles.compactContent}>
             <span className={styles.compactLabel}>Library:</span>
             <span className={styles.compactValue} title={libraryPath}>
-              {getFolderName(libraryPath)}
+              {getFolderName(libraryPath)}/jp3
             </span>
-            <span className={styles.compactPath}>{libraryPath}</span>
+            <span className={styles.compactPath}>{libraryPath}/jp3</span>
           </div>
+
+          {libraryInfo?.initialized && (
+            <span className={styles.compactStatus} title="Library initialized">
+              Ready
+            </span>
+          )}
           
           <div className={styles.compactActions}>
             <button 
               className={styles.compactButton}
               onClick={selectDirectory}
-              disabled={isSaving}
+              disabled={isWorking}
               title="Change location"
             >
-              {isSaving ? '...' : 'Change'}
+              {isWorking ? '...' : 'Change'}
             </button>
             <button 
               className={styles.compactButtonClear}
               onClick={handleClear}
-              disabled={isSaving}
+              disabled={isWorking}
               title="Clear location"
             >
               Clear
@@ -124,13 +140,23 @@ export default function DirectoryConfig({
           This folder will contain your organized music files, metadata, and playlists.
         </p>
 
+        <div className={styles.structurePreview}>
+          <span className={styles.structureTitle}>Directory structure:</span>
+          <code className={styles.structureCode}>
+            {`jp3/
+  music/00/     (audio files)
+  metadata/     (library.bin)
+  playlists/`}
+          </code>
+        </div>
+
         <div className={styles.unconfigured}>
           <button 
             className={styles.selectButton}
             onClick={selectDirectory}
-            disabled={isSaving}
+            disabled={isWorking}
           >
-            {isSaving ? 'Saving...' : 'Select Directory'}
+            {getButtonText()}
           </button>
         </div>
 

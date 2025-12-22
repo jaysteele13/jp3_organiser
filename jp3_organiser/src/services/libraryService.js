@@ -4,6 +4,17 @@
  * Wraps Tauri commands for managing the JP3 library configuration.
  * This includes the base library path where all music files, metadata,
  * and playlists will be stored.
+ * 
+ * Directory Structure:
+ * {libraryPath}/
+ *   jp3/
+ *     music/
+ *       00/  (buckets, max 256 songs each)
+ *       01/
+ *       ...
+ *     metadata/
+ *       library.bin  (binary format for ESP32)
+ *     playlists/
  */
 
 import { invoke } from '@tauri-apps/api/core';
@@ -31,4 +42,32 @@ export async function setLibraryPath(path) {
  */
 export async function clearLibraryPath() {
   return await invoke('clear_library_path');
+}
+
+/**
+ * Initialize the JP3 library directory structure
+ * Creates: jp3/music/00/, jp3/metadata/, jp3/playlists/
+ * Also creates an empty library.bin file
+ * 
+ * @param {string} basePath - The base directory path
+ * @returns {Promise<string>} The full path to the jp3 directory
+ */
+export async function initializeLibrary(basePath) {
+  return await invoke('initialize_library', { basePath });
+}
+
+/**
+ * Get information about the current library structure
+ * 
+ * @param {string} basePath - The base directory path
+ * @returns {Promise<LibraryInfo>} Information about the library
+ * 
+ * @typedef {Object} LibraryInfo
+ * @property {boolean} initialized - Whether the jp3 directory exists
+ * @property {string|null} jp3Path - Full path to jp3 directory
+ * @property {number} musicBuckets - Number of music bucket folders
+ * @property {boolean} hasLibraryBin - Whether library.bin exists
+ */
+export async function getLibraryInfo(basePath) {
+  return await invoke('get_library_info', { basePath });
 }

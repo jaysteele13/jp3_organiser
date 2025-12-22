@@ -22,9 +22,31 @@
 }
 
 .description {
-  margin: 0 0 1.25rem 0;
+  margin: 0 0 1rem 0;
   opacity: 0.9;
   line-height: 1.5;
+}
+
+.structurePreview {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.structureTitle {
+  display: block;
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin-bottom: 0.5rem;
+}
+
+.structureCode {
+  display: block;
+  font-size: 0.85rem;
+  white-space: pre;
+  opacity: 0.9;
+  line-height: 1.4;
 }
 
 .unconfigured {
@@ -43,6 +65,11 @@
 
 .selectButton:hover {
   background-color: var(--tertiary-hover);
+}
+
+.selectButton:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 .error {
@@ -116,6 +143,21 @@
   display: block;
 }
 
+.compactCard:hover .compactValue {
+  display: none;
+}
+
+/* Status indicator */
+.compactStatus {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.4rem;
+  background-color: var(--secondary);
+  border-radius: 3px;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
 /* Actions - hidden by default, shown on hover */
 .compactActions {
   display: flex;
@@ -143,6 +185,11 @@
   background-color: var(--tertiary-hover);
 }
 
+.compactButton:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .compactButtonClear {
   padding: 0.25rem 0.5rem;
   font-size: 0.7rem;
@@ -157,6 +204,11 @@
   background-color: var(--primary);
   border-color: var(--primary);
   color: #fff;
+}
+
+.compactButtonClear:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 .compactError {
