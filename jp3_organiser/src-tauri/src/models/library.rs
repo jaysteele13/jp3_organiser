@@ -1,0 +1,148 @@
+//! Library data structures for JP3 binary format.
+//!
+//! The library.bin format is designed for efficient reading on ESP32:
+//! - Fixed-size header for quick parsing
+//! - String table for deduplication
+//! - Separate tables for artists, albums, and songs
+//! - All integers are little-endian
+
+use serde::Serialize;
+
+// Binary format constants
+pub const LIBRARY_MAGIC: &[u8; 4] = b"LIB1";
+pub const LIBRARY_VERSION: u32 = 1;
+pub const HEADER_SIZE: u32 = 40;
+
+/// Library header structure for binary serialization.
+///
+/// Binary layout (40 bytes total):
+/// ```text
+/// Offset  Size  Field
+/// 0x00    4     magic ("LIB1")
+/// 0x04    4     version
+/// 0x08    4     song_count
+/// 0x0C    4     artist_count
+/// 0x10    4     album_count
+/// 0x14    4     string_table_offset
+/// 0x18    4     artist_table_offset
+/// 0x1C    4     album_table_offset
+/// 0x20    4     song_table_offset
+/// 0x24    4     reserved
+/// ```
+#[derive(Debug, Clone)]
+pub struct LibraryHeader {
+    pub magic: [u8; 4],
+    pub version: u32,
+    pub song_count: u32,
+    pub artist_count: u32,
+    pub album_count: u32,
+    pub string_table_offset: u32,
+    pub artist_table_offset: u32,
+    pub album_table_offset: u32,
+    pub song_table_offset: u32,
+}
+
+impl LibraryHeader {
+    /// Create a new empty library header.
+    pub fn new_empty() -> Self {
+        Self {
+            magic: *LIBRARY_MAGIC,
+            version: LIBRARY_VERSION,
+            song_count: 0,
+            artist_count: 0,
+            album_count: 0,
+            string_table_offset: HEADER_SIZE,
+            artist_table_offset: HEADER_SIZE,
+            album_table_offset: HEADER_SIZE,
+            song_table_offset: HEADER_SIZE,
+        }
+    }
+
+    /// Serialize header to bytes (little-endian).
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(HEADER_SIZE as usize);
+        bytes.extend_from_slice(&self.magic);
+        bytes.extend_from_slice(&self.version.to_le_bytes());
+        bytes.extend_from_slice(&self.song_count.to_le_bytes());
+        bytes.extend_from_slice(&self.artist_count.to_le_bytes());
+        bytes.extend_from_slice(&self.album_count.to_le_bytes());
+        bytes.extend_from_slice(&self.string_table_offset.to_le_bytes());
+        bytes.extend_from_slice(&self.artist_table_offset.to_le_bytes());
+        bytes.extend_from_slice(&self.album_table_offset.to_le_bytes());
+        bytes.extend_from_slice(&self.song_table_offset.to_le_bytes());
+        // Reserved 4 bytes for future use
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        bytes
+    }
+
+    /// Parse header from bytes.
+    #[allow(dead_code)]
+    pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() < HEADER_SIZE as usize {
+            return None;
+        }
+
+        let magic: [u8; 4] = bytes[0..4].try_into().ok()?;
+        if &magic != LIBRARY_MAGIC {
+            return None;
+        }
+
+        Some(Self {
+            magic,
+            version: u32::from_le_bytes(bytes[4..8].try_into().ok()?),
+            song_count: u32::from_le_bytes(bytes[8..12].try_into().ok()?),
+            artist_count: u32::from_le_bytes(bytes[12..16].try_into().ok()?),
+            album_count: u32::from_le_bytes(bytes[16..20].try_into().ok()?),
+            string_table_offset: u32::from_le_bytes(bytes[20..24].try_into().ok()?),
+            artist_table_offset: u32::from_le_bytes(bytes[24..28].try_into().ok()?),
+            album_table_offset: u32::from_le_bytes(bytes[28..32].try_into().ok()?),
+            song_table_offset: u32::from_le_bytes(bytes[32..36].try_into().ok()?),
+        })
+    }
+}
+
+/// Information about the current library state.
+/// Returned to the frontend to display library status.
+#[derive(Debug, Clone, Serialize)]
+pub struct LibraryInfo {
+    pub initialized: bool,
+    pub jp3_path: Option<String>,
+    pub music_buckets: u32,
+    pub has_library_bin: bool,
+}
+
+impl LibraryInfo {
+    /// Create an uninitialized library info.
+    pub fn uninitialized() -> Self {
+        Self {
+            initialized: false,
+            jp3_path: None,
+            music_buckets: 0,
+            has_library_bin: false,
+        }
+    }
+}
+
+// Future: Add these structures as needed
+//
+// #[derive(Debug, Clone, Serialize)]
+// pub struct ArtistEntry {
+//     pub name_string_id: u32,
+// }
+//
+// #[derive(Debug, Clone, Serialize)]
+// pub struct AlbumEntry {
+//     pub name_string_id: u32,
+//     pub artist_id: u32,
+//     pub year: u16,
+// }
+//
+// #[derive(Debug, Clone, Serialize)]
+// pub struct SongEntry {
+//     pub title_string_id: u32,
+//     pub artist_id: u32,
+//     pub album_id: u32,
+//     pub path_string_id: u32,
+//     pub track_number: u16,
+//     pub duration_sec: u16,
+// }
