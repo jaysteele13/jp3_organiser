@@ -4,6 +4,7 @@ import styles from './App.module.css';
 import Navbar from './components/Navbar';
 import About from './pages/About';
 import Upload from './pages/Upload';
+import View from './pages/View';
 import { useKeyboardShortcut } from './hooks/useKeyboardShortcut';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/upload" replace />} />
           <Route path="/upload" element={<Upload />} />
+          <Route path="/view" element={<View />} />
           <Route path="/about" element={<About />} />
         </Routes>
       </main>

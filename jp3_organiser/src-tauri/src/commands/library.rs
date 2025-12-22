@@ -4,12 +4,13 @@
 
 use std::collections::HashMap;
 use std::fs;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::Path;
 
 use crate::models::{
-    AlbumEntry, ArtistEntry, AudioMetadata, LibraryHeader, LibraryInfo, SaveToLibraryResult,
-    SongEntry, StringTable, HEADER_SIZE,
+    AlbumEntry, ArtistEntry, AudioMetadata, LibraryHeader, LibraryInfo, ParsedAlbum,
+    ParsedArtist, ParsedLibrary, ParsedSong, SaveToLibraryResult, SongEntry, StringTable,
+    HEADER_SIZE,
 };
 
 // JP3 directory structure constants
@@ -319,4 +320,291 @@ fn get_current_bucket(music_path: &Path) -> Result<(u32, usize), String> {
     };
 
     Ok((max_bucket, file_count))
+}
+
+/// Load and parse library.bin from the jp3 folder.
+///
+/// This parses the binary format exactly as the ESP32 would,
+/// reading directly from the file on disk (not from memory).
+#[tauri::command]
+pub fn load_library(base_path: String) -> Result<ParsedLibrary, String> {
+    let base = Path::new(&base_path);
+    let jp3_path = base.join(JP3_DIR);
+    let metadata_path = jp3_path.join(METADATA_DIR);
+    let library_bin_path = metadata_path.join(LIBRARY_BIN);
+
+    if !library_bin_path.exists() {
+        return Err("library.bin not found. Add some songs first.".to_string());
+    }
+
+    // Read entire file into memory (same as ESP32 would read from SD card)
+    let mut file = fs::File::open(&library_bin_path)
+        .map_err(|e| format!("Failed to open library.bin: {}", e))?;
+    let mut data = Vec::new();
+    file.read_to_end(&mut data)
+        .map_err(|e| format!("Failed to read library.bin: {}", e))?;
+
+    // Parse header
+    let header = LibraryHeader::from_bytes(&data)
+        .ok_or("Invalid library.bin header")?;
+
+    // Parse string table
+    let strings = parse_string_table(
+        &data,
+        header.string_table_offset as usize,
+        header.artist_table_offset as usize,
+    )?;
+
+    // Parse artist table
+    let raw_artists = parse_artist_table(
+        &data,
+        header.artist_table_offset as usize,
+        header.artist_count as usize,
+    )?;
+
+    // Parse album table
+    let raw_albums = parse_album_table(
+        &data,
+        header.album_table_offset as usize,
+        header.album_count as usize,
+    )?;
+
+    // Parse song table
+    let raw_songs = parse_song_table(
+        &data,
+        header.song_table_offset as usize,
+        header.song_count as usize,
+    )?;
+
+    // Build parsed artists with resolved names
+    let artists: Vec<ParsedArtist> = raw_artists
+        .iter()
+        .enumerate()
+        .map(|(i, a)| ParsedArtist {
+            id: i as u32,
+            name: strings
+                .get(a.name_string_id as usize)
+                .cloned()
+                .unwrap_or_else(|| "Unknown".to_string()),
+        })
+        .collect();
+
+    // Build parsed albums with resolved names
+    let albums: Vec<ParsedAlbum> = raw_albums
+        .iter()
+        .enumerate()
+        .map(|(i, a)| {
+            let artist_name = artists
+                .get(a.artist_id as usize)
+                .map(|ar| ar.name.clone())
+                .unwrap_or_else(|| "Unknown".to_string());
+            ParsedAlbum {
+                id: i as u32,
+                name: strings
+                    .get(a.name_string_id as usize)
+                    .cloned()
+                    .unwrap_or_else(|| "Unknown".to_string()),
+                artist_id: a.artist_id,
+                artist_name,
+                year: a.year,
+            }
+        })
+        .collect();
+
+    // Build parsed songs with resolved names
+    let songs: Vec<ParsedSong> = raw_songs
+        .iter()
+        .enumerate()
+        .map(|(i, s)| {
+            let artist_name = artists
+                .get(s.artist_id as usize)
+                .map(|ar| ar.name.clone())
+                .unwrap_or_else(|| "Unknown".to_string());
+            let album_name = albums
+                .get(s.album_id as usize)
+                .map(|al| al.name.clone())
+                .unwrap_or_else(|| "Unknown".to_string());
+            ParsedSong {
+                id: i as u32,
+                title: strings
+                    .get(s.title_string_id as usize)
+                    .cloned()
+                    .unwrap_or_else(|| "Unknown".to_string()),
+                artist_id: s.artist_id,
+                artist_name,
+                album_id: s.album_id,
+                album_name,
+                path: strings
+                    .get(s.path_string_id as usize)
+                    .cloned()
+                    .unwrap_or_else(|| "".to_string()),
+                track_number: s.track_number,
+                duration_sec: s.duration_sec,
+            }
+        })
+        .collect();
+
+    Ok(ParsedLibrary {
+        version: header.version,
+        artists,
+        albums,
+        songs,
+    })
+}
+
+/// Parse the string table from binary data.
+fn parse_string_table(data: &[u8], start: usize, end: usize) -> Result<Vec<String>, String> {
+    let mut strings = Vec::new();
+    let mut pos = start;
+
+    while pos + 2 <= end && pos + 2 <= data.len() {
+        let len = u16::from_le_bytes(
+            data[pos..pos + 2]
+                .try_into()
+                .map_err(|_| "Failed to read string length")?,
+        ) as usize;
+        pos += 2;
+
+        if pos + len > data.len() {
+            return Err("String extends beyond file".to_string());
+        }
+
+        let s = String::from_utf8(data[pos..pos + len].to_vec())
+            .map_err(|_| "Invalid UTF-8 in string table")?;
+        strings.push(s);
+        pos += len;
+    }
+
+    Ok(strings)
+}
+
+/// Raw artist entry from binary (before name resolution).
+struct RawArtist {
+    name_string_id: u32,
+}
+
+/// Parse artist table from binary data.
+fn parse_artist_table(data: &[u8], start: usize, count: usize) -> Result<Vec<RawArtist>, String> {
+    let mut artists = Vec::with_capacity(count);
+    let entry_size = ArtistEntry::SIZE as usize;
+
+    for i in 0..count {
+        let offset = start + i * entry_size;
+        if offset + 4 > data.len() {
+            return Err("Artist table extends beyond file".to_string());
+        }
+        let name_string_id = u32::from_le_bytes(
+            data[offset..offset + 4]
+                .try_into()
+                .map_err(|_| "Failed to read artist name_string_id")?,
+        );
+        artists.push(RawArtist { name_string_id });
+    }
+
+    Ok(artists)
+}
+
+/// Raw album entry from binary (before name resolution).
+struct RawAlbum {
+    name_string_id: u32,
+    artist_id: u32,
+    year: u16,
+}
+
+/// Parse album table from binary data.
+fn parse_album_table(data: &[u8], start: usize, count: usize) -> Result<Vec<RawAlbum>, String> {
+    let mut albums = Vec::with_capacity(count);
+    let entry_size = AlbumEntry::SIZE as usize;
+
+    for i in 0..count {
+        let offset = start + i * entry_size;
+        if offset + 10 > data.len() {
+            return Err("Album table extends beyond file".to_string());
+        }
+        let name_string_id = u32::from_le_bytes(
+            data[offset..offset + 4]
+                .try_into()
+                .map_err(|_| "Failed to read album name_string_id")?,
+        );
+        let artist_id = u32::from_le_bytes(
+            data[offset + 4..offset + 8]
+                .try_into()
+                .map_err(|_| "Failed to read album artist_id")?,
+        );
+        let year = u16::from_le_bytes(
+            data[offset + 8..offset + 10]
+                .try_into()
+                .map_err(|_| "Failed to read album year")?,
+        );
+        albums.push(RawAlbum {
+            name_string_id,
+            artist_id,
+            year,
+        });
+    }
+
+    Ok(albums)
+}
+
+/// Raw song entry from binary (before name resolution).
+struct RawSong {
+    title_string_id: u32,
+    artist_id: u32,
+    album_id: u32,
+    path_string_id: u32,
+    track_number: u16,
+    duration_sec: u16,
+}
+
+/// Parse song table from binary data.
+fn parse_song_table(data: &[u8], start: usize, count: usize) -> Result<Vec<RawSong>, String> {
+    let mut songs = Vec::with_capacity(count);
+    let entry_size = SongEntry::SIZE as usize;
+
+    for i in 0..count {
+        let offset = start + i * entry_size;
+        if offset + 20 > data.len() {
+            return Err("Song table extends beyond file".to_string());
+        }
+        let title_string_id = u32::from_le_bytes(
+            data[offset..offset + 4]
+                .try_into()
+                .map_err(|_| "Failed to read song title_string_id")?,
+        );
+        let artist_id = u32::from_le_bytes(
+            data[offset + 4..offset + 8]
+                .try_into()
+                .map_err(|_| "Failed to read song artist_id")?,
+        );
+        let album_id = u32::from_le_bytes(
+            data[offset + 8..offset + 12]
+                .try_into()
+                .map_err(|_| "Failed to read song album_id")?,
+        );
+        let path_string_id = u32::from_le_bytes(
+            data[offset + 12..offset + 16]
+                .try_into()
+                .map_err(|_| "Failed to read song path_string_id")?,
+        );
+        let track_number = u16::from_le_bytes(
+            data[offset + 16..offset + 18]
+                .try_into()
+                .map_err(|_| "Failed to read song track_number")?,
+        );
+        let duration_sec = u16::from_le_bytes(
+            data[offset + 18..offset + 20]
+                .try_into()
+                .map_err(|_| "Failed to read song duration_sec")?,
+        );
+        songs.push(RawSong {
+            title_string_id,
+            artist_id,
+            album_id,
+            path_string_id,
+            track_number,
+            duration_sec,
+        });
+    }
+
+    Ok(songs)
 }

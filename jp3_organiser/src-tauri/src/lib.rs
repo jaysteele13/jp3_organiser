@@ -27,6 +27,7 @@ use commands::{
     // Library commands
     get_library_info,
     initialize_library,
+    load_library,
     save_to_library,
 };
 
@@ -49,6 +50,7 @@ pub fn run() {
             initialize_library,
             get_library_info,
             save_to_library,
+            load_library,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

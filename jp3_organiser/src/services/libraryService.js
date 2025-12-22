@@ -95,3 +95,44 @@ export async function getLibraryInfo(basePath) {
 export async function saveToLibrary(basePath, files) {
   return await invoke('save_to_library', { basePath, files });
 }
+
+/**
+ * Load and parse the library.bin file from the jp3 folder.
+ * 
+ * This reads directly from the file on disk, parsing it
+ * exactly as the ESP32 would (not from locally cached memory).
+ * 
+ * @param {string} basePath - The base library directory path
+ * @returns {Promise<ParsedLibrary>} Parsed library data
+ * 
+ * @typedef {Object} ParsedArtist
+ * @property {number} id - Artist ID
+ * @property {string} name - Artist name
+ * 
+ * @typedef {Object} ParsedAlbum
+ * @property {number} id - Album ID
+ * @property {string} name - Album name
+ * @property {number} artistId - Artist ID
+ * @property {string} artistName - Artist name (resolved)
+ * @property {number} year - Release year
+ * 
+ * @typedef {Object} ParsedSong
+ * @property {number} id - Song ID
+ * @property {string} title - Song title
+ * @property {number} artistId - Artist ID
+ * @property {string} artistName - Artist name (resolved)
+ * @property {number} albumId - Album ID
+ * @property {string} albumName - Album name (resolved)
+ * @property {string} path - Relative path in library (e.g., "00/001.mp3")
+ * @property {number} trackNumber - Track number
+ * @property {number} durationSec - Duration in seconds
+ * 
+ * @typedef {Object} ParsedLibrary
+ * @property {number} version - Library format version
+ * @property {ParsedArtist[]} artists - All artists
+ * @property {ParsedAlbum[]} albums - All albums
+ * @property {ParsedSong[]} songs - All songs
+ */
+export async function loadLibrary(basePath) {
+  return await invoke('load_library', { basePath });
+}

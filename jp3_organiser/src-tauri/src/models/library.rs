@@ -281,3 +281,47 @@ pub struct SaveToLibraryResult {
     pub albums_added: u32,
     pub songs_added: u32,
 }
+
+/// Parsed artist data for frontend display.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ParsedArtist {
+    pub id: u32,
+    pub name: String,
+}
+
+/// Parsed album data for frontend display.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ParsedAlbum {
+    pub id: u32,
+    pub name: String,
+    pub artist_id: u32,
+    pub artist_name: String,
+    pub year: u16,
+}
+
+/// Parsed song data for frontend display.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ParsedSong {
+    pub id: u32,
+    pub title: String,
+    pub artist_id: u32,
+    pub artist_name: String,
+    pub album_id: u32,
+    pub album_name: String,
+    pub path: String,
+    pub track_number: u16,
+    pub duration_sec: u16,
+}
+
+/// Complete parsed library data for frontend display.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ParsedLibrary {
+    pub version: u32,
+    pub artists: Vec<ParsedArtist>,
+    pub albums: Vec<ParsedAlbum>,
+    pub songs: Vec<ParsedSong>,
+}
