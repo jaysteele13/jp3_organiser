@@ -1,1 +1,1 @@
-export { default } from 'StatsBar.jsx'
+export { default } from './StatsBar.jsx'

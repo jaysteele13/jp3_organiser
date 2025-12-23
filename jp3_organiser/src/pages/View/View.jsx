@@ -16,9 +16,13 @@ import styles from './View.module.css';
 import {TABS} from '../../utils/enums'
 
 // Custom Components
+import ViewHeader from './components/ViewHeader';
 import StatsBar from './components/StatsBar/StatsBar';
 import TabSelector from './components/Tabs/TabSelector';
 import SongView from './components/Tabs/Songs'
+import AlbumView from './components/Tabs/Albums'
+import ArtistView from './components/Tabs/Artists'
+import PlaylistView from './components/Tabs/Playlists'
 
 export default function View() {
   const { libraryPath, isLoading: configLoading } = useLibraryConfig();
@@ -63,14 +67,6 @@ export default function View() {
     }
   };
 
-  // Format duration from seconds to MM:SS
-  const formatDuration = (seconds) => {
-    if (!seconds) return '--:--';
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   // Stats for header
   const stats = useMemo(() => {
     if (!library) return { songs: 0, albums: 0, artists: 0 };
@@ -102,21 +98,9 @@ export default function View() {
 
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
-        <div className={styles.headerInfo}>
-          <h1 className={styles.title}>Library</h1>
-          <p className={styles.subtitle}>
-            Parsed from: <code>{libraryPath}/jp3/metadata/library.bin</code>
-          </p>
-        </div>
-        <button 
-          className={styles.refreshButton} 
-          onClick={handleRefresh}
-          disabled={isLoading}
-        >
-          {isLoading ? 'Loading...' : 'Refresh'}
-        </button>
-      </header>
+      <ViewHeader libraryPath={libraryPath}
+      handleRefresh={handleRefresh}
+      isLoading={isLoading}/>
 
       {error && (
         <div className={styles.error}>{error}</div>
@@ -125,92 +109,24 @@ export default function View() {
       {library && (
         <>
           <StatsBar stats={stats}/>
-
           <TabSelector setActiveTab={setActiveTab}
           activeTab={activeTab}/>
-
           <div className={styles.content}>
             {activeTab === TABS.SONGS && (
-              <div className={styles.tableContainer}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Title</th>
-                      <th>Artist</th>
-                      <th>Album</th>
-                      <th>Duration</th>
-                      <th>Path</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {library.songs.map((song, index) => (
-                      <tr key={song.id}>
-                        <td className={styles.cellNum}>{index + 1}</td>
-                        <td className={styles.cellTitle}>{song.title}</td>
-                        <td>{song.artistName}</td>
-                        <td>{song.albumName}</td>
-                        <td className={styles.cellDuration}>
-                          {formatDuration(song.durationSec)}
-                        </td>
-                        <td className={styles.cellPath}>{song.path}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {library.songs.length === 0 && (
-                  <div className={styles.emptyTable}>No songs in library</div>
-                )}
-              </div>
+              <SongView library={library}/>
             )}
 
             {activeTab === TABS.ALBUMS && (
-              <div className={styles.cardGrid}>
-                {library.albums.map((album) => {
-                  const albumSongs = library.songs.filter(s => s.albumId === album.id);
-                  return (
-                    <div key={album.id} className={styles.card}>
-                      <div className={styles.cardTitle}>{album.name}</div>
-                      <div className={styles.cardSubtitle}>{album.artistName}</div>
-                      <div className={styles.cardMeta}>
-                        {album.year > 0 && <span>{album.year}</span>}
-                        <span>{albumSongs.length} song(s)</span>
-                      </div>
-                    </div>
-                  );
-                })}
-                {library.albums.length === 0 && (
-                  <div className={styles.emptyTable}>No albums in library</div>
-                )}
-              </div>
+              <AlbumView library={library}/>
             )}
 
             {activeTab === TABS.ARTISTS && (
-              <div className={styles.cardGrid}>
-                {library.artists.map((artist) => {
-                  const artistSongs = library.songs.filter(s => s.artistId === artist.id);
-                  const artistAlbums = library.albums.filter(a => a.artistId === artist.id);
-                  return (
-                    <div key={artist.id} className={styles.card}>
-                      <div className={styles.cardTitle}>{artist.name}</div>
-                      <div className={styles.cardMeta}>
-                        <span>{artistAlbums.length} album(s)</span>
-                        <span>{artistSongs.length} song(s)</span>
-                      </div>
-                    </div>
-                  );
-                })}
-                {library.artists.length === 0 && (
-                  <div className={styles.emptyTable}>No artists in library</div>
-                )}
-              </div>
+              <ArtistView
+              library={library}/>
             )}
 
             {activeTab === TABS.PLAYLISTS && (
-              <div className={styles.emptyState}>
-                <h3>Playlists</h3>
-                <p>Playlist support coming soon.</p>
-              </div>
+              <PlaylistView/>
             )}
           </div>
         </>

@@ -1,2 +1,2 @@
-export { default } from 'TabSelector.jsx'
+export { default } from './TabSelector.jsx'
 

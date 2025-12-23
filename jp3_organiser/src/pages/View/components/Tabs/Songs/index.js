@@ -1,1 +1,1 @@
-export { default } from 'SongView.jsx'
+export { default } from './SongView.jsx'

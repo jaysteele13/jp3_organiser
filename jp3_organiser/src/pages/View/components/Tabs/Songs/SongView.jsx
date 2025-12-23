@@ -1,4 +1,6 @@
-export default function SongView(library) {
+import styles from './SongView.module.css'
+
+export default function SongView({ library }) {
       // Format duration from seconds to MM:SS
   const formatDuration = (seconds) => {
     if (!seconds) return '--:--';
