@@ -1,0 +1,33 @@
+
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+}
+
+.tab {
+  padding: 0.5rem 1rem;
+  background-color: var(--secondary);
+  border: none;
+  color: #000;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.tab:hover {
+  background-color: var(--secondary-hover);
+}
+
+.tabActive {
+  background-color: var(--primary);
+  color: #fff;
+}
+
+.tabActive:hover {
+  background-color: var(--primary-hover);
+}

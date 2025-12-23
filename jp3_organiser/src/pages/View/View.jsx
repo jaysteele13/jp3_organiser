@@ -13,12 +13,12 @@ import { loadLibrary } from '../../services';
 import { useLibraryConfig } from '../../hooks';
 import styles from './View.module.css';
 
-const TABS = {
-  SONGS: 'songs',
-  ALBUMS: 'albums',
-  ARTISTS: 'artists',
-  PLAYLISTS: 'playlists',
-};
+import {TABS} from '../../utils/enums'
+
+// Custom Components
+import StatsBar from './components/StatsBar/StatsBar';
+import TabSelector from './components/Tabs/TabSelector';
+import SongView from './components/Tabs/Songs'
 
 export default function View() {
   const { libraryPath, isLoading: configLoading } = useLibraryConfig();
@@ -124,24 +124,10 @@ export default function View() {
 
       {library && (
         <>
-          <div className={styles.statsBar}>
-            <span className={styles.stat}>{stats.songs} songs</span>
-            <span className={styles.stat}>{stats.albums} albums</span>
-            <span className={styles.stat}>{stats.artists} artists</span>
-            <span className={styles.stat}>v{library.version}</span>
-          </div>
+          <StatsBar stats={stats}/>
 
-          <div className={styles.tabs}>
-            {Object.entries(TABS).map(([key, value]) => (
-              <button
-                key={value}
-                className={`${styles.tab} ${activeTab === value ? styles.tabActive : ''}`}
-                onClick={() => setActiveTab(value)}
-              >
-                {key.charAt(0) + key.slice(1).toLowerCase()}
-              </button>
-            ))}
-          </div>
+          <TabSelector setActiveTab={setActiveTab}
+          activeTab={activeTab}/>
 
           <div className={styles.content}>
             {activeTab === TABS.SONGS && (

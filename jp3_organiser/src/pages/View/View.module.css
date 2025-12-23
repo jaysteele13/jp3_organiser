@@ -55,21 +55,7 @@
   cursor: wait;
 }
 
-/* Stats bar */
-.statsBar {
-  display: flex;
-  gap: 1.5rem;
-  margin-bottom: 1rem;
-  padding: 0.75rem 1rem;
-  background-color: var(--tertiary);
-  border-radius: 6px;
-  color: #000;
-}
 
-.stat {
-  font-size: 0.9rem;
-  opacity: 0.9;
-}
 
 /* Tabs */
 .tabs {
