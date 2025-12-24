@@ -232,6 +232,15 @@ impl StringTable {
         Self::default()
     }
 
+    /// Create a StringTable from existing strings (for loading from library.bin).
+    pub fn from_vec(strings: Vec<String>) -> Self {
+        let mut lookup = std::collections::HashMap::new();
+        for (id, s) in strings.iter().enumerate() {
+            lookup.insert(s.clone(), id as u32);
+        }
+        Self { strings, lookup }
+    }
+
     /// Add a string and return its ID.
     /// Returns existing ID if string already present (deduplication).
     pub fn add(&mut self, s: &str) -> u32 {

@@ -124,11 +124,122 @@ pub struct FileToSave {
 /// Maximum files per music bucket.
 const MAX_FILES_PER_BUCKET: usize = 256;
 
+/// Existing library data loaded from library.bin for incremental updates.
+struct ExistingLibraryData {
+    string_table: StringTable,
+    artists: Vec<ArtistEntry>,
+    albums: Vec<AlbumEntry>,
+    songs: Vec<SongEntry>,
+    artist_map: HashMap<String, u32>,
+    album_map: HashMap<String, u32>,
+}
+
+/// Load existing library data from library.bin for merging with new songs.
+fn load_existing_library_data(library_bin_path: &Path) -> Result<Option<ExistingLibraryData>, String> {
+    if !library_bin_path.exists() {
+        return Ok(None);
+    }
+
+    // Read entire file
+    let mut file = fs::File::open(library_bin_path)
+        .map_err(|e| format!("Failed to open library.bin: {}", e))?;
+    let mut data = Vec::new();
+    file.read_to_end(&mut data)
+        .map_err(|e| format!("Failed to read library.bin: {}", e))?;
+
+    // Check if file is too small (just header with no data)
+    if data.len() < HEADER_SIZE as usize {
+        return Ok(None);
+    }
+
+    // Parse header
+    let header = LibraryHeader::from_bytes(&data)
+        .ok_or("Invalid library.bin header")?;
+
+    // If no songs exist, return None (fresh library)
+    if header.song_count == 0 {
+        return Ok(None);
+    }
+
+    // Parse string table
+    let strings = parse_string_table(
+        &data,
+        header.string_table_offset as usize,
+        header.artist_table_offset as usize,
+    )?;
+    let string_table = StringTable::from_vec(strings.clone());
+
+    // Parse raw artist table and rebuild ArtistEntry vec + map
+    let raw_artists = parse_artist_table(
+        &data,
+        header.artist_table_offset as usize,
+        header.artist_count as usize,
+    )?;
+    let mut artists: Vec<ArtistEntry> = Vec::with_capacity(raw_artists.len());
+    let mut artist_map: HashMap<String, u32> = HashMap::new();
+    for (id, raw) in raw_artists.iter().enumerate() {
+        let name = strings.get(raw.name_string_id as usize)
+            .cloned()
+            .unwrap_or_default();
+        artist_map.insert(name, id as u32);
+        artists.push(ArtistEntry {
+            name_string_id: raw.name_string_id,
+        });
+    }
+
+    // Parse raw album table and rebuild AlbumEntry vec + map
+    let raw_albums = parse_album_table(
+        &data,
+        header.album_table_offset as usize,
+        header.album_count as usize,
+    )?;
+    let mut albums: Vec<AlbumEntry> = Vec::with_capacity(raw_albums.len());
+    let mut album_map: HashMap<String, u32> = HashMap::new();
+    for (id, raw) in raw_albums.iter().enumerate() {
+        let album_name = strings.get(raw.name_string_id as usize)
+            .cloned()
+            .unwrap_or_default();
+        let album_key = format!("{}:{}", raw.artist_id, album_name);
+        album_map.insert(album_key, id as u32);
+        albums.push(AlbumEntry {
+            name_string_id: raw.name_string_id,
+            artist_id: raw.artist_id,
+            year: raw.year,
+        });
+    }
+
+    // Parse raw song table and rebuild SongEntry vec
+    let raw_songs = parse_song_table(
+        &data,
+        header.song_table_offset as usize,
+        header.song_count as usize,
+    )?;
+    let songs: Vec<SongEntry> = raw_songs.iter().map(|raw| SongEntry {
+        title_string_id: raw.title_string_id,
+        artist_id: raw.artist_id,
+        album_id: raw.album_id,
+        path_string_id: raw.path_string_id,
+        track_number: raw.track_number,
+        duration_sec: raw.duration_sec,
+    }).collect();
+
+    Ok(Some(ExistingLibraryData {
+        string_table,
+        artists,
+        albums,
+        songs,
+        artist_map,
+        album_map,
+    }))
+}
+
 /// Save audio files to the library.
 ///
 /// This command:
-/// 1. Copies audio files to the appropriate music bucket
-/// 2. Builds the library.bin with deduped artists, albums, and songs
+/// 1. Loads existing library data (if any) for incremental updates
+/// 2. Copies audio files to the appropriate music bucket
+/// 3. Merges new songs with existing library data
+/// 4. Writes updated library.bin with all artists, albums, and songs
 ///
 /// Files are added to existing library data (incremental).
 #[tauri::command]
@@ -146,16 +257,32 @@ pub fn save_to_library(
         return Err("Library not initialized. Please select a library directory first.".to_string());
     }
 
-    // Build lookup tables
-    let mut string_table = StringTable::new();
-    let mut artists: Vec<ArtistEntry> = Vec::new();
-    let mut albums: Vec<AlbumEntry> = Vec::new();
-    let mut songs: Vec<SongEntry> = Vec::new();
-
-    // Maps for deduplication: name -> id
-    let mut artist_map: HashMap<String, u32> = HashMap::new();
-    // Album key: "artist_id:album_name" -> album_id
-    let mut album_map: HashMap<String, u32> = HashMap::new();
+    // Load existing library data or start fresh
+    let existing = load_existing_library_data(&library_bin_path)?;
+    
+    let (mut string_table, mut artists, mut albums, mut songs, mut artist_map, mut album_map) = 
+        match existing {
+            Some(data) => (
+                data.string_table,
+                data.artists,
+                data.albums,
+                data.songs,
+                data.artist_map,
+                data.album_map,
+            ),
+            None => (
+                StringTable::new(),
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                HashMap::new(),
+                HashMap::new(),
+            ),
+        };
+    
+    let existing_song_count = songs.len() as u32;
+    let existing_artist_count = artists.len() as u32;
+    let existing_album_count = albums.len() as u32;
 
     // Find current bucket and file count
     let (mut current_bucket, mut files_in_bucket) = get_current_bucket(&music_path)?;
@@ -283,9 +410,9 @@ pub fn save_to_library(
 
     Ok(SaveToLibraryResult {
         files_saved,
-        artists_added: artists.len() as u32,
-        albums_added: albums.len() as u32,
-        songs_added: songs.len() as u32,
+        artists_added: artists.len() as u32 - existing_artist_count,
+        albums_added: albums.len() as u32 - existing_album_count,
+        songs_added: songs.len() as u32 - existing_song_count,
     })
 }
 
