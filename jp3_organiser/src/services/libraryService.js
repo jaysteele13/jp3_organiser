@@ -136,3 +136,72 @@ export async function saveToLibrary(basePath, files) {
 export async function loadLibrary(basePath) {
   return await invoke('load_library', { basePath });
 }
+
+/**
+ * Soft delete songs by their IDs.
+ * 
+ * This only modifies the flags byte of each song entry, minimizing SD card write cycles.
+ * The song data remains in the file but will be skipped when reading.
+ * Use `compactLibrary` to actually remove deleted entries and reclaim space.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {number[]} songIds - Array of song IDs to delete
+ * @returns {Promise<DeleteSongsResult>} Result with deletion counts
+ * 
+ * @typedef {Object} DeleteSongsResult
+ * @property {number} songsDeleted - Number of songs successfully marked as deleted
+ * @property {number[]} notFound - Song IDs that were not found
+ */
+export async function deleteSongs(basePath, songIds) {
+  return await invoke('delete_songs', { basePath, songIds });
+}
+
+/**
+ * Get library statistics including deleted song count.
+ * 
+ * Use this to determine if compaction is needed.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @returns {Promise<LibraryStats>} Library statistics
+ * 
+ * @typedef {Object} LibraryStats
+ * @property {number} totalSongs - Total songs (including deleted)
+ * @property {number} activeSongs - Active songs (not deleted)
+ * @property {number} deletedSongs - Deleted songs
+ * @property {number} totalArtists - Total artists
+ * @property {number} totalAlbums - Total albums
+ * @property {number} totalStrings - Total strings in string table
+ * @property {number} deletedPercentage - Percentage of deleted songs (0-100)
+ * @property {boolean} shouldCompact - Recommended to compact (deleted > 20%)
+ * @property {number} fileSizeBytes - File size in bytes
+ */
+export async function getLibraryStats(basePath) {
+  return await invoke('get_library_stats', { basePath });
+}
+
+/**
+ * Compact the library by removing deleted entries and orphaned data.
+ * 
+ * This rebuilds the entire library.bin, removing:
+ * - Soft-deleted songs
+ * - Artists with no remaining songs
+ * - Albums with no remaining songs
+ * - Strings not referenced by any active entry
+ * 
+ * This is a full rewrite operation - use sparingly to minimize SD card wear.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @returns {Promise<CompactResult>} Result with removal counts
+ * 
+ * @typedef {Object} CompactResult
+ * @property {number} songsRemoved - Songs removed (were soft-deleted)
+ * @property {number} artistsRemoved - Orphaned artists removed
+ * @property {number} albumsRemoved - Orphaned albums removed
+ * @property {number} stringsRemoved - Orphaned strings removed
+ * @property {number} oldSizeBytes - Old file size
+ * @property {number} newSizeBytes - New file size
+ * @property {number} bytesSaved - Bytes saved
+ */
+export async function compactLibrary(basePath) {
+  return await invoke('compact_library', { basePath });
+}

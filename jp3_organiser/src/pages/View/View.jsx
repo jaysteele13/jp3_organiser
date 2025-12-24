@@ -11,21 +11,28 @@
 import React, { useState, useMemo } from 'react';
 import { useLibraryConfig } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
+import { deleteSongs } from '../../services/libraryService';
 import { LoadingState, ErrorState, EmptyState } from '../../components';
 import styles from './View.module.css';
 
-import {TABS} from '../../utils/enums'
+import { TABS } from '../../utils/enums';
 
 // Custom Components
 import ViewHeader from './components/ViewHeader';
 import StatsBar from './components/StatsBar/StatsBar';
 import TabSelector from './components/Tabs/TabSelector';
 import TabContent from './components/Tabs/TabContent';
+import DeleteConfirmModal from './components/DeleteConfirmModal';
 
 export default function View() {
   const { libraryPath, isLoading: configLoading } = useLibraryConfig();
   const [activeTab, setActiveTab] = useState(TABS.SONGS);
   const { library, isLoading, error, handleRefresh } = useLibrary(libraryPath);
+
+  // Delete modal state
+  const [songsToDelete, setSongsToDelete] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Stats for header
   const stats = useMemo(() => {
@@ -36,6 +43,37 @@ export default function View() {
       artists: library.artists.length,
     };
   }, [library]);
+
+  // Handle delete request from SongView
+  const handleDeleteRequest = (song) => {
+    setSongsToDelete([song]);
+    setShowDeleteModal(true);
+  };
+
+  // Handle confirmed delete
+  const handleConfirmDelete = async () => {
+    if (songsToDelete.length === 0 || !libraryPath) return;
+
+    setIsDeleting(true);
+    try {
+      const songIds = songsToDelete.map(song => song.id);
+      await deleteSongs(libraryPath, songIds);
+      setShowDeleteModal(false);
+      setSongsToDelete([]);
+      handleRefresh();
+    } catch (err) {
+      console.error('Failed to delete songs:', err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Handle cancel delete
+  const handleCancelDelete = () => {
+    if (isDeleting) return;
+    setShowDeleteModal(false);
+    setSongsToDelete([]);
+  };
 
   if (configLoading) {
     return <LoadingState message="Loading configuration..." />;
@@ -68,7 +106,11 @@ export default function View() {
             activeTab={activeTab}
           />
           <div className={styles.content}>
-            <TabContent activeTab={activeTab} library={library} />
+            <TabContent 
+              activeTab={activeTab} 
+              library={library} 
+              onDeleteSong={handleDeleteRequest}
+            />
           </div>
         </>
       )}
@@ -77,6 +119,15 @@ export default function View() {
         <EmptyState 
           title="No Library Data"
           message="The library.bin file is empty or could not be parsed."
+        />
+      )}
+
+      {showDeleteModal && (
+        <DeleteConfirmModal
+          songs={songsToDelete}
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
+          isDeleting={isDeleting}
         />
       )}
     </div>
