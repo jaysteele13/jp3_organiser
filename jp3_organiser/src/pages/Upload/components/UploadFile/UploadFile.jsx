@@ -1,242 +1,70 @@
-import React, { useState, useMemo } from "react";
-import { open } from "@tauri-apps/plugin-dialog";
-import { processAudioFiles, MetadataStatus, saveToLibrary } from "../../../../services";
-import MetadataForm from "../MetadataForm";
-import styles from "./UploadFile.module.css";
-
 /**
  * UploadFile Component
  * 
- * Handles audio file selection, metadata extraction, and manual completion.
+ * Orchestrates audio file upload, metadata review, and library saving.
  * 
  * Flow:
  * 1. User selects files -> assigned trackingId
  * 2. Extract ID3 metadata -> mark as Complete or Incomplete
- * 3. (Future) AI/API cross-checker for missing metadata
- * 4. Manual confirmation for incomplete metadata
- * 5. (Future) Duplicate detection
- * 6. (Future) Sanitize filenames and save to library
+ * 3. Review/edit incomplete files manually
+ * 4. Save complete files to library
  * 
  * @param {Object} props
  * @param {string} props.libraryPath - The configured library directory path
  */
+
+import React, { useEffect } from 'react';
+import { useFileUpload, useReviewMode } from './hooks';
+import { FileStats, FileList, ReviewPanel, ActionButtons } from './components';
+import MetadataForm from '../MetadataForm';
+import styles from './UploadFile.module.css';
+
 export default function UploadFile({ libraryPath }) {
-  const [trackedFiles, setTrackedFiles] = useState([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
-  const [editingFileId, setEditingFileId] = useState(null);
-  const [showReviewMode, setShowReviewMode] = useState(false);
-  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
+  // File management state and actions
+  const {
+    trackedFiles,
+    isProcessing,
+    isSaving,
+    error,
+    successMessage,
+    stats,
+    incompleteFiles,
+    allFilesReady,
+    selectFiles,
+    clearFiles,
+    updateFileMetadata,
+    removeFile,
+    saveToLibrary,
+  } = useFileUpload(libraryPath);
 
-  // Calculate stats from current files
-  const stats = useMemo(() => {
-    return {
-      complete: trackedFiles.filter(f => f.metadataStatus === MetadataStatus.COMPLETE).length,
-      incomplete: trackedFiles.filter(f => f.metadataStatus === MetadataStatus.INCOMPLETE).length,
-      error: trackedFiles.filter(f => f.metadataStatus === MetadataStatus.ERROR).length,
-    };
-  }, [trackedFiles]);
+  // Review mode state and actions
+  const review = useReviewMode(incompleteFiles, {
+    onSaveMetadata: updateFileMetadata,
+    onRemoveFile: removeFile,
+  });
 
-  // Get incomplete files for review
-  const incompleteFiles = useMemo(() => {
-    return trackedFiles.filter(f => f.metadataStatus === MetadataStatus.INCOMPLETE);
-  }, [trackedFiles]);
-
-  // Check if all files are ready (complete or skipped)
-  const allFilesReady = useMemo(() => {
-    return trackedFiles.length > 0 && stats.incomplete === 0;
-  }, [trackedFiles, stats.incomplete]);
-
-  const selectFiles = async () => {
-    try {
-      setError(null);
-      setEditingFileId(null);
-      setShowReviewMode(false);
-      
-      const selected = await open({
-        multiple: true,
-        directory: false,
-        filters: [
-          {
-            name: "Audio Files",
-            extensions: ["mp3", "wav", "flac", "m4a", "ogg"],
-          },
-        ],
-      });
-
-      if (!selected) return;
-
-      const paths = Array.isArray(selected) ? selected : [selected];
-
-      setIsProcessing(true);
-
-      const result = await processAudioFiles(paths);
-      
-      setTrackedFiles(result.files);
-    } catch (err) {
-      setError(err.toString());
-      console.error("Failed to process files:", err);
-    } finally {
-      setIsProcessing(false);
+  // Reset review mode when files are cleared
+  useEffect(() => {
+    if (trackedFiles.length === 0) {
+      review.reset();
     }
+  }, [trackedFiles.length, review.reset]);
+
+  // Handle file selection (resets review mode)
+  const handleSelectFiles = async () => {
+    review.reset();
+    await selectFiles();
   };
 
-  const clearFiles = () => {
-    setTrackedFiles([]);
-    setError(null);
-    setSuccessMessage(null);
-    setEditingFileId(null);
-    setShowReviewMode(false);
-    setCurrentReviewIndex(0);
+  // Handle clear (resets everything)
+  const handleClear = () => {
+    review.reset();
+    clearFiles();
   };
-
-  // Save metadata for a single file
-  const handleSaveMetadata = (trackingId, metadata) => {
-    setTrackedFiles(prev => prev.map(file => {
-      if (file.trackingId === trackingId) {
-        return {
-          ...file,
-          metadata: {
-            ...file.metadata,
-            title: metadata.title,
-            artist: metadata.artist,
-            album: metadata.album,
-          },
-          metadataStatus: MetadataStatus.COMPLETE,
-        };
-      }
-      return file;
-    }));
-
-    // Move to next incomplete file in review mode
-    if (showReviewMode) {
-      const remainingIncomplete = incompleteFiles.filter(f => f.trackingId !== trackingId);
-      if (remainingIncomplete.length > 0) {
-        const nextIndex = Math.min(currentReviewIndex, remainingIncomplete.length - 1);
-        setCurrentReviewIndex(nextIndex);
-      } else {
-        setShowReviewMode(false);
-      }
-    } else {
-      setEditingFileId(null);
-    }
-  };
-
-  // Skip a file (remove from list)
-  const handleSkipFile = (trackingId) => {
-    setTrackedFiles(prev => prev.filter(f => f.trackingId !== trackingId));
-    
-    if (showReviewMode) {
-      const remainingIncomplete = incompleteFiles.filter(f => f.trackingId !== trackingId);
-      if (remainingIncomplete.length <= 1) {
-        setShowReviewMode(false);
-      } else {
-        setCurrentReviewIndex(prev => Math.min(prev, remainingIncomplete.length - 2));
-      }
-    } else {
-      setEditingFileId(null);
-    }
-  };
-
-  // Start reviewing all incomplete files
-  const startReviewMode = () => {
-    setShowReviewMode(true);
-    setCurrentReviewIndex(0);
-    setEditingFileId(null);
-  };
-
-  // Cancel review mode
-  const cancelReviewMode = () => {
-    setShowReviewMode(false);
-    setCurrentReviewIndex(0);
-  };
-
-  // Edit a specific file
-  const editFile = (trackingId) => {
-    setEditingFileId(trackingId);
-    setShowReviewMode(false);
-  };
-
-  // Add all complete files to the library
-  const handleAddToLibrary = async () => {
-    if (!libraryPath) {
-      setError("Library path not configured");
-      return;
-    }
-
-    const completeFiles = trackedFiles.filter(
-      f => f.metadataStatus === MetadataStatus.COMPLETE
-    );
-
-    if (completeFiles.length === 0) {
-      setError("No complete files to add");
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-      setError(null);
-      setSuccessMessage(null);
-
-      // Transform to the format expected by the backend
-      const filesToSave = completeFiles.map(f => ({
-        sourcePath: f.filePath,
-        metadata: f.metadata,
-      }));
-
-      const result = await saveToLibrary(libraryPath, filesToSave);
-
-      setSuccessMessage(
-        `Added ${result.filesSaved} file(s) to library. ` +
-        `${result.artistsAdded} artist(s), ${result.albumsAdded} album(s), ${result.songsAdded} song(s).`
-      );
-
-      // Clear the saved files from the list
-      setTrackedFiles(prev => 
-        prev.filter(f => f.metadataStatus !== MetadataStatus.COMPLETE)
-      );
-    } catch (err) {
-      setError(`Failed to save to library: ${err}`);
-      console.error("Failed to save to library:", err);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case MetadataStatus.COMPLETE:
-        return <span className={styles.statusComplete}>Complete</span>;
-      case MetadataStatus.INCOMPLETE:
-        return <span className={styles.statusIncomplete}>Incomplete</span>;
-      case MetadataStatus.ERROR:
-        return <span className={styles.statusError}>Error</span>;
-      case MetadataStatus.PENDING:
-      default:
-        return <span className={styles.statusPending}>Pending</span>;
-    }
-  };
-
-  const formatFileSize = (bytes) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
-  // Get file being edited
-  const editingFile = editingFileId 
-    ? trackedFiles.find(f => f.trackingId === editingFileId)
-    : null;
-
-  // Get current file in review mode
-  const currentReviewFile = showReviewMode && incompleteFiles.length > 0
-    ? incompleteFiles[currentReviewIndex]
-    : null;
 
   return (
     <div className={styles.uploadContainer}>
+      {/* Header */}
       <div className={styles.header}>
         <h3 className={styles.title}>Select Audio Files</h3>
         <p className={styles.hint}>
@@ -244,19 +72,20 @@ export default function UploadFile({ libraryPath }) {
         </p>
       </div>
 
+      {/* Select/Clear buttons */}
       <div className={styles.actions}>
         <button 
           className={styles.selectButton} 
-          onClick={selectFiles}
+          onClick={handleSelectFiles}
           disabled={isProcessing}
         >
-          {isProcessing ? "Processing..." : "Select Audio Files"}
+          {isProcessing ? 'Processing...' : 'Select Audio Files'}
         </button>
         
         {trackedFiles.length > 0 && (
           <button 
             className={styles.clearButton}
-            onClick={clearFiles}
+            onClick={handleClear}
             disabled={isProcessing}
           >
             Clear
@@ -264,137 +93,54 @@ export default function UploadFile({ libraryPath }) {
         )}
       </div>
 
-      {error && (
-        <div className={styles.error}>{error}</div>
-      )}
+      {/* Error/Success messages */}
+      {error && <div className={styles.error}>{error}</div>}
+      {successMessage && <div className={styles.successMessage}>{successMessage}</div>}
 
-      {successMessage && (
-        <div className={styles.successMessage}>{successMessage}</div>
-      )}
-
+      {/* File list section */}
       {trackedFiles.length > 0 && (
         <div className={styles.fileListContainer}>
-          <div className={styles.statsBar}>
-            <span className={styles.statItem}>
-              {trackedFiles.length} file(s)
-            </span>
-            {stats.complete > 0 && (
-              <span className={styles.statComplete}>
-                {stats.complete} complete
-              </span>
-            )}
-            {stats.incomplete > 0 && (
-              <span className={styles.statIncomplete}>
-                {stats.incomplete} incomplete
-              </span>
-            )}
-            {stats.error > 0 && (
-              <span className={styles.statError}>
-                {stats.error} error(s)
-              </span>
-            )}
-          </div>
+          <FileStats stats={stats} />
 
-          {/* Review incomplete files button */}
-          {stats.incomplete > 0 && !showReviewMode && !editingFileId && (
-            <button 
-              className={styles.reviewButton}
-              onClick={startReviewMode}
-            >
-              Review {stats.incomplete} incomplete file(s)
-            </button>
-          )}
+          <ActionButtons
+            stats={stats}
+            allFilesReady={allFilesReady}
+            isReviewMode={review.isReviewMode}
+            editingFileId={review.editingFileId}
+            isSaving={isSaving}
+            onReview={review.startReview}
+            onAddToLibrary={saveToLibrary}
+          />
 
-          {/* All files ready message and Add to Library button */}
-          {allFilesReady && (
-            <div className={styles.readyContainer}>
-              <div className={styles.readyMessage}>
-                All files have complete metadata and are ready to be added to the library.
-              </div>
-              <button 
-                className={styles.addToLibraryButton}
-                onClick={handleAddToLibrary}
-                disabled={isSaving}
-              >
-                {isSaving ? "Saving..." : `Add ${stats.complete} file(s) to Library`}
-              </button>
-            </div>
-          )}
-
-          {/* Some files ready - show Add to Library option */}
-          {!allFilesReady && stats.complete > 0 && !showReviewMode && !editingFileId && (
-            <button 
-              className={styles.addToLibraryButtonSecondary}
-              onClick={handleAddToLibrary}
-              disabled={isSaving}
-            >
-              {isSaving ? "Saving..." : `Add ${stats.complete} complete file(s) to Library`}
-            </button>
-          )}
-
-          {/* Review mode form */}
-          {showReviewMode && currentReviewFile && (
-            <div className={styles.reviewContainer}>
-              <div className={styles.reviewHeader}>
-                <span className={styles.reviewProgress}>
-                  File {currentReviewIndex + 1} of {incompleteFiles.length}
-                </span>
-                <button 
-                  className={styles.reviewCancelButton}
-                  onClick={cancelReviewMode}
-                >
-                  Exit Review
-                </button>
-              </div>
-              <MetadataForm
-                file={currentReviewFile}
-                onSave={handleSaveMetadata}
-                onSkip={handleSkipFile}
-              />
-            </div>
+          {/* Review mode panel */}
+          {review.isReviewMode && review.currentReviewFile && (
+            <ReviewPanel
+              currentFile={review.currentReviewFile}
+              currentIndex={review.currentIndex}
+              totalFiles={review.totalIncomplete}
+              onSave={review.handleSave}
+              onSkip={review.handleSkip}
+              onExit={review.exitReview}
+            />
           )}
 
           {/* Single file edit form */}
-          {editingFile && !showReviewMode && (
+          {review.editingFile && !review.isReviewMode && (
             <MetadataForm
-              file={editingFile}
-              onSave={handleSaveMetadata}
-              onCancel={() => setEditingFileId(null)}
-              onSkip={handleSkipFile}
+              file={review.editingFile}
+              onSave={review.handleSave}
+              onCancel={review.cancelEdit}
+              onSkip={review.handleSkip}
             />
           )}
 
           {/* File list */}
-          <ul className={styles.fileList}>
-            {trackedFiles.map((file) => (
-              <li 
-                className={`${styles.fileItem} ${file.trackingId === editingFileId ? styles.fileItemActive : ''}`} 
-                key={file.trackingId}
-              >
-                <div className={styles.fileInfo}>
-                  <span className={styles.fileName}>{file.fileName}</span>
-                  <span className={styles.fileMeta}>
-                    {formatFileSize(file.fileSize)}
-                    {file.metadata?.artist && ` • ${file.metadata.artist}`}
-                    {file.metadata?.title && ` - ${file.metadata.title}`}
-                  </span>
-                </div>
-                <div className={styles.fileActions}>
-                  {file.metadataStatus === MetadataStatus.INCOMPLETE && !showReviewMode && (
-                    <button 
-                      className={styles.editButton}
-                      onClick={() => editFile(file.trackingId)}
-                    >
-                      Edit
-                    </button>
-                  )}
-                  <div className={styles.fileStatus}>
-                    {getStatusBadge(file.metadataStatus)}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <FileList
+            files={trackedFiles}
+            editingFileId={review.editingFileId}
+            isReviewMode={review.isReviewMode}
+            onEdit={review.editFile}
+          />
         </div>
       )}
     </div>
