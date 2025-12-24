@@ -25,7 +25,11 @@ use commands::{
     get_library_path,
     set_library_path,
     // Library commands
+    compact_library,
+    delete_songs,
+    edit_song_metadata,
     get_library_info,
+    get_library_stats,
     initialize_library,
     load_library,
     save_to_library,
@@ -51,6 +55,10 @@ pub fn run() {
             get_library_info,
             save_to_library,
             load_library,
+            delete_songs,
+            edit_song_metadata,
+            get_library_stats,
+            compact_library,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

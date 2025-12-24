@@ -177,6 +177,15 @@ impl AlbumEntry {
     }
 }
 
+/// Song entry flags for soft delete support.
+/// Using bitflags allows future expansion (e.g., favorites, hidden, etc.)
+pub mod song_flags {
+    /// Entry is active and valid
+    pub const ACTIVE: u8 = 0x00;
+    /// Entry has been soft-deleted (skip during reads)
+    pub const DELETED: u8 = 0x01;
+}
+
 /// Song table entry (24 bytes).
 ///
 /// Binary layout:
@@ -188,7 +197,8 @@ impl AlbumEntry {
 /// 0x0C    4     path_string_id (relative path in library)
 /// 0x10    2     track_number
 /// 0x12    2     duration_sec
-/// 0x14    4     reserved
+/// 0x14    1     flags (0x00 = active, 0x01 = deleted)
+/// 0x15    3     reserved
 /// ```
 #[derive(Debug, Clone)]
 pub struct SongEntry {
@@ -198,10 +208,41 @@ pub struct SongEntry {
     pub path_string_id: u32,
     pub track_number: u16,
     pub duration_sec: u16,
+    pub flags: u8,
 }
 
 impl SongEntry {
     pub const SIZE: u32 = 24;
+
+    /// Create a new active song entry.
+    pub fn new(
+        title_string_id: u32,
+        artist_id: u32,
+        album_id: u32,
+        path_string_id: u32,
+        track_number: u16,
+        duration_sec: u16,
+    ) -> Self {
+        Self {
+            title_string_id,
+            artist_id,
+            album_id,
+            path_string_id,
+            track_number,
+            duration_sec,
+            flags: song_flags::ACTIVE,
+        }
+    }
+
+    /// Check if this entry is deleted.
+    pub fn is_deleted(&self) -> bool {
+        self.flags & song_flags::DELETED != 0
+    }
+
+    /// Check if this entry is active (not deleted).
+    pub fn is_active(&self) -> bool {
+        !self.is_deleted()
+    }
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(Self::SIZE as usize);
@@ -211,8 +252,25 @@ impl SongEntry {
         bytes.extend_from_slice(&self.path_string_id.to_le_bytes());
         bytes.extend_from_slice(&self.track_number.to_le_bytes());
         bytes.extend_from_slice(&self.duration_sec.to_le_bytes());
-        bytes.extend_from_slice(&0u32.to_le_bytes()); // reserved
+        bytes.push(self.flags);
+        bytes.extend_from_slice(&[0u8; 3]); // reserved
         bytes
+    }
+
+    /// Parse a song entry from bytes.
+    pub fn from_bytes(data: &[u8]) -> Option<Self> {
+        if data.len() < Self::SIZE as usize {
+            return None;
+        }
+        Some(Self {
+            title_string_id: u32::from_le_bytes(data[0..4].try_into().ok()?),
+            artist_id: u32::from_le_bytes(data[4..8].try_into().ok()?),
+            album_id: u32::from_le_bytes(data[8..12].try_into().ok()?),
+            path_string_id: u32::from_le_bytes(data[12..16].try_into().ok()?),
+            track_number: u16::from_le_bytes(data[16..18].try_into().ok()?),
+            duration_sec: u16::from_le_bytes(data[18..20].try_into().ok()?),
+            flags: data[20],
+        })
     }
 }
 
@@ -333,4 +391,70 @@ pub struct ParsedLibrary {
     pub artists: Vec<ParsedArtist>,
     pub albums: Vec<ParsedAlbum>,
     pub songs: Vec<ParsedSong>,
+}
+
+/// Result returned after deleting songs from the library.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteSongsResult {
+    /// Number of songs successfully marked as deleted
+    pub songs_deleted: u32,
+    /// Song IDs that were not found
+    pub not_found: Vec<u32>,
+}
+
+/// Result returned after editing a song's metadata.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EditSongResult {
+    /// The new song ID after edit (old one is soft-deleted, new one appended)
+    pub new_song_id: u32,
+    /// Whether a new artist was created
+    pub artist_created: bool,
+    /// Whether a new album was created
+    pub album_created: bool,
+}
+
+/// Library statistics for compaction decision.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryStats {
+    /// Total songs (including deleted)
+    pub total_songs: u32,
+    /// Active songs (not deleted)
+    pub active_songs: u32,
+    /// Deleted songs
+    pub deleted_songs: u32,
+    /// Total artists
+    pub total_artists: u32,
+    /// Total albums
+    pub total_albums: u32,
+    /// Total strings in string table
+    pub total_strings: u32,
+    /// Percentage of deleted songs (0-100)
+    pub deleted_percentage: f32,
+    /// Recommended to compact (deleted > 20%)
+    pub should_compact: bool,
+    /// File size in bytes
+    pub file_size_bytes: u64,
+}
+
+/// Result returned after compacting the library.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompactResult {
+    /// Songs removed (were soft-deleted)
+    pub songs_removed: u32,
+    /// Orphaned artists removed
+    pub artists_removed: u32,
+    /// Orphaned albums removed
+    pub albums_removed: u32,
+    /// Orphaned strings removed
+    pub strings_removed: u32,
+    /// Old file size
+    pub old_size_bytes: u64,
+    /// New file size
+    pub new_size_bytes: u64,
+    /// Bytes saved
+    pub bytes_saved: u64,
 }
