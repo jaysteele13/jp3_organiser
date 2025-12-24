@@ -401,6 +401,8 @@ pub struct DeleteSongsResult {
     pub songs_deleted: u32,
     /// Song IDs that were not found
     pub not_found: Vec<u32>,
+    /// Number of audio files deleted from music/
+    pub files_deleted: u32,
 }
 
 /// Result returned after editing a song's metadata.

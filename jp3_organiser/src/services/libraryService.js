@@ -140,9 +140,9 @@ export async function loadLibrary(basePath) {
 /**
  * Soft delete songs by their IDs.
  * 
- * This only modifies the flags byte of each song entry, minimizing SD card write cycles.
- * The song data remains in the file but will be skipped when reading.
- * Use `compactLibrary` to actually remove deleted entries and reclaim space.
+ * This marks the song as deleted in library.bin (minimal binary write) AND
+ * deletes the actual audio file from music/ (frees disk space immediately).
+ * Use `compactLibrary` to reclaim metadata space in library.bin.
  * 
  * @param {string} basePath - The base library directory path
  * @param {number[]} songIds - Array of song IDs to delete
@@ -151,6 +151,7 @@ export async function loadLibrary(basePath) {
  * @typedef {Object} DeleteSongsResult
  * @property {number} songsDeleted - Number of songs successfully marked as deleted
  * @property {number[]} notFound - Song IDs that were not found
+ * @property {number} filesDeleted - Number of audio files deleted from music/
  */
 export async function deleteSongs(basePath, songIds) {
   return await invoke('delete_songs', { basePath, songIds });

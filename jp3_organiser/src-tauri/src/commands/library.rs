@@ -420,9 +420,9 @@ pub fn save_to_library(
 
 /// Soft delete songs by their IDs.
 ///
-/// This only modifies the flags byte of each song entry, minimizing write cycles.
-/// The song data remains in the file but will be skipped when reading.
-/// Use `compact_library` to actually remove deleted entries and reclaim space.
+/// This modifies the flags byte of each song entry (minimal binary write),
+/// AND deletes the actual audio file from music/ (frees disk space immediately).
+/// Use `compact_library` to reclaim metadata space in library.bin.
 #[tauri::command]
 pub fn delete_songs(
     base_path: String,
@@ -431,28 +431,42 @@ pub fn delete_songs(
     let base = Path::new(&base_path);
     let jp3_path = base.join(JP3_DIR);
     let metadata_path = jp3_path.join(METADATA_DIR);
+    let music_path = jp3_path.join(MUSIC_DIR);
     let library_bin_path = metadata_path.join(LIBRARY_BIN);
 
     if !library_bin_path.exists() {
         return Err("Library not found".to_string());
     }
 
-    // Read header to get song table offset and count
+    // Read entire file to get string table for path resolution
+    let mut data = Vec::new();
+    {
+        let mut read_file = fs::File::open(&library_bin_path)
+            .map_err(|e| format!("Failed to open library.bin for reading: {}", e))?;
+        read_file.read_to_end(&mut data)
+            .map_err(|e| format!("Failed to read library.bin: {}", e))?;
+    }
+
+    let header = LibraryHeader::from_bytes(&data)
+        .ok_or("Invalid library.bin header")?;
+
+    // Parse string table to resolve paths
+    let strings = parse_string_table(
+        &data,
+        header.string_table_offset as usize,
+        header.artist_table_offset as usize,
+    )?;
+
+    // Open file for writing flags
     let mut file = OpenOptions::new()
         .read(true)
         .write(true)
         .open(&library_bin_path)
-        .map_err(|e| format!("Failed to open library.bin: {}", e))?;
-
-    let mut header_bytes = [0u8; HEADER_SIZE as usize];
-    file.read_exact(&mut header_bytes)
-        .map_err(|e| format!("Failed to read header: {}", e))?;
-
-    let header = LibraryHeader::from_bytes(&header_bytes)
-        .ok_or("Invalid library.bin header")?;
+        .map_err(|e| format!("Failed to open library.bin for writing: {}", e))?;
 
     let mut songs_deleted = 0u32;
     let mut not_found = Vec::new();
+    let mut files_deleted = 0u32;
 
     for song_id in song_ids {
         if song_id >= header.song_count {
@@ -460,12 +474,27 @@ pub fn delete_songs(
             continue;
         }
 
-        // Calculate the offset of the flags byte for this song
-        // Song entry layout: 20 bytes of data + 1 byte flags + 3 bytes reserved
-        let song_offset = header.song_table_offset as u64 + (song_id as u64 * SongEntry::SIZE as u64);
-        let flags_offset = song_offset + 20; // flags is at byte 20 within the entry
+        // Calculate song entry offset
+        let song_offset = header.song_table_offset as usize + (song_id as usize * SongEntry::SIZE as usize);
 
-        // Seek to flags byte and write DELETED flag
+        // Read the path_string_id (bytes 12-16 of the song entry)
+        let path_string_id = u32::from_le_bytes(
+            data[song_offset + 12..song_offset + 16].try_into()
+                .map_err(|_| format!("Failed to read path_string_id for song {}", song_id))?
+        );
+
+        // Get the audio file path from string table
+        if let Some(audio_path_str) = strings.get(path_string_id as usize) {
+            let audio_file_path = music_path.join(audio_path_str);
+            if audio_file_path.exists() {
+                if fs::remove_file(&audio_file_path).is_ok() {
+                    files_deleted += 1;
+                }
+            }
+        }
+
+        // Mark song as deleted in library.bin (flags byte at offset 20)
+        let flags_offset = song_offset as u64 + 20;
         file.seek(SeekFrom::Start(flags_offset))
             .map_err(|e| format!("Failed to seek to song {}: {}", song_id, e))?;
         
@@ -482,6 +511,7 @@ pub fn delete_songs(
     Ok(crate::models::DeleteSongsResult {
         songs_deleted,
         not_found,
+        files_deleted,
     })
 }
 
@@ -1352,10 +1382,22 @@ mod tests {
         let library = load_library(base_path.clone()).unwrap();
         assert_eq!(library.songs.len(), 2, "Should have 2 songs before delete");
         
+        // Verify audio files exist before delete
+        let music_path = temp_dir.path().join("jp3/music");
+        let audio_file_1 = music_path.join("00/001.mp3");
+        let audio_file_2 = music_path.join("00/002.mp3");
+        assert!(audio_file_1.exists(), "Audio file 1 should exist before delete");
+        assert!(audio_file_2.exists(), "Audio file 2 should exist before delete");
+        
         // Delete song 0
         let delete_result = delete_songs(base_path.clone(), vec![0]).unwrap();
         assert_eq!(delete_result.songs_deleted, 1, "Should delete 1 song");
+        assert_eq!(delete_result.files_deleted, 1, "Should delete 1 audio file");
         assert!(delete_result.not_found.is_empty(), "Should not have any not_found");
+        
+        // Verify audio file was deleted
+        assert!(!audio_file_1.exists(), "Audio file 1 should be deleted");
+        assert!(audio_file_2.exists(), "Audio file 2 should still exist");
         
         // Verify we now have 1 song (deleted one is filtered out)
         let library = load_library(base_path.clone()).unwrap();
