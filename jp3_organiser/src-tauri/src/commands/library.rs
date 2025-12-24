@@ -735,3 +735,86 @@ fn parse_song_table(data: &[u8], start: usize, count: usize) -> Result<Vec<RawSo
 
     Ok(songs)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_string_deduplication_across_batches() {
+        // Create a temp directory
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let base_path = temp_dir.path().to_string_lossy().to_string();
+        
+        // Initialize library
+        initialize_library(base_path.clone()).unwrap();
+        
+        // Create a dummy audio file
+        let dummy_file = temp_dir.path().join("test.mp3");
+        std::fs::write(&dummy_file, b"fake audio data").unwrap();
+        
+        // First batch: add one song
+        let files1 = vec![FileToSave {
+            source_path: dummy_file.to_string_lossy().to_string(),
+            metadata: crate::models::AudioMetadata {
+                title: Some("Song One".to_string()),
+                artist: Some("Test Artist".to_string()),
+                album: Some("Test Album".to_string()),
+                year: Some(2020),
+                track_number: Some(1),
+                duration_secs: Some(180),
+            },
+        }];
+        
+        let result1 = save_to_library(base_path.clone(), files1).unwrap();
+        println!("First batch: {:?}", result1);
+        
+        // Create another dummy file
+        let dummy_file2 = temp_dir.path().join("test2.mp3");
+        std::fs::write(&dummy_file2, b"fake audio data 2").unwrap();
+        
+        // Second batch: add another song with SAME album name
+        let files2 = vec![FileToSave {
+            source_path: dummy_file2.to_string_lossy().to_string(),
+            metadata: crate::models::AudioMetadata {
+                title: Some("Song Two".to_string()),
+                artist: Some("Test Artist".to_string()),  // Same artist
+                album: Some("Test Album".to_string()),    // Same album!
+                year: Some(2020),
+                track_number: Some(2),
+                duration_secs: Some(200),
+            },
+        }];
+        
+        let result2 = save_to_library(base_path.clone(), files2).unwrap();
+        println!("Second batch: {:?}", result2);
+        
+        // Load library and check for duplicates
+        let library = load_library(base_path.clone()).unwrap();
+        
+        // Should have 2 songs, 1 artist, 1 album
+        assert_eq!(library.songs.len(), 2, "Should have 2 songs");
+        assert_eq!(library.artists.len(), 1, "Should have 1 artist (no duplicates)");
+        assert_eq!(library.albums.len(), 1, "Should have 1 album (no duplicates)");
+        
+        // Check result2 reports 0 new artists/albums
+        assert_eq!(result2.artists_added, 0, "Second batch should add 0 new artists");
+        assert_eq!(result2.albums_added, 0, "Second batch should add 0 new albums");
+        
+        // Check the string table by reading raw file
+        let library_bin_path = temp_dir.path().join("jp3/metadata/library.bin");
+        let data = std::fs::read(&library_bin_path).unwrap();
+        let header = LibraryHeader::from_bytes(&data).unwrap();
+        let strings = parse_string_table(
+            &data,
+            header.string_table_offset as usize,
+            header.artist_table_offset as usize,
+        ).unwrap();
+        
+        println!("Strings in table: {:?}", strings);
+        
+        // Count occurrences of "Test Album"
+        let album_count = strings.iter().filter(|s| *s == "Test Album").count();
+        assert_eq!(album_count, 1, "String 'Test Album' should appear exactly once, found {}", album_count);
+    }
+}
