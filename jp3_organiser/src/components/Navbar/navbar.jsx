@@ -3,6 +3,7 @@ import styles from './navbar.module.css';
 
 const NAV_ITEMS = [
     { to: '/upload', label: 'Upload', icon: '↑' },
+    { to: '/view', label: 'View', icon: '♫' },
     { to: '/about', label: 'About', icon: '?' },
 ];
 

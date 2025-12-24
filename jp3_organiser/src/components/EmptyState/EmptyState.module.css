@@ -1,0 +1,15 @@
+.emptyState {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #666;
+}
+
+.emptyState h2 {
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.emptyState p {
+  margin: 0;
+  font-size: 1.1rem;
+}

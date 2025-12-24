@@ -1,0 +1,17 @@
+.emptyState {
+  text-align: center;
+  padding: 3rem;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.emptyState h2,
+.emptyState h3 {
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
+.emptyState p {
+  margin: 0;
+  opacity: 0.7;
+}

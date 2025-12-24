@@ -1,22 +1,68 @@
+import React from 'react';
+import Header from '../../components/Header';
+import DirectoryConfig from './components/DirectoryConfig';
+import UploadFile from './components/UploadFile';
+import { useLibraryConfig } from '../../hooks';
+import styles from './Upload.module.css';
 
-import React from 'react'
-import Header from '../../components/Header'
-import UploadFile from './components/UploadFile' 
-// this is a place for where to upload FileSystem. With some advice about having atleast the song name on the mp3. If not there will be work arounds 
-// use extensive datasets, ID3 transformImage, APIs and AIs. If they can't find it we will ask you to clear up some things
-
+/**
+ * Upload Page
+ * 
+ * Main page for uploading music files to JP3 Organiser.
+ * 
+ * Flow:
+ * 1. User must first configure the library directory (large card)
+ * 2. Directory is auto-initialized with jp3/music/, jp3/metadata/, jp3/playlists/
+ * 3. Once configured, compact card shows in top-right
+ * 4. User can then upload audio files
+ * 5. (Future) Files will be processed through metadata extraction pipeline
+ */
 export default function Upload() {
+  const { 
+    libraryPath,
+    libraryInfo,
+    isLoading,
+    isInitializing,
+    error, 
+    isConfigured,
+    isInitialized,
+    saveLibraryPath, 
+    clearLibraryPath 
+  } = useLibraryConfig();
 
-
+  if (isLoading) {
     return (
-        <>
-            <Header
-            title={"Upload Music"}
-            description={"Where you upload Files Prick"}/>
+      <div className={styles.uploadPage}>
+        <Header
+          title="Upload Music"
+          description="Prepare your music for the ESP32"
+        />
+        <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.7 }}>
+          Loading configuration...
+        </div>
+      </div>
+    );
+  }
 
-            <UploadFile/>
+  return (
+    <div className={styles.uploadPage}>
+      <Header
+        title="Upload Music"
+        description="Prepare your music for the ESP32"
+      />
 
+      <DirectoryConfig
+        libraryPath={libraryPath}
+        libraryInfo={libraryInfo}
+        isInitializing={isInitializing}
+        onSave={saveLibraryPath}
+        onClear={clearLibraryPath}
+        error={error}
+      />
 
-        </>
-    )
+      {isConfigured && isInitialized && (
+        <UploadFile libraryPath={libraryPath} />
+      )}
+    </div>
+  );
 }

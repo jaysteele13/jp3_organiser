@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "jp3_organiser",
   "version": "0.1.0",
-  "identifier": "com.jp3_organiser.app",
+  "identifier": "com.jp3-organiser.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",

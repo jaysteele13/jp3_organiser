@@ -1,0 +1,266 @@
+/* DirectoryConfig component styles */
+
+/* ===========================
+   LARGE CARD (Unconfigured)
+   =========================== */
+.container {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.card {
+  background-color: var(--quaternary);
+  border-radius: 8px;
+  padding: 1.5rem;
+  color: #fff;
+}
+
+.title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.description {
+  margin: 0 0 1rem 0;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+.structurePreview {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.structureTitle {
+  display: block;
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin-bottom: 0.5rem;
+}
+
+.structureCode {
+  display: block;
+  font-size: 0.85rem;
+  white-space: pre;
+  opacity: 0.9;
+  line-height: 1.4;
+}
+
+.unconfigured {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.selectButton {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  font-size: 1.1rem;
+  background-color: var(--tertiary);
+}
+
+.selectButton:hover {
+  background-color: var(--tertiary-hover);
+}
+
+.selectButton:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.error {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--primary);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+/* ===========================
+   COMPACT CARD (Configured)
+   =========================== */
+.compactContainer {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 100;
+}
+
+.compactCard {
+  background-color: var(--quaternary);
+  border-radius: 6px;
+  padding: 0.6rem 0.85rem;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: box-shadow 0.2s ease;
+}
+
+.compactCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.compactContent {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.compactLabel {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.compactValue {
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.compactPath {
+  display: none;
+  font-size: 0.7rem;
+  opacity: 0.6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+/* Show full path on card hover */
+.compactCard:hover .compactPath {
+  display: block;
+}
+
+.compactCard:hover .compactValue {
+  display: none;
+}
+
+/* Status indicator */
+.compactStatus {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.4rem;
+  background-color: var(--secondary);
+  border-radius: 3px;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* Actions - hidden by default, shown on hover */
+.compactActions {
+  display: flex;
+  gap: 0.35rem;
+  opacity: 0;
+  max-width: 0;
+  overflow: hidden;
+  transition: opacity 0.2s ease, max-width 0.2s ease;
+}
+
+.compactCard:hover .compactActions {
+  opacity: 1;
+  max-width: 150px;
+}
+
+.compactButton {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+  background-color: var(--tertiary);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.compactButton:hover {
+  background-color: var(--tertiary-hover);
+}
+
+.compactButton:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.compactButtonClear {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.compactButtonClear:hover {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.compactButtonClear:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.compactError {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background-color: var(--primary);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  max-width: 250px;
+}
+
+/* ===========================
+   RESPONSIVE: Small screens
+   =========================== */
+@media (max-width: 1180px) {
+  .compactContainer {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin-bottom: 1rem;
+    display: inline-block;
+  }
+
+  .compactCard {
+    width: auto;
+    flex-wrap: nowrap;
+  }
+
+  .compactContent {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .compactPath {
+    display: none;
+  }
+
+  .compactCard:hover .compactPath {
+    display: none;
+  }
+
+  .compactCard:hover .compactValue {
+    display: block;
+  }
+
+  /* Always show actions on mobile */
+  .compactActions {
+    opacity: 1;
+    max-width: none;
+  }
+
+  .compactError {
+    max-width: 100%;
+  }
+}

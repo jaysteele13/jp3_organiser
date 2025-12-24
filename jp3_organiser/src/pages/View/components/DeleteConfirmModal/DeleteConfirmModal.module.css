@@ -1,0 +1,141 @@
+/* Modal overlay - covers entire screen */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Modal card */
+.modal {
+  background-color: #1a1a1a;
+  border-radius: 12px;
+  padding: 1.5rem;
+  min-width: 400px;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--primary);
+}
+
+/* Modal title */
+.title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.25rem;
+  color: var(--primary);
+}
+
+/* Warning message */
+.warning {
+  margin: 0 0 1rem 0;
+  color: #aaa;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* Song list container */
+.songList {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 0.5rem;
+  margin-bottom: 1.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* Individual song item */
+.songItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.songItem:last-child {
+  border-bottom: none;
+}
+
+.songTitle {
+  color: #fff;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  margin-right: 1rem;
+}
+
+.songArtist {
+  color: #888;
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 150px;
+}
+
+/* More items indicator */
+.moreItems {
+  padding: 0.5rem 0.75rem;
+  color: #666;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* Action buttons container */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+/* Cancel button - secondary style */
+.cancelBtn {
+  background-color: transparent;
+  border: 1px solid #666;
+  color: #ccc;
+  padding: 0.6em 1.2em;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  border-color: #888;
+  color: #fff;
+}
+
+.cancelBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Delete button - danger/primary style */
+.deleteBtn {
+  background-color: var(--primary);
+  border: none;
+  color: #fff;
+  padding: 0.6em 1.2em;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.deleteBtn:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.deleteBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

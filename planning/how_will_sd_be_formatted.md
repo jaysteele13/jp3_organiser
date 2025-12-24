@@ -66,6 +66,12 @@ ArtistEntry {
   name_string_id = 0;   // "Paul Simon"
 }
 
+StringEntry {
+    [0] = "Paul Simon";
+    [1] = "Still Crazy after All of these Years"
+    [2] = "music/00/001.mp3"
+}
+
 AlbumEntry {
   name_string_id = 1;   // "Still Crazy After All These Years"
   artist_id = 0;        // Paul Simon

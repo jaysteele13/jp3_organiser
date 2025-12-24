@@ -1,0 +1,70 @@
+/* Table styles */
+.tableContainer {
+  overflow-x: auto;
+  background-color: var(--tertiary);
+  border-radius: 8px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table thead {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  color: #000;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.table td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  color: #000;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Actions column */
+.actionsHeader {
+  width: 80px;
+  text-align: center;
+}
+
+.cellActions {
+  text-align: center;
+}
+
+.deleteBtn {
+  background-color: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.deleteBtn:hover {
+  background-color: var(--primary);
+  color: #fff;
+}
+
+.emptyTable {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+}

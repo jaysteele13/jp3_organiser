@@ -1,0 +1,73 @@
+/* View page styles */
+
+.container {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+
+
+/* Content area */
+.content {
+  min-height: 300px;
+}
+
+
+
+/* States */
+.loading {
+  text-align: center;
+  padding: 3rem;
+  opacity: 0.7;
+}
+
+.error {
+  padding: 1rem;
+  background-color: var(--primary);
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.emptyState h2,
+.emptyState h3 {
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
+.emptyState p {
+  margin: 0;
+  opacity: 0.7;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+  }
+
+  .refreshButton {
+    width: 100%;
+  }
+
+  .statsBar {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .tabs {
+    overflow-x: auto;
+  }
+
+  .cardGrid {
+    grid-template-columns: 1fr;
+  }
+}

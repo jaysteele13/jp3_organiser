@@ -1,6 +1,6 @@
 ## Summary
 
-This Application is to be a lightwieght file organiser and local mp3 player.
+This Application is to be a lightweight file organiser and local mp3 player.
 
 This application will take songs and load them into a file /jp3
 
@@ -63,3 +63,7 @@ A hybrid:
 4. Ask user for manual confirmation go through the ones we couldn't find for and get manual input. Here have validation to ensure that the strings in the sd card are the same e.g. cant do queen and Queen. (Drop down of bands that exist). Unless we make strings with the same name and different capitals just be associated to the same band.
 5. For all the song input have a duplicate checker flag songs that may be duplicates for an air tight system
 6. Before we save we must remove illegal filename characters like ' i believe with a percentage. Trim whitespace also
+
+
+
+Run `xxd jp3/metadata/library.bin ` to get Hex Dump of binary File. Te Parsing and duplicate checking is now working in seprate batches.
