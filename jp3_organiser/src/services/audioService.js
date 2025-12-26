@@ -74,3 +74,4 @@ export async function processAudioFiles(filePaths) {
 export async function getAudioMetadata(filePath) {
   return await invoke('get_audio_metadata', { filePath });
 }
+

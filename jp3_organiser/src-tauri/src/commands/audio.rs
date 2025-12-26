@@ -4,12 +4,50 @@
 //! - Processing selected audio files
 //! - Extracting ID3 metadata
 //! - Assigning tracking IDs
-
 use id3::{Tag, TagLike};
 use std::path::Path;
 use uuid::Uuid;
 
-use crate::models::{AudioMetadata, MetadataStatus, ProcessedFilesResult, TrackedAudioFile};
+use crate::models::{AudioMetadata, MetadataStatus, ProcessedAudioFingerprint, TrackedAudioFile};
+use crate::services::fingerprint_service::{process_audio_fingerprint, lookup_acoustid};
+
+
+
+
+
+// Command that takes music data file and runs it against the open AcousticID API, we must get the audio fingerprint then can search the database
+#[tauri::command]
+pub fn get_audio_metadata_from_acoustic_id(file_path: String, tracking_id: String) -> Result<ProcessedAudioFingerprint, String> {
+    // Placeholder for future implementation
+    
+    // Get Fingerprint from file thos returns:
+
+    /*
+    pub struct ProcessedAudioFingerprint {
+    pub fingerprint_id: String,
+    pub tracking_id: String,
+    pub fingerprint_status: MetadataStatus,
+    pub error_message: Option<String>,
+}
+    */
+    let audioFingerPrint = match process_audio_fingerprint(&file_path, tracking_id.clone()) {
+        Ok(result) => (result.fingerprint_id, result.duration_seconds),
+        Err(e) => {
+            return Err(format!("Failed to process audio fingerprint: {}", e));
+        }
+    };
+
+    // use the fingerprint and duration to query the AcousticID API
+    let resultJSON = lookup_acoustid(&audioFingerPrint).map_err(|e| format!("AcousticID lookup failed: {}", e))?;
+
+    // log result
+    log::info!("AcousticID lookup result: {:?}", resultJSON);
+    return Ok(resultJSON);
+    
+}
+
+
+
 
 /// Process a list of audio file paths.
 /// 
@@ -45,7 +83,13 @@ pub fn process_audio_files(file_paths: Vec<String>) -> Result<ProcessedFilesResu
                 tracked_file.metadata_status = MetadataStatus::Error;
                 tracked_file.error_message = Some("Unsupported file format".to_string());
             }
+            let result = get_audio_metadata_from_acoustic_id(file_path.clone(), tracked_file.tracking_id.clone())?;
+
+            // do stuff based off of the result -> fix tomorrow
         }
+
+        // After ID3 Check, lets try metadata from AcousticID
+
 
         tracked_files.push(tracked_file);
     }

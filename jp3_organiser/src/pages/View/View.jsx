@@ -128,7 +128,7 @@ export default function View() {
           onConfirm={handleConfirmDelete}
           onCancel={handleCancelDelete}
           isDeleting={isDeleting}
-        />
+editcate        />
       )}
     </div>
   );

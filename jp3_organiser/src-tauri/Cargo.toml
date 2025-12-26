@@ -28,6 +28,10 @@ tauri-plugin-store = "2"
 # Audio metadata parsing
 id3 = "1.14"
 uuid = { version = "1", features = ["v4"] }
+# For API and Audio Fingerprinting
+symphonia = { version = "0.5", features = ["mp3", "wav"] }
+chromaprint = "0.1"
+reqwest = { version = "0.11", features = ["json", "blocking"] }
 
 [dev-dependencies]
 tempfile = "3.24.0"

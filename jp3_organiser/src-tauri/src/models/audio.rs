@@ -139,6 +139,27 @@ impl TrackedAudioFile {
     }
 }
 
+// Model
+/// Result of processing multiple audio files.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProcessedAudioFingerprint {
+    pub fingerprint_id: String,
+    pub tracking_id: String,
+    pub fingerprint_status: MetadataStatus,
+    pub error_message: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AudioFingerprintResult {
+    pub fingerprint: String,
+    pub duration_seconds: u32,
+}
+
+
+
+
+
 /// Result of processing multiple audio files.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
