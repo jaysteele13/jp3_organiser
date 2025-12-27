@@ -38,7 +38,7 @@ pub fn lookup_acoustid(fingerprint_result: &ProcessedAudioFingerprint) -> anyhow
         .query(&[
             ("client", api_key.as_str()),
             ("format", "json"),
-            ("meta", "recordings"),
+            ("meta", "recordings releasegroups compress"),  
             ("duration", &fingerprint_result.duration_seconds.to_string()),
             ("fingerprint", &fingerprint_result.fingerprint_id),
         ])
