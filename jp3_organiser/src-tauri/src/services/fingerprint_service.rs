@@ -1,18 +1,21 @@
-//! Use Chromaprint/AcousticID for fingerprinting (future)
-use chromaprint::Chromaprint;
-use symphonia::core::{
-    audio::{AudioBufferRef, Signal},
-    codecs::DecoderOptions,
-    formats::FormatOptions,
-    io::MediaSourceStream,
-    meta::MetadataOptions,
-    probe::Hint,
-};
-use std::fs::File;
+//! Use fpcalc (Chromaprint command-line tool) for fingerprinting
+//!
+//! Requires fpcalc to be installed:
+//! - Ubuntu/Debian: sudo apt install fpcalc
+//! - macOS: brew install fpcalc
+//! - Windows: Download from https://acoustid.org/chromaprint
 use std::path::Path;
 use std::env::var;
+use std::process::Command;
 
 use crate::models::{MetadataStatus, ProcessedAudioFingerprint };
+
+/// Output format from fpcalc command
+#[derive(Debug, serde::Deserialize)]
+struct FpcalcOutput {
+    duration: f64,
+    fingerprint: String,
+}
 
 pub fn lookup_acoustid(fingerprint_result: &ProcessedAudioFingerprint) -> anyhow::Result<serde_json::Value> {
     log::info!("lookup_acoustid called with fingerprint_id: {} (length: {}), duration: {}s",
@@ -28,8 +31,6 @@ pub fn lookup_acoustid(fingerprint_result: &ProcessedAudioFingerprint) -> anyhow
         e
     })?;
 
-    
-
     log::info!("Sending GET request to https://api.acoustid.org/v2/lookup");
 
     let res = client
@@ -44,14 +45,14 @@ pub fn lookup_acoustid(fingerprint_result: &ProcessedAudioFingerprint) -> anyhow
         .send()
         .map_err(|e| {
             log::error!("Failed to send request to AcousticID API: {}", e);
-            e
+            anyhow::anyhow!("Request failed: {}", e)
         })?;
 
     log::info!("Received response from AcousticID API");
 
     let response_text = res.text().map_err(|e| {
         log::error!("Failed to read response body: {}", e);
-        e
+        anyhow::anyhow!("Failed to read response: {}", e)
     })?;
 
     log::info!("Response body (first 200 chars): {}",
@@ -61,7 +62,7 @@ pub fn lookup_acoustid(fingerprint_result: &ProcessedAudioFingerprint) -> anyhow
     let json: serde_json::Value = serde_json::from_str(&response_text).map_err(|e| {
         log::error!("Failed to parse JSON response: {}", e);
         log::error!("Response was: {}", response_text);
-        e
+        anyhow::anyhow!("Failed to parse JSON: {}", e)
     })?;
 
     log::info!("Successfully parsed AcousticID response");
@@ -72,151 +73,48 @@ pub fn lookup_acoustid(fingerprint_result: &ProcessedAudioFingerprint) -> anyhow
 fn inner_process_audio_fingerprint<P: AsRef<Path>>(
     path: P,
 ) -> anyhow::Result<(String, u32)> {
-    log::info!("Opening audio file: {:?}", path.as_ref());
+    let path_ref = path.as_ref();
+    log::info!("Running fpcalc on file: {:?}", path_ref);
 
-    let file = File::open(path)?;
-    let mss = MediaSourceStream::new(Box::new(file), Default::default());
+    let output = Command::new("fpcalc")
+        .arg("-json")
+        .arg("-length")
+        .arg("30")
+        .arg(path_ref)
+        .output()
+        .map_err(|e| {
+            log::error!("Failed to execute fpcalc command: {}", e);
+            anyhow::anyhow!("Failed to run fpcalc: {}. Ensure fpcalc is installed (apt install fpcalc or brew install fpcalc)", e)
+        })?;
 
-    let mut hint = Hint::new();
-    hint.with_extension("wav");
-
-    let probed = symphonia::default::get_probe()
-        .format(&hint, mss, &FormatOptions::default(), &MetadataOptions::default())?;
-
-    let mut format = probed.format;
-    let track = format
-        .default_track()
-        .ok_or_else(|| anyhow::anyhow!("No default audio track"))?;
-
-    log::info!("Track codec: {:?}", track.codec_params.codec);
-
-    let mut decoder = symphonia::default::get_codecs()
-        .make(&track.codec_params, &DecoderOptions::default())?;
-
-    let sample_rate = track
-        .codec_params
-        .sample_rate
-        .ok_or_else(|| anyhow::anyhow!("Missing sample rate"))?;
-
-    let channels = track
-        .codec_params
-        .channels
-        .ok_or_else(|| anyhow::anyhow!("Missing channel count"))?
-        .count();
-
-    log::info!("Audio info - Sample rate: {} Hz, Channels: {}", sample_rate, channels);
-
-    let mut chroma = Chromaprint::new();
-    if !chroma.start(sample_rate as i32, channels as i32) {
-        return Err(anyhow::anyhow!("Failed to start chromaprint"));
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        log::error!("fpcalc failed with status: {}", output.status);
+        log::error!("stderr: {}", stderr);
+        return Err(anyhow::anyhow!("fpcalc failed: {}", stderr));
     }
 
-    log::info!("Chromaprint started successfully");
+    let stdout = String::from_utf8(output.stdout)
+        .map_err(|e| {
+            log::error!("Failed to parse fpcalc output as UTF-8: {}", e);
+            anyhow::anyhow!("Invalid fpcalc output: {}", e)
+        })?;
 
-    let mut total_samples: u64 = 0;
-    let mut packet_count: u64 = 0;
+    log::debug!("fpcalc output: {}", stdout);
 
-    loop {
-        let packet = match format.next_packet() {
-            Ok(pkt) => pkt,
-            Err(e) => {
-                log::debug!("End of stream or error reading packet: {}", e);
-                break;
-            }
-        };
+    let fpcalc_result: FpcalcOutput = serde_json::from_str(&stdout)
+        .map_err(|e| {
+            log::error!("Failed to parse fpcalc JSON output: {}", e);
+            log::error!("Output was: {}", stdout);
+            anyhow::anyhow!("Invalid fpcalc JSON: {}", e)
+        })?;
 
-        packet_count += 1;
-
-        let decoded = match decoder.decode(&packet) {
-            Ok(buf) => buf,
-            Err(e) => {
-                log::warn!("Failed to decode packet {}: {}", packet_count, e);
-                continue;
-            }
-        };
-
-        log::debug!("Decoded packet {} - buffer type: {:?}", packet_count, std::mem::discriminant(&decoded));
-
-        match decoded {
-            AudioBufferRef::F32(buf) => {
-                let frames = buf.frames();
-                total_samples += frames as u64;
-                log::debug!("F32 buffer - frames: {}", frames);
-
-                let mut interleaved = Vec::with_capacity(frames * channels);
-                for frame in 0..frames {
-                    for chan in 0..channels {
-                        let sample = buf.chan(chan)[frame];
-                        let sample_u8 = (sample * 127.0 + 128.0) as u8;
-                        interleaved.push(sample_u8);
-                    }
-                }
-                chroma.feed(&interleaved);
-            }
-            AudioBufferRef::U16(buf) => {
-                let frames = buf.frames();
-                total_samples += frames as u64;
-                log::debug!("U16 buffer - frames: {}", frames);
-
-                let mut interleaved = Vec::with_capacity(frames * channels);
-                for frame in 0..frames {
-                    for chan in 0..channels {
-                        let sample = buf.chan(chan)[frame];
-                        let sample_u8 = (sample >> 8) as u8;
-                        interleaved.push(sample_u8);
-                    }
-                }
-                chroma.feed(&interleaved);
-            }
-            AudioBufferRef::S16(buf) => {
-                let frames = buf.frames();
-                total_samples += frames as u64;
-                log::debug!("S16 buffer - frames: {}", frames);
-
-                let mut interleaved = Vec::with_capacity(frames * channels);
-                for frame in 0..frames {
-                    for chan in 0..channels {
-                        let sample = buf.chan(chan)[frame];
-                        let sample_u8 = ((sample >> 8) + 128) as u8;
-                        interleaved.push(sample_u8);
-                    }
-                }
-                chroma.feed(&interleaved);
-            }
-            AudioBufferRef::S32(buf) => {
-                let frames = buf.frames();
-                total_samples += frames as u64;
-                log::debug!("S32 buffer - frames: {}", frames);
-
-                let mut interleaved = Vec::with_capacity(frames * channels);
-                for frame in 0..frames {
-                    for chan in 0..channels {
-                        let sample = buf.chan(chan)[frame];
-                        let sample_u8 = ((sample >> 24) + 128) as u8;
-                        interleaved.push(sample_u8);
-                    }
-                }
-                chroma.feed(&interleaved);
-            }
-            _ => {
-                log::warn!("Unsupported audio buffer type: {:?}", std::mem::discriminant(&decoded));
-            }
-        }
-
-        if packet_count % 100 == 0 {
-            log::debug!("Processed {} packets, total samples: {}", packet_count, total_samples);
-        }
-    }
-
-    chroma.finish();
-
-    let duration_seconds = total_samples / sample_rate as u64;
-
-    log::info!("Processing complete - packets: {}, samples: {}, duration: {}s",
-        packet_count, total_samples, duration_seconds
+    log::info!("fpcalc result - duration: {:.2}s, fingerprint length: {}",
+        fpcalc_result.duration,
+        fpcalc_result.fingerprint.len()
     );
 
-    Ok((chroma.fingerprint().unwrap_or_default(), duration_seconds as u32))
+    Ok((fpcalc_result.fingerprint, fpcalc_result.duration as u32))
 }
 
 

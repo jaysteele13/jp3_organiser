@@ -77,7 +77,7 @@ pub fn process_audio_files(file_paths: Vec<String>) -> Result<ProcessedFilesResu
                 log::info!("Extracting ID3 metadata for MP3 file");
                 extract_id3_metadata(&mut tracked_file);
             }
-            "wav" | "flac" | "m4a" | "ogg" => {
+            "wav" | "flac" | "m4a" | "ogg" | "opus" => {
                 log::info!("Skipping ID3 extraction for {} file (not supported yet)", tracked_file.file_extension);
                 // Mark as incomplete but don't set error_message - we'll try AcousticID
                 tracked_file.metadata_status = MetadataStatus::Incomplete;
