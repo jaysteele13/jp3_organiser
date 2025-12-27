@@ -15,6 +15,7 @@
 
 mod commands;
 mod models;
+mod services;
 
 use commands::{
     // Audio commands
@@ -42,6 +43,11 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_upload::init())
         .plugin(tauri_plugin_opener::init())
+        .setup(|_app| {
+            env_logger::init();
+            log::info!("JP3 Organiser starting...");
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             // Audio commands
             process_audio_files,

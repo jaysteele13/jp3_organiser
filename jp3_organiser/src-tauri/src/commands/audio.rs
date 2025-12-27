@@ -8,7 +8,7 @@ use id3::{Tag, TagLike};
 use std::path::Path;
 use uuid::Uuid;
 
-use crate::models::{AudioMetadata, MetadataStatus, ProcessedAudioFingerprint, TrackedAudioFile};
+use crate::models::{AudioMetadata, MetadataStatus, ProcessedFilesResult, TrackedAudioFile};
 use crate::services::fingerprint_service::{process_audio_fingerprint, lookup_acoustid};
 
 
@@ -17,33 +17,35 @@ use crate::services::fingerprint_service::{process_audio_fingerprint, lookup_aco
 
 // Command that takes music data file and runs it against the open AcousticID API, we must get the audio fingerprint then can search the database
 #[tauri::command]
-pub fn get_audio_metadata_from_acoustic_id(file_path: String, tracking_id: String) -> Result<ProcessedAudioFingerprint, String> {
-    // Placeholder for future implementation
-    
-    // Get Fingerprint from file thos returns:
+pub fn get_audio_metadata_from_acoustic_id(file_path: String, tracking_id: String) -> Result<serde_json::Value, String> {
+    log::info!("Starting AcousticID lookup for file: {} (tracking_id: {})", file_path, tracking_id);
 
-    /*
-    pub struct ProcessedAudioFingerprint {
-    pub fingerprint_id: String,
-    pub tracking_id: String,
-    pub fingerprint_status: MetadataStatus,
-    pub error_message: Option<String>,
-}
-    */
-    let audioFingerPrint = match process_audio_fingerprint(&file_path, tracking_id.clone()) {
-        Ok(result) => (result.fingerprint_id, result.duration_seconds),
-        Err(e) => {
-            return Err(format!("Failed to process audio fingerprint: {}", e));
-        }
-    };
+    let audio_finger_print = process_audio_fingerprint(&file_path, tracking_id.clone());
 
-    // use the fingerprint and duration to query the AcousticID API
-    let resultJSON = lookup_acoustid(&audioFingerPrint).map_err(|e| format!("AcousticID lookup failed: {}", e))?;
+    log::info!("Fingerprint result - status: {:?}, duration: {}s, fingerprint length: {}",
+        audio_finger_print.fingerprint_status,
+        audio_finger_print.duration_seconds,
+        audio_finger_print.fingerprint_id.len()
+    );
 
-    // log result
-    log::info!("AcousticID lookup result: {:?}", resultJSON);
-    return Ok(resultJSON);
-    
+    if audio_finger_print.fingerprint_status == MetadataStatus::Failed {
+        let error_msg = audio_finger_print.error_message.unwrap_or_else(|| "Unknown fingerprint error".to_string());
+        log::error!("Fingerprint processing failed: {}", error_msg);
+        return Err(error_msg);
+    }
+
+    log::info!("Making AcousticID API request with fingerprint (length: {}, duration: {}s)",
+        audio_finger_print.fingerprint_id.len(),
+        audio_finger_print.duration_seconds
+    );
+
+    let result_json = lookup_acoustid(&audio_finger_print).map_err(|e| {
+        log::error!("AcousticID lookup failed: {}", e);
+        format!("AcousticID lookup failed: {}", e)
+    })?;
+
+    log::info!("AcousticID lookup successful: {:?}", result_json);
+    Ok(result_json)
 }
 
 
@@ -83,13 +85,11 @@ pub fn process_audio_files(file_paths: Vec<String>) -> Result<ProcessedFilesResu
                 tracked_file.metadata_status = MetadataStatus::Error;
                 tracked_file.error_message = Some("Unsupported file format".to_string());
             }
-            let result = get_audio_metadata_from_acoustic_id(file_path.clone(), tracked_file.tracking_id.clone())?;
-
-            // do stuff based off of the result -> fix tomorrow
         }
 
-        // After ID3 Check, lets try metadata from AcousticID
-
+        log::info!("Calling get_audio_metadata_from_acoustic_id for file: {}", file_path);
+        let _result = get_audio_metadata_from_acoustic_id(file_path.clone(), tracked_file.tracking_id.clone())?;
+        log::info!("get_audio_metadata_from_acoustic_id completed for file: {}", file_path);
 
         tracked_files.push(tracked_file);
     }

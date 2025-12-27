@@ -22,6 +22,10 @@ pub enum MetadataStatus {
     Incomplete,
     /// Failed to read file or parse metadata
     Error,
+    /// Successfully processed
+    Success,
+    /// Failed during processing
+    Failed,
 }
 
 impl Default for MetadataStatus {
@@ -139,8 +143,7 @@ impl TrackedAudioFile {
     }
 }
 
-// Model
-/// Result of processing multiple audio files.
+/// Result of processing an audio file for fingerprinting.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProcessedAudioFingerprint {
@@ -148,6 +151,7 @@ pub struct ProcessedAudioFingerprint {
     pub tracking_id: String,
     pub fingerprint_status: MetadataStatus,
     pub error_message: Option<String>,
+    pub duration_seconds: u32,
 }
 
 #[derive(Debug, Clone)]
