@@ -44,7 +44,7 @@ pub fn run() {
         .plugin(tauri_plugin_upload::init())
         .plugin(tauri_plugin_opener::init())
         .setup(|_app| {
-            dotenv::dotenv().ok();
+            dotenvy::from_filename(".env.local").ok();
             env_logger::init();
             log::info!("JP3 Organiser starting...");
             Ok(())
