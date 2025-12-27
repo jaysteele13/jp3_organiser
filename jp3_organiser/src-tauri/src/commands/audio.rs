@@ -64,32 +64,49 @@ pub fn process_audio_files(file_paths: Vec<String>) -> Result<ProcessedFilesResu
     let mut tracked_files: Vec<TrackedAudioFile> = Vec::with_capacity(file_paths.len());
 
     for file_path in file_paths {
+        log::info!("Processing file: {}", file_path);
+
         let tracking_id = Uuid::new_v4().to_string();
         let mut tracked_file = TrackedAudioFile::new(tracking_id, file_path.clone());
+
+        log::info!("File extension: {}", tracked_file.file_extension);
 
         // Extract metadata based on file extension
         match tracked_file.file_extension.as_str() {
             "mp3" => {
+                log::info!("Extracting ID3 metadata for MP3 file");
                 extract_id3_metadata(&mut tracked_file);
             }
             "wav" | "flac" | "m4a" | "ogg" => {
-                // For now, mark non-MP3 files as incomplete
-                // TODO: Add support for other formats using appropriate libraries
+                log::info!("Skipping ID3 extraction for {} file (not supported yet)", tracked_file.file_extension);
+                // Mark as incomplete but don't set error_message - we'll try AcousticID
                 tracked_file.metadata_status = MetadataStatus::Incomplete;
-                tracked_file.error_message = Some(format!(
-                    "Metadata extraction not yet supported for .{} files",
-                    tracked_file.file_extension
-                ));
             }
             _ => {
+                log::warn!("Unsupported file format: {}", tracked_file.file_extension);
                 tracked_file.metadata_status = MetadataStatus::Error;
                 tracked_file.error_message = Some("Unsupported file format".to_string());
             }
         }
 
         log::info!("Calling get_audio_metadata_from_acoustic_id for file: {}", file_path);
-        let _result = get_audio_metadata_from_acoustic_id(file_path.clone(), tracked_file.tracking_id.clone())?;
+        let acoustic_id_result = get_audio_metadata_from_acoustic_id(file_path.clone(), tracked_file.tracking_id.clone());
         log::info!("get_audio_metadata_from_acoustic_id completed for file: {}", file_path);
+
+        match acoustic_id_result {
+            Ok(result_json) => {
+                log::info!("Successfully got AcousticID result for file: {}", file_path);
+                log::info!("AcousticID result: {:?}", result_json);
+                // TODO: Parse the result and update tracked_file metadata
+            }
+            Err(e) => {
+                log::error!("Failed to get metadata from AcousticID for file: {}: {}", file_path, e);
+                // Don't fail the entire file processing, just log the error
+                if tracked_file.error_message.is_none() {
+                    tracked_file.error_message = Some(format!("AcousticID lookup failed: {}", e));
+                }
+            }
+        }
 
         tracked_files.push(tracked_file);
     }
