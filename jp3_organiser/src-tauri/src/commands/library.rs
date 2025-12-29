@@ -133,6 +133,8 @@ struct ExistingLibraryData {
     songs: Vec<SongEntry>,
     artist_map: HashMap<String, u32>,
     album_map: HashMap<String, u32>,
+    /// Set of existing songs keyed by (title, artist_id, album_id) to detect duplicates
+    song_set: HashSet<(u32, u32, u32)>,
 }
 
 /// Load existing library data from library.bin for merging with new songs.
@@ -209,20 +211,27 @@ fn load_existing_library_data(library_bin_path: &Path) -> Result<Option<Existing
         });
     }
 
-    // Parse raw song table and rebuild SongEntry vec
+    // Parse raw song table and rebuild SongEntry vec + song_set for duplicate detection
     let raw_songs = parse_song_table(
         &data,
         header.song_table_offset as usize,
         header.song_count as usize,
     )?;
-    let songs: Vec<SongEntry> = raw_songs.iter().map(|raw| SongEntry {
-        title_string_id: raw.title_string_id,
-        artist_id: raw.artist_id,
-        album_id: raw.album_id,
-        path_string_id: raw.path_string_id,
-        track_number: raw.track_number,
-        duration_sec: raw.duration_sec,
-        flags: raw.flags,
+    let mut song_set: HashSet<(u32, u32, u32)> = HashSet::new();
+    let songs: Vec<SongEntry> = raw_songs.iter().map(|raw| {
+        // Only add active (non-deleted) songs to the duplicate set
+        if raw.flags & song_flags::DELETED == 0 {
+            song_set.insert((raw.title_string_id, raw.artist_id, raw.album_id));
+        }
+        SongEntry {
+            title_string_id: raw.title_string_id,
+            artist_id: raw.artist_id,
+            album_id: raw.album_id,
+            path_string_id: raw.path_string_id,
+            track_number: raw.track_number,
+            duration_sec: raw.duration_sec,
+            flags: raw.flags,
+        }
     }).collect();
 
     Ok(Some(ExistingLibraryData {
@@ -232,6 +241,7 @@ fn load_existing_library_data(library_bin_path: &Path) -> Result<Option<Existing
         songs,
         artist_map,
         album_map,
+        song_set,
     }))
 }
 
@@ -262,7 +272,7 @@ pub fn save_to_library(
     // Load existing library data or start fresh
     let existing = load_existing_library_data(&library_bin_path)?;
     
-    let (mut string_table, mut artists, mut albums, mut songs, mut artist_map, mut album_map) = 
+    let (mut string_table, mut artists, mut albums, mut songs, mut artist_map, mut album_map, mut song_set) = 
         match existing {
             Some(data) => (
                 data.string_table,
@@ -271,6 +281,7 @@ pub fn save_to_library(
                 data.songs,
                 data.artist_map,
                 data.album_map,
+                data.song_set,
             ),
             None => (
                 StringTable::new(),
@@ -279,6 +290,7 @@ pub fn save_to_library(
                 Vec::new(),
                 HashMap::new(),
                 HashMap::new(),
+                HashSet::new(),
             ),
         };
     
@@ -290,6 +302,7 @@ pub fn save_to_library(
     let (mut current_bucket, mut files_in_bucket) = get_current_bucket(&music_path)?;
 
     let mut files_saved = 0u32;
+    let mut duplicates_skipped = 0u32;
 
     for file_to_save in files {
         let source = Path::new(&file_to_save.source_path);
@@ -331,6 +344,21 @@ pub fn save_to_library(
             id
         };
 
+        // Check for duplicate song (same title, artist, album)
+        // We need to check using the title_string_id that would be assigned
+        let title_string_id = string_table.get_or_peek(title);
+        if let Some(tid) = title_string_id {
+            let song_key = (tid, artist_id, album_id);
+            if song_set.contains(&song_key) {
+                log::info!(
+                    "Skipping duplicate song: '{}' by '{}' on '{}'",
+                    title, artist_name, album_name
+                );
+                duplicates_skipped += 1;
+                continue;
+            }
+        }
+
         // Check if we need a new bucket
         if files_in_bucket >= MAX_FILES_PER_BUCKET {
             current_bucket += 1;
@@ -359,6 +387,11 @@ pub fn save_to_library(
         // Add song entry
         let title_string_id = string_table.add(title);
         let path_string_id = string_table.add(&relative_path);
+        
+        // Add to song_set to prevent duplicates within the same batch
+        let song_key = (title_string_id, artist_id, album_id);
+        song_set.insert(song_key);
+        
         songs.push(SongEntry::new(
             title_string_id,
             artist_id,
@@ -415,6 +448,7 @@ pub fn save_to_library(
         artists_added: artists.len() as u32 - existing_artist_count,
         albums_added: albums.len() as u32 - existing_album_count,
         songs_added: songs.len() as u32 - existing_song_count,
+        duplicates_skipped,
     })
 }
 
@@ -1597,5 +1631,121 @@ mod tests {
         assert_eq!(stats.deleted_songs, 1, "Deleted songs should be 1");
         
         println!("Edit test passed!");
+    }
+
+    #[test]
+    fn test_duplicate_song_detection() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let base_path = temp_dir.path().to_string_lossy().to_string();
+        
+        initialize_library(base_path.clone()).unwrap();
+        
+        // Create dummy audio files
+        let dummy_file1 = temp_dir.path().join("test1.mp3");
+        let dummy_file2 = temp_dir.path().join("test2.mp3");
+        std::fs::write(&dummy_file1, b"fake audio data 1").unwrap();
+        std::fs::write(&dummy_file2, b"fake audio data 2").unwrap();
+        
+        // First save: add a song
+        let files1 = vec![FileToSave {
+            source_path: dummy_file1.to_string_lossy().to_string(),
+            metadata: crate::models::AudioMetadata {
+                title: Some("Unique Song".to_string()),
+                artist: Some("Test Artist".to_string()),
+                album: Some("Test Album".to_string()),
+                year: Some(2020),
+                track_number: Some(1),
+                duration_secs: Some(180),
+            },
+        }];
+        
+        let result1 = save_to_library(base_path.clone(), files1).unwrap();
+        assert_eq!(result1.files_saved, 1, "First save should save 1 file");
+        assert_eq!(result1.songs_added, 1, "First save should add 1 song");
+        assert_eq!(result1.duplicates_skipped, 0, "First save should skip 0 duplicates");
+        
+        // Second save: try to add the SAME song (same title/artist/album)
+        let files2 = vec![FileToSave {
+            source_path: dummy_file2.to_string_lossy().to_string(),
+            metadata: crate::models::AudioMetadata {
+                title: Some("Unique Song".to_string()),   // Same title
+                artist: Some("Test Artist".to_string()),  // Same artist
+                album: Some("Test Album".to_string()),    // Same album
+                year: Some(2020),
+                track_number: Some(1),
+                duration_secs: Some(180),
+            },
+        }];
+        
+        let result2 = save_to_library(base_path.clone(), files2).unwrap();
+        assert_eq!(result2.files_saved, 0, "Second save should save 0 files (duplicate)");
+        assert_eq!(result2.songs_added, 0, "Second save should add 0 songs (duplicate)");
+        assert_eq!(result2.duplicates_skipped, 1, "Second save should skip 1 duplicate");
+        
+        // Verify library still has only 1 song
+        let library = load_library(base_path.clone()).unwrap();
+        assert_eq!(library.songs.len(), 1, "Library should have exactly 1 song");
+        
+        // Verify only 1 file in music directory
+        let music_path = temp_dir.path().join("jp3/music/00");
+        let file_count = std::fs::read_dir(&music_path)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().is_file())
+            .count();
+        assert_eq!(file_count, 1, "Music directory should have exactly 1 file");
+        
+        println!("Duplicate detection test passed!");
+    }
+
+    #[test]
+    fn test_duplicate_detection_within_same_batch() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let base_path = temp_dir.path().to_string_lossy().to_string();
+        
+        initialize_library(base_path.clone()).unwrap();
+        
+        // Create dummy audio files
+        let dummy_file1 = temp_dir.path().join("test1.mp3");
+        let dummy_file2 = temp_dir.path().join("test2.mp3");
+        std::fs::write(&dummy_file1, b"fake audio data 1").unwrap();
+        std::fs::write(&dummy_file2, b"fake audio data 2").unwrap();
+        
+        // Try to add the same song twice in ONE batch
+        let files = vec![
+            FileToSave {
+                source_path: dummy_file1.to_string_lossy().to_string(),
+                metadata: crate::models::AudioMetadata {
+                    title: Some("Same Song".to_string()),
+                    artist: Some("Same Artist".to_string()),
+                    album: Some("Same Album".to_string()),
+                    year: Some(2020),
+                    track_number: Some(1),
+                    duration_secs: Some(180),
+                },
+            },
+            FileToSave {
+                source_path: dummy_file2.to_string_lossy().to_string(),
+                metadata: crate::models::AudioMetadata {
+                    title: Some("Same Song".to_string()),    // Duplicate!
+                    artist: Some("Same Artist".to_string()), // Duplicate!
+                    album: Some("Same Album".to_string()),   // Duplicate!
+                    year: Some(2020),
+                    track_number: Some(2),
+                    duration_secs: Some(200),
+                },
+            },
+        ];
+        
+        let result = save_to_library(base_path.clone(), files).unwrap();
+        assert_eq!(result.files_saved, 1, "Should save 1 file");
+        assert_eq!(result.songs_added, 1, "Should add 1 song");
+        assert_eq!(result.duplicates_skipped, 1, "Should skip 1 duplicate in batch");
+        
+        // Verify library has only 1 song
+        let library = load_library(base_path.clone()).unwrap();
+        assert_eq!(library.songs.len(), 1, "Library should have exactly 1 song");
+        
+        println!("Duplicate detection within batch test passed!");
     }
 }

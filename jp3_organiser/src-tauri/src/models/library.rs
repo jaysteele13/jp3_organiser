@@ -317,6 +317,11 @@ impl StringTable {
         self.strings.get(id as usize).map(|s| s.as_str())
     }
 
+    /// Check if a string exists and return its ID without adding it.
+    pub fn get_or_peek(&self, s: &str) -> Option<u32> {
+        self.lookup.get(s).copied()
+    }
+
     /// Serialize to bytes.
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
@@ -347,6 +352,7 @@ pub struct SaveToLibraryResult {
     pub artists_added: u32,
     pub albums_added: u32,
     pub songs_added: u32,
+    pub duplicates_skipped: u32,
 }
 
 /// Parsed artist data for frontend display.
