@@ -86,8 +86,14 @@ pub struct AcoustIdResponse {
     pub results: Option<Vec<AcoustIdResult>>,
 }
 
-/// Points awarded for ranking (top 5 get points)
-const RANKING_POINTS: [u32; 5] = [20, 16, 12, 8, 4];
+/// Points awarded for sources ranking (top 5 get points) - increased weight
+const SOURCES_POINTS: [u32; 5] = [25, 20, 15, 10, 5];
+
+/// Points awarded for date ranking (top 5 get points) - higher weight for older dates
+const DATE_POINTS: [u32; 5] = [30, 24, 18, 12, 6];
+
+/// Bonus points for having an Album type release group
+const ALBUM_TYPE_BONUS: u32 = 10;
 
 /// Internal structure to track recording with its ranking score
 #[derive(Debug)]
@@ -130,9 +136,10 @@ fn get_first_release_group(recording: &Recording) -> Option<&ReleaseGroup> {
 
 /// Extract metadata from AcoustID JSON response by ranking candidates.
 ///
-/// Ranking criteria:
-/// 1. Sources count (higher = more reputable, top 5 get 20/16/12/8/4 points)
-/// 2. Oldest release date (older = more likely original, top 5 get 20/16/12/8/4 points)
+/// Ranking criteria (in order of importance):
+/// 1. Oldest release date (older = more likely original, top 5 get 30/24/18/12/6 points)
+/// 2. Sources count (higher = more reputable, top 5 get 20/16/12/8/4 points)
+/// 3. Album type bonus (recordings with Album release group get +15 points)
 ///
 /// Returns the best matching metadata or None if no valid recordings found.
 pub fn extract_metadata_from_acoustic_json(
@@ -172,19 +179,64 @@ pub fn extract_metadata_from_acoustic_json(
     // Rank by sources (higher is better)
     rank_by_sources(&mut ranked);
 
-    // Rank by oldest release date (older is better)
+    // Rank by oldest release date (older is better) - higher weight
     rank_by_oldest_date(&mut ranked);
 
-    // Find the recording with highest score
-    ranked.sort_by(|a, b| b.score.cmp(&a.score));
+    // Bonus for having an Album type release group
+    rank_by_album_type(&mut ranked);
+
+    // Sort by score descending, then by sources descending as tiebreaker
+    ranked.sort_by(|a, b| {
+        match b.score.cmp(&a.score) {
+            std::cmp::Ordering::Equal => {
+                // Tiebreaker: higher sources wins
+                b.recording.sources.unwrap_or(0).cmp(&a.recording.sources.unwrap_or(0))
+            }
+            other => other,
+        }
+    });
+
+    // Log all candidates with their scores
+    log::info!("=== RANKING RESULTS ({} candidates) ===", ranked.len());
+    
+    for (i, r) in ranked.iter().enumerate() {
+        let album_info = r.recording.releasegroups.as_ref()
+            .and_then(|groups| groups.first())
+            .map(|g| format!("{} ({})", g.title, g.release_type.as_deref().unwrap_or("Unknown")))
+            .unwrap_or_else(|| "No album".to_string());
+        
+        let artist = r.recording.artists.as_ref()
+            .and_then(|artists| artists.first())
+            .map(|a| a.name.clone())
+            .unwrap_or_else(|| "Unknown".to_string());
+        
+        let oldest_year = get_oldest_release_date(&r.recording)
+            .and_then(|d| d.year)
+            .map(|y| y.to_string())
+            .unwrap_or_else(|| "N/A".to_string());
+        
+        let sources = r.recording.sources.unwrap_or(0);
+        
+        log::info!(
+            "  #{}: score={} | '{}' by {} | album: {} | year: {} | sources: {}",
+            i + 1,
+            r.score,
+            r.recording.title,
+            artist,
+            album_info,
+            oldest_year,
+            sources
+        );
+    }
+    log::info!("=== END RANKING ===");
 
     let best = ranked
         .into_iter()
         .next()
         .ok_or("No recordings after ranking")?;
 
-        log::info!(
-        "Best recording: '{}' (album: '{}', artist: '{}') with score {}",
+    log::info!(
+        "SELECTED: '{}' (album: '{}', artist: '{}') with score {}",
         best.recording.title,
         best.recording.releasegroups.as_ref().and_then(|groups| groups.first()).map(|g| g.title.clone()).unwrap_or_default(),
         best.recording.artists.as_ref().and_then(|artists| artists.first()).map(|a| a.name.clone()).unwrap_or_default(),
@@ -209,13 +261,13 @@ fn rank_by_sources(ranked: &mut [RankedRecording]) {
     // Award points to top 5
     for (rank, (idx, sources)) in sources_order.iter().take(5).enumerate() {
         if *sources > 0 {
-            ranked[*idx].score += RANKING_POINTS[rank];
+            ranked[*idx].score += SOURCES_POINTS[rank];
             log::debug!(
                 "Sources rank {}: '{}' with {} sources gets {} points",
                 rank + 1,
                 ranked[*idx].recording.title,
                 sources,
-                RANKING_POINTS[rank]
+                SOURCES_POINTS[rank]
             );
         }
     }
@@ -238,16 +290,30 @@ fn rank_by_oldest_date(ranked: &mut [RankedRecording]) {
         (None, None) => std::cmp::Ordering::Equal,
     });
 
-    // Award points to top 5
+    // Award points to top 5 (higher weight than sources)
     for (rank, (idx, date)) in date_order.iter().take(5).enumerate() {
         if let Some(d) = date {
-            ranked[*idx].score += RANKING_POINTS[rank];
+            ranked[*idx].score += DATE_POINTS[rank];
             log::debug!(
                 "Date rank {}: '{}' with year {:?} gets {} points",
                 rank + 1,
                 ranked[*idx].recording.title,
                 d.year,
-                RANKING_POINTS[rank]
+                DATE_POINTS[rank]
+            );
+        }
+    }
+}
+
+/// Award bonus points for recordings with an Album type release group
+fn rank_by_album_type(ranked: &mut [RankedRecording]) {
+    for r in ranked.iter_mut() {
+        if get_album_release_group(&r.recording).is_some() {
+            r.score += ALBUM_TYPE_BONUS;
+            log::debug!(
+                "Album type bonus: '{}' gets {} points",
+                r.recording.title,
+                ALBUM_TYPE_BONUS
             );
         }
     }
@@ -401,10 +467,59 @@ mod tests {
         });
 
         let result = extract_metadata_from_acoustic_json(&json).unwrap();
-        // Song High wins: 20 (sources rank 1) + 20 (oldest date) = 40
-        // Song Low gets: 16 (sources rank 2) + 16 (newer date) = 32
+        // Song High wins with weights:
+        // Sources: Song High = 25 (rank 1), Song Low = 20 (rank 2)
+        // Date: Song High = 30 (oldest, rank 1), Song Low = 24 (rank 2)
+        // Album bonus: both get +10
+        // Total: Song High = 25 + 30 + 10 = 65, Song Low = 20 + 24 + 10 = 54
         assert_eq!(result.title, Some("Song High".to_string()));
         assert_eq!(result.album, Some("Album High".to_string()));
+    }
+
+    #[test]
+    fn test_older_date_beats_higher_sources() {
+        // Test that an older release date can beat higher sources
+        // This simulates: compilation from 2019 with many sources vs original from 1978
+        let json = json!({
+            "status": "ok",
+            "results": [{
+                "id": "test-result-id",
+                "recordings": [
+                    {
+                        "id": "new-compilation",
+                        "title": "Don't Stop Me Now",
+                        "sources": 3000,
+                        "artists": [{"id": "1", "name": "Queen"}],
+                        "releasegroups": [{
+                            "id": "rg1",
+                            "type": "Compilation",
+                            "title": "Animal Crackers",
+                            "releases": [{"id": "r1", "date": {"year": 2019}}]
+                        }]
+                    },
+                    {
+                        "id": "original-album",
+                        "title": "Don't Stop Me Now",
+                        "sources": 1500,
+                        "artists": [{"id": "2", "name": "Queen"}],
+                        "releasegroups": [{
+                            "id": "rg2",
+                            "type": "Album",
+                            "title": "Jazz",
+                            "releases": [{"id": "r2", "date": {"year": 1978}}]
+                        }]
+                    }
+                ]
+            }]
+        });
+
+        let result = extract_metadata_from_acoustic_json(&json).unwrap();
+        // Original Jazz album should win:
+        // New compilation: 25 (sources rank 1) + 24 (date rank 2) + 0 (no Album bonus) = 49
+        // Original album: 20 (sources rank 2) + 30 (date rank 1) + 10 (Album bonus) = 60
+        assert_eq!(result.title, Some("Don't Stop Me Now".to_string()));
+        assert_eq!(result.album, Some("Jazz".to_string()));
+        assert_eq!(result.year, Some(1978));
     }
 
     #[test]
