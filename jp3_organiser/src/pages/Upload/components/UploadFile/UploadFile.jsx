@@ -7,6 +7,8 @@
  * 3. After confirmation, files can be saved to library
  * 4. User can go back to re-review all files before saving
  * 
+ * Workflow state is persisted in cache so navigation doesn't lose progress.
+ * 
  * @param {Object} props
  * @param {string} props.libraryPath - The configured library directory path
  */
@@ -14,32 +16,38 @@
 import React, { useState, useCallback } from 'react';
 import ProcessFile from '../ProcessFile';
 import ReviewScreen from '../ReviewScreen';
-import { useUploadCache } from '../../../../hooks';
+import { useUploadCache, UploadStage } from '../../../../hooks';
 import { saveToLibrary, MetadataStatus } from '../../../../services';
 import styles from './UploadFile.module.css';
 
-/**
- * Workflow stages
- */
-const Stage = {
-  PROCESS: 'process',   // File selection and processing
-  REVIEW: 'review',     // Reviewing and confirming metadata
-  COMPLETE: 'complete', // All files confirmed, ready to save
-};
-
 export default function UploadFile({ libraryPath }) {
   const cache = useUploadCache();
-  const [stage, setStage] = useState(Stage.PROCESS);
-  const [reviewAll, setReviewAll] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
   const [saveError, setSaveError] = useState(null);
 
+  // Get workflow state from cache
+  const { stage, reviewAll, reviewIndex, isEditMode } = cache.workflowState;
+
+  // Helper to update stage
+  const setStage = useCallback((newStage) => {
+    cache.updateWorkflowState({ stage: newStage });
+  }, [cache]);
+
+  // Helper to update reviewAll
+  const setReviewAll = useCallback((value) => {
+    cache.updateWorkflowState({ reviewAll: value });
+  }, [cache]);
+
   // Handle starting review from ProcessFile
   const handleStartReview = useCallback(() => {
-    setReviewAll(false);
-    setStage(Stage.REVIEW);
-  }, []);
+    cache.updateWorkflowState({ 
+      stage: UploadStage.REVIEW, 
+      reviewAll: false,
+      reviewIndex: 0,
+      isEditMode: false,
+    });
+  }, [cache]);
 
   // Handle file confirmation in ReviewScreen
   const handleConfirmFile = useCallback((trackingId) => {
@@ -65,25 +73,37 @@ export default function UploadFile({ libraryPath }) {
 
   // Handle review completion (all files confirmed)
   const handleReviewComplete = useCallback(() => {
-    setStage(Stage.COMPLETE);
-  }, []);
+    setStage(UploadStage.COMPLETE);
+  }, [setStage]);
 
   // Handle exit from review
   const handleExitReview = useCallback(() => {
     // If in reviewAll mode and all files are confirmed, go to complete
     if (reviewAll && cache.allFilesConfirmed) {
-      setStage(Stage.COMPLETE);
+      setStage(UploadStage.COMPLETE);
     } else {
-      setStage(Stage.PROCESS);
+      setStage(UploadStage.PROCESS);
     }
     setReviewAll(false);
-  }, [reviewAll, cache.allFilesConfirmed]);
+  }, [reviewAll, cache.allFilesConfirmed, setStage, setReviewAll]);
 
   // Handle going back to review from complete stage
   const handleBackToReview = useCallback(() => {
-    setReviewAll(true);
-    setStage(Stage.REVIEW);
-  }, []);
+    cache.updateWorkflowState({ 
+      stage: UploadStage.REVIEW, 
+      reviewAll: true,
+      reviewIndex: 0,
+      isEditMode: false,
+    });
+  }, [cache]);
+
+  // Handle review state changes (position, edit mode)
+  const handleReviewStateChange = useCallback((state) => {
+    cache.updateWorkflowState({ 
+      reviewIndex: state.currentIndex, 
+      isEditMode: state.isEditMode,
+    });
+  }, [cache]);
 
   // Save confirmed files to library
   const handleSaveToLibrary = useCallback(async () => {
@@ -122,8 +142,7 @@ export default function UploadFile({ libraryPath }) {
       cache.removeConfirmedFiles();
       
       // Reset to process stage
-      setStage(Stage.PROCESS);
-      setReviewAll(false);
+      cache.resetWorkflowState();
     } catch (err) {
       setSaveError(`Failed to save to library: ${err}`);
     } finally {
@@ -134,8 +153,6 @@ export default function UploadFile({ libraryPath }) {
   // Reset everything
   const handleReset = useCallback(() => {
     cache.clearAll();
-    setStage(Stage.PROCESS);
-    setReviewAll(false);
     setSuccessMessage(null);
     setSaveError(null);
   }, [cache]);
@@ -154,15 +171,17 @@ export default function UploadFile({ libraryPath }) {
       )}
 
       {/* Process stage - file selection and processing */}
-      {stage === Stage.PROCESS && (
+      {stage === UploadStage.PROCESS && (
         <ProcessFile onStartReview={handleStartReview} />
       )}
 
       {/* Review stage - confirming metadata */}
-      {stage === Stage.REVIEW && (
+      {stage === UploadStage.REVIEW && (
         <ReviewScreen
           files={cache.trackedFiles}
           reviewAll={reviewAll}
+          initialState={{ currentIndex: reviewIndex, isEditMode }}
+          onStateChange={handleReviewStateChange}
           onComplete={handleReviewComplete}
           onExit={handleExitReview}
           onConfirmFile={handleConfirmFile}
@@ -173,7 +192,7 @@ export default function UploadFile({ libraryPath }) {
       )}
 
       {/* Complete stage - ready to save */}
-      {stage === Stage.COMPLETE && (
+      {stage === UploadStage.COMPLETE && (
         <div className={styles.completeContainer}>
           <div className={styles.completeHeader}>
             <h3 className={styles.completeTitle}>Ready to Add to Library</h3>

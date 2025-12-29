@@ -9,9 +9,10 @@
  * - Review All mode: Shows all files, allows un-confirming
  * 
  * Includes validation to ensure required fields are present before confirming.
+ * Supports persisting state via initialState and onStateChange.
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 
 /**
  * Validate that a file has all required metadata fields.
@@ -38,10 +39,33 @@ function validateMetadata(file) {
   };
 }
 
-export function useReviewNavigation(files, { onConfirm, onUnconfirm, onRemove, onEdit, reviewAll = false }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isEditMode, setIsEditMode] = useState(false);
+export function useReviewNavigation(files, { 
+  onConfirm, 
+  onUnconfirm, 
+  onRemove, 
+  onEdit, 
+  reviewAll = false,
+  initialState = { currentIndex: 0, isEditMode: false },
+  onStateChange,
+}) {
+  const [currentIndex, setCurrentIndex] = useState(initialState?.currentIndex ?? 0);
+  const [isEditMode, setIsEditMode] = useState(initialState?.isEditMode ?? false);
   const [validationError, setValidationError] = useState(null);
+
+  // Use ref for callback to avoid effect re-runs
+  const onStateChangeRef = useRef(onStateChange);
+  onStateChangeRef.current = onStateChange;
+  
+  // Track if we've initialized to avoid triggering onStateChange on mount
+  const isInitialized = useRef(false);
+
+  // Notify parent of state changes (for persistence)
+  useEffect(() => {
+    if (isInitialized.current && onStateChangeRef.current) {
+      onStateChangeRef.current({ currentIndex, isEditMode });
+    }
+    isInitialized.current = true;
+  }, [currentIndex, isEditMode]);
 
   // Get files to display based on mode
   const displayFiles = useMemo(() => {

@@ -12,10 +12,13 @@
  * - Edit metadata inline
  * - Keyboard shortcut: Shift+Enter to confirm
  * - Re-review mode: view all files including confirmed ones
+ * - Persists navigation position across page navigation
  * 
  * @param {Object} props
  * @param {Array} props.files - Files to review
  * @param {boolean} props.reviewAll - If true, show all files including confirmed
+ * @param {Object} props.initialState - Initial navigation state { currentIndex, isEditMode }
+ * @param {function} props.onStateChange - Called when navigation state changes
  * @param {function} props.onComplete - Called when all files are reviewed
  * @param {function} props.onExit - Called when user exits review
  * @param {function} props.onConfirmFile - Called when a file is confirmed
@@ -34,6 +37,8 @@ import styles from './ReviewScreen.module.css';
 export default function ReviewScreen({
   files,
   reviewAll = false,
+  initialState,
+  onStateChange,
   onComplete,
   onExit,
   onConfirmFile,
@@ -48,6 +53,8 @@ export default function ReviewScreen({
     onRemove: onRemoveFile,
     onEdit: onEditFile,
     reviewAll,
+    initialState,
+    onStateChange,
   });
 
   // Audio player hook

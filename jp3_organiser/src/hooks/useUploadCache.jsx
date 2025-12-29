@@ -29,6 +29,15 @@ export const MetadataSource = {
   MANUAL: 'manual',
 };
 
+/**
+ * Workflow stages for the upload process.
+ */
+export const UploadStage = {
+  PROCESS: 'process',   // File selection and processing
+  REVIEW: 'review',     // Reviewing and confirming metadata
+  COMPLETE: 'complete', // All files confirmed, ready to save
+};
+
 // =============================================================================
 // Context
 // =============================================================================
@@ -46,6 +55,7 @@ const UploadCacheContext = createContext(null);
  * Persisted state:
  * - trackedFiles: The processed audio files
  * - error: Any error message (persisted so user sees it when returning)
+ * - workflowState: Current stage and review mode
  * 
  * NOT persisted (should be local state):
  * - successMessage: Transient feedback after saving to library
@@ -55,6 +65,14 @@ export function UploadCacheProvider({ children }) {
   // Core state that persists across navigation
   const [trackedFiles, setTrackedFiles] = useState([]);
   const [error, setError] = useState(null);
+  
+  // Workflow state that persists across navigation
+  const [workflowState, setWorkflowState] = useState({
+    stage: UploadStage.PROCESS,
+    reviewAll: false,
+    reviewIndex: 0,
+    isEditMode: false,
+  });
 
   // Calculate stats from current files
   const stats = useMemo(() => {
@@ -126,6 +144,12 @@ export function UploadCacheProvider({ children }) {
   const clearAll = useCallback(() => {
     setTrackedFiles([]);
     setError(null);
+    setWorkflowState({
+      stage: UploadStage.PROCESS,
+      reviewAll: false,
+      reviewIndex: 0,
+      isEditMode: false,
+    });
   }, []);
 
   // Update metadata for a file and mark as complete
@@ -194,10 +218,26 @@ export function UploadCacheProvider({ children }) {
     setTrackedFiles(prev => prev.filter(f => !f.isConfirmed));
   }, []);
 
+  // Update workflow state (stage, reviewAll, reviewIndex, isEditMode)
+  const updateWorkflowState = useCallback((updates) => {
+    setWorkflowState(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  // Reset workflow state to initial values
+  const resetWorkflowState = useCallback(() => {
+    setWorkflowState({
+      stage: UploadStage.PROCESS,
+      reviewAll: false,
+      reviewIndex: 0,
+      isEditMode: false,
+    });
+  }, []);
+
   const value = useMemo(() => ({
     // State
     trackedFiles,
     error,
+    workflowState,
     
     // Computed
     stats,
@@ -219,11 +259,14 @@ export function UploadCacheProvider({ children }) {
     removeFile,
     removeCompleteFiles,
     removeConfirmedFiles,
+    updateWorkflowState,
+    resetWorkflowState,
     setError,
     clearError: () => setError(null),
   }), [
     trackedFiles,
     error,
+    workflowState,
     stats,
     incompleteFiles,
     pendingConfirmation,
@@ -241,6 +284,8 @@ export function UploadCacheProvider({ children }) {
     removeFile,
     removeCompleteFiles,
     removeConfirmedFiles,
+    updateWorkflowState,
+    resetWorkflowState,
   ]);
 
   return (
