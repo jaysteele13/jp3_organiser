@@ -59,11 +59,11 @@ export async function processSingleAudioFile(filePath) {
  * @param {Object} callbacks - Callback functions
  * @param {function(TrackedAudioFile, number, number): void} callbacks.onFileProcessed 
  *   Called when each file completes: (file, currentIndex, totalFiles)
- * @param {function(Error, string, number): void} [callbacks.onFileError]
- *   Called when a file fails: (error, filePath, currentIndex)
+ * @param {function(Error, string, number, number): void} [callbacks.onFileError]
+ *   Called when a file fails: (error, filePath, currentIndex, totalFiles)
  * @param {function(): boolean} [callbacks.shouldCancel]
  *   Return true to cancel remaining files
- * @returns {Promise<TrackedAudioFile[]>} All processed files
+ * @returns {Promise<TrackedAudioFile[]>} All successfully processed files
  */
 export async function processAudioFilesIncremental(filePaths, callbacks) {
   const { onFileProcessed, onFileError, shouldCancel } = callbacks;
@@ -92,7 +92,7 @@ export async function processAudioFilesIncremental(filePaths, callbacks) {
       }
     } catch (error) {
       if (onFileError) {
-        onFileError(error, filePath, i);
+        onFileError(error, filePath, i, totalFiles);
       }
       // Continue processing remaining files even if one fails
     }

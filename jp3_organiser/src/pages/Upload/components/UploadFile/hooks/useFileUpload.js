@@ -5,6 +5,7 @@
  * 
  * Files are processed incrementally - each file appears in the UI
  * as soon as it completes, rather than waiting for all files.
+ * Failed files are also shown with error status.
  */
 
 import { useState, useMemo, useCallback, useRef } from 'react';
@@ -12,6 +13,52 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { processAudioFilesIncremental, MetadataStatus, saveToLibrary } from '../../../../../services';
 
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'flac', 'm4a', 'ogg'];
+
+/**
+ * Extract filename from a file path.
+ * @param {string} filePath - Full file path
+ * @returns {string} Just the filename
+ */
+function getFileName(filePath) {
+  return filePath.split('/').pop() || filePath.split('\\').pop() || filePath;
+}
+
+/**
+ * Extract file extension from a file path.
+ * @param {string} filePath - Full file path
+ * @returns {string} File extension without dot
+ */
+function getFileExtension(filePath) {
+  const fileName = getFileName(filePath);
+  const lastDot = fileName.lastIndexOf('.');
+  return lastDot > 0 ? fileName.slice(lastDot + 1).toLowerCase() : '';
+}
+
+/**
+ * Create a placeholder file entry for failed processing.
+ * @param {string} filePath - Original file path
+ * @param {Error|string} error - The error that occurred
+ * @returns {Object} TrackedAudioFile-like object with error status
+ */
+function createErrorFile(filePath, error) {
+  return {
+    trackingId: crypto.randomUUID(),
+    filePath,
+    fileName: getFileName(filePath),
+    fileExtension: getFileExtension(filePath),
+    fileSize: 0,
+    metadataStatus: MetadataStatus.ERROR,
+    metadata: {
+      title: null,
+      artist: null,
+      album: null,
+      trackNumber: null,
+      year: null,
+      durationSecs: null,
+    },
+    errorMessage: error?.toString() || 'Unknown error',
+  };
+}
 
 export function useFileUpload(libraryPath) {
   const [trackedFiles, setTrackedFiles] = useState([]);
@@ -40,11 +87,11 @@ export function useFileUpload(libraryPath) {
     [trackedFiles]
   );
 
-  // Check if all files are ready (complete or skipped)
-  const allFilesReady = useMemo(() => 
-    trackedFiles.length > 0 && stats.incomplete === 0,
-    [trackedFiles.length, stats.incomplete]
-  );
+  // Check if all files are ready (complete or skipped, ignoring errors)
+  const allFilesReady = useMemo(() => {
+    const nonErrorFiles = trackedFiles.filter(f => f.metadataStatus !== MetadataStatus.ERROR);
+    return nonErrorFiles.length > 0 && stats.incomplete === 0;
+  }, [trackedFiles, stats.incomplete]);
 
   // Select and process files incrementally
   const selectFiles = useCallback(async () => {
@@ -76,9 +123,12 @@ export function useFileUpload(libraryPath) {
           setTrackedFiles(prev => [...prev, file]);
           setProcessingProgress({ current: currentIndex + 1, total: totalFiles });
         },
-        onFileError: (err, filePath, currentIndex) => {
+        onFileError: (err, filePath, currentIndex, totalFiles) => {
           console.error(`Failed to process ${filePath}:`, err);
-          // Could optionally add a placeholder file with error status
+          // Add placeholder file with error status so user can see what failed
+          const errorFile = createErrorFile(filePath, err);
+          setTrackedFiles(prev => [...prev, errorFile]);
+          setProcessingProgress({ current: currentIndex + 1, total: totalFiles });
         },
         shouldCancel: () => cancelRef.current,
       });
