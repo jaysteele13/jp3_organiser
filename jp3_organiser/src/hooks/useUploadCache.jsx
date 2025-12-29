@@ -15,6 +15,29 @@
 import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { MetadataStatus } from '../services';
 
+/**
+ * Metadata source types for tracking how metadata was obtained.
+ */
+export const MetadataSource = {
+  /** Metadata source not yet determined */
+  UNKNOWN: 'unknown',
+  /** Metadata from ID3 tags embedded in the file */
+  ID3: 'id3',
+  /** Metadata from audio fingerprint matching (Chromaprint -> AcoustID -> MusicBrainz) */
+  FINGERPRINT: 'fingerprint',
+  /** Metadata entered manually by user */
+  MANUAL: 'manual',
+};
+
+/**
+ * Workflow stages for the upload process.
+ */
+export const UploadStage = {
+  PROCESS: 'process',   // File selection and processing
+  REVIEW: 'review',     // Reviewing and confirming metadata
+  COMPLETE: 'complete', // All files confirmed, ready to save
+};
+
 // =============================================================================
 // Context
 // =============================================================================
@@ -32,6 +55,7 @@ const UploadCacheContext = createContext(null);
  * Persisted state:
  * - trackedFiles: The processed audio files
  * - error: Any error message (persisted so user sees it when returning)
+ * - workflowState: Current stage and review mode
  * 
  * NOT persisted (should be local state):
  * - successMessage: Transient feedback after saving to library
@@ -41,18 +65,51 @@ export function UploadCacheProvider({ children }) {
   // Core state that persists across navigation
   const [trackedFiles, setTrackedFiles] = useState([]);
   const [error, setError] = useState(null);
+  
+  // Workflow state that persists across navigation
+  const [workflowState, setWorkflowState] = useState({
+    stage: UploadStage.PROCESS,
+    reviewAll: false,
+    reviewIndex: 0,
+    isEditMode: false,
+  });
 
   // Calculate stats from current files
-  const stats = useMemo(() => ({
-    total: trackedFiles.length,
-    complete: trackedFiles.filter(f => f.metadataStatus === MetadataStatus.COMPLETE).length,
-    incomplete: trackedFiles.filter(f => f.metadataStatus === MetadataStatus.INCOMPLETE).length,
-    error: trackedFiles.filter(f => f.metadataStatus === MetadataStatus.ERROR).length,
-  }), [trackedFiles]);
+  const stats = useMemo(() => {
+    const confirmed = trackedFiles.filter(f => f.isConfirmed).length;
+    const automated = trackedFiles.filter(
+      f => f.metadataStatus === MetadataStatus.COMPLETE && !f.isConfirmed
+    ).length;
+    const incomplete = trackedFiles.filter(f => f.metadataStatus === MetadataStatus.INCOMPLETE).length;
+    const error = trackedFiles.filter(f => f.metadataStatus === MetadataStatus.ERROR).length;
+    
+    return {
+      total: trackedFiles.length,
+      confirmed,
+      automated,
+      incomplete,
+      error,
+      // Legacy: keep 'complete' for backward compatibility (all files with complete metadata)
+      complete: trackedFiles.filter(f => f.metadataStatus === MetadataStatus.COMPLETE).length,
+      pending: trackedFiles.filter(f => !f.isConfirmed && f.metadataStatus !== MetadataStatus.ERROR).length,
+    };
+  }, [trackedFiles]);
 
   // Get incomplete files for review
   const incompleteFiles = useMemo(() => 
     trackedFiles.filter(f => f.metadataStatus === MetadataStatus.INCOMPLETE),
+    [trackedFiles]
+  );
+
+  // Get files pending confirmation (not yet confirmed by user)
+  const pendingConfirmation = useMemo(() =>
+    trackedFiles.filter(f => !f.isConfirmed && f.metadataStatus !== MetadataStatus.ERROR),
+    [trackedFiles]
+  );
+
+  // Get confirmed files (ready to add to library)
+  const confirmedFiles = useMemo(() =>
+    trackedFiles.filter(f => f.isConfirmed),
     [trackedFiles]
   );
 
@@ -61,6 +118,12 @@ export function UploadCacheProvider({ children }) {
     const nonErrorFiles = trackedFiles.filter(f => f.metadataStatus !== MetadataStatus.ERROR);
     return nonErrorFiles.length > 0 && stats.incomplete === 0;
   }, [trackedFiles, stats.incomplete]);
+
+  // Check if all non-error files have been confirmed
+  const allFilesConfirmed = useMemo(() => {
+    const nonErrorFiles = trackedFiles.filter(f => f.metadataStatus !== MetadataStatus.ERROR);
+    return nonErrorFiles.length > 0 && nonErrorFiles.every(f => f.isConfirmed);
+  }, [trackedFiles]);
 
   // Add a single file to the cache
   const addFile = useCallback((file) => {
@@ -81,6 +144,12 @@ export function UploadCacheProvider({ children }) {
   const clearAll = useCallback(() => {
     setTrackedFiles([]);
     setError(null);
+    setWorkflowState({
+      stage: UploadStage.PROCESS,
+      reviewAll: false,
+      reviewIndex: 0,
+      isEditMode: false,
+    });
   }, []);
 
   // Update metadata for a file and mark as complete
@@ -91,10 +160,45 @@ export function UploadCacheProvider({ children }) {
           ...file,
           metadata: { ...file.metadata, ...metadata },
           metadataStatus: MetadataStatus.COMPLETE,
+          metadataSource: 'manual', // Mark as manually edited
         };
       }
       return file;
     }));
+  }, []);
+
+  // Mark a file as confirmed by user
+  const confirmFile = useCallback((trackingId) => {
+    setTrackedFiles(prev => prev.map(file => {
+      if (file.trackingId === trackingId) {
+        return {
+          ...file,
+          isConfirmed: true,
+        };
+      }
+      return file;
+    }));
+  }, []);
+
+  // Unconfirm a file (for re-reviewing)
+  const unconfirmFile = useCallback((trackingId) => {
+    setTrackedFiles(prev => prev.map(file => {
+      if (file.trackingId === trackingId) {
+        return {
+          ...file,
+          isConfirmed: false,
+        };
+      }
+      return file;
+    }));
+  }, []);
+
+  // Unconfirm all files (for re-reviewing all)
+  const unconfirmAllFiles = useCallback(() => {
+    setTrackedFiles(prev => prev.map(file => ({
+      ...file,
+      isConfirmed: false,
+    })));
   }, []);
 
   // Remove a file from the list
@@ -109,15 +213,39 @@ export function UploadCacheProvider({ children }) {
     );
   }, []);
 
+  // Remove confirmed files (after saving to library)
+  const removeConfirmedFiles = useCallback(() => {
+    setTrackedFiles(prev => prev.filter(f => !f.isConfirmed));
+  }, []);
+
+  // Update workflow state (stage, reviewAll, reviewIndex, isEditMode)
+  const updateWorkflowState = useCallback((updates) => {
+    setWorkflowState(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  // Reset workflow state to initial values
+  const resetWorkflowState = useCallback(() => {
+    setWorkflowState({
+      stage: UploadStage.PROCESS,
+      reviewAll: false,
+      reviewIndex: 0,
+      isEditMode: false,
+    });
+  }, []);
+
   const value = useMemo(() => ({
     // State
     trackedFiles,
     error,
+    workflowState,
     
     // Computed
     stats,
     incompleteFiles,
+    pendingConfirmation,
+    confirmedFiles,
     allFilesReady,
+    allFilesConfirmed,
     
     // Actions
     addFile,
@@ -125,23 +253,39 @@ export function UploadCacheProvider({ children }) {
     setFiles,
     clearAll,
     updateFileMetadata,
+    confirmFile,
+    unconfirmFile,
+    unconfirmAllFiles,
     removeFile,
     removeCompleteFiles,
+    removeConfirmedFiles,
+    updateWorkflowState,
+    resetWorkflowState,
     setError,
     clearError: () => setError(null),
   }), [
     trackedFiles,
     error,
+    workflowState,
     stats,
     incompleteFiles,
+    pendingConfirmation,
+    confirmedFiles,
     allFilesReady,
+    allFilesConfirmed,
     addFile,
     addFiles,
     setFiles,
     clearAll,
     updateFileMetadata,
+    confirmFile,
+    unconfirmFile,
+    unconfirmAllFiles,
     removeFile,
     removeCompleteFiles,
+    removeConfirmedFiles,
+    updateWorkflowState,
+    resetWorkflowState,
   ]);
 
   return (

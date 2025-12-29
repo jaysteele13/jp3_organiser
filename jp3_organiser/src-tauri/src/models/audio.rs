@@ -34,6 +34,26 @@ impl Default for MetadataStatus {
     }
 }
 
+/// Source of the metadata for a tracked audio file.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum MetadataSource {
+    /// Source not yet determined
+    Unknown,
+    /// Metadata extracted from ID3 tags embedded in the file
+    Id3,
+    /// Metadata from audio fingerprint matching (Chromaprint -> AcoustID -> MusicBrainz)
+    Fingerprint,
+    /// Metadata entered manually by user
+    Manual,
+}
+
+impl Default for MetadataSource {
+    fn default() -> Self {
+        Self::Unknown
+    }
+}
+
 /// Extracted metadata from an audio file.
 /// All fields are optional since ID3 tags may be partially filled.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -95,6 +115,8 @@ pub struct TrackedAudioFile {
     pub file_size: u64,
     /// Current metadata extraction status
     pub metadata_status: MetadataStatus,
+    /// Source of the metadata (id3, acoustid, manual)
+    pub metadata_source: MetadataSource,
     /// Extracted metadata (if any)
     pub metadata: AudioMetadata,
     /// Error message if status is Error
@@ -126,6 +148,7 @@ impl TrackedAudioFile {
             file_extension,
             file_size,
             metadata_status: MetadataStatus::Pending,
+            metadata_source: MetadataSource::Unknown,
             metadata: AudioMetadata::default(),
             error_message: None,
         }

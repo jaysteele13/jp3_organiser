@@ -1,161 +1,248 @@
 /**
  * UploadFile Component
  * 
- * Orchestrates audio file upload, metadata review, and library saving.
+ * Orchestrates the complete audio file upload workflow:
+ * 1. User selects files -> ProcessFile handles selection and processing
+ * 2. Once processed, user enters ReviewScreen to confirm metadata
+ * 3. After confirmation, files can be saved to library
+ * 4. User can go back to re-review all files before saving
  * 
- * Flow:
- * 1. User selects files -> assigned trackingId
- * 2. Files are processed incrementally (shown as they complete)
- * 3. Review/edit incomplete files manually
- * 4. Save complete files to library
+ * Workflow state is persisted in cache so navigation doesn't lose progress.
  * 
  * @param {Object} props
  * @param {string} props.libraryPath - The configured library directory path
  */
 
-import React, { useEffect } from 'react';
-import { useFileUpload, useReviewMode } from './hooks';
-import { FileStats, FileList, ReviewPanel, ActionButtons } from './components';
-import MetadataForm from '../MetadataForm';
+import React, { useState, useCallback } from 'react';
+import ProcessFile from '../ProcessFile';
+import ReviewScreen from '../ReviewScreen';
+import { useUploadCache, UploadStage } from '../../../../hooks';
+import { saveToLibrary, MetadataStatus } from '../../../../services';
 import styles from './UploadFile.module.css';
 
-/**
- * Format processing progress for display.
- * @param {Object} progress - { current, total }
- * @returns {string} Formatted progress string
- */
-function formatProgress(progress) {
-  if (progress.total === 0) return 'Processing...';
-  return `Processing ${progress.current}/${progress.total}...`;
-}
-
 export default function UploadFile({ libraryPath }) {
-  // File management state and actions
-  const {
-    trackedFiles,
-    isProcessing,
-    isSaving,
-    error,
-    successMessage,
-    processingProgress,
-    stats,
-    incompleteFiles,
-    allFilesReady,
-    selectFiles,
-    cancelProcessing,
-    clearFiles,
-    updateFileMetadata,
-    removeFile,
-    saveToLibrary,
-  } = useFileUpload(libraryPath);
+  const cache = useUploadCache();
+  const [isSaving, setIsSaving] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [saveError, setSaveError] = useState(null);
 
-  // Review mode state and actions
-  const review = useReviewMode(incompleteFiles, {
-    onSaveMetadata: updateFileMetadata,
-    onRemoveFile: removeFile,
-  });
+  // Get workflow state from cache
+  const { stage, reviewAll, reviewIndex, isEditMode } = cache.workflowState;
 
-  // Reset review mode when files are cleared
-  useEffect(() => {
-    if (trackedFiles.length === 0) {
-      review.reset();
+  // Helper to update stage
+  const setStage = useCallback((newStage) => {
+    cache.updateWorkflowState({ stage: newStage });
+  }, [cache]);
+
+  // Helper to update reviewAll
+  const setReviewAll = useCallback((value) => {
+    cache.updateWorkflowState({ reviewAll: value });
+  }, [cache]);
+
+  // Handle starting review from ProcessFile
+  const handleStartReview = useCallback(() => {
+    cache.updateWorkflowState({ 
+      stage: UploadStage.REVIEW, 
+      reviewAll: false,
+      reviewIndex: 0,
+      isEditMode: false,
+    });
+  }, [cache]);
+
+  // Handle file confirmation in ReviewScreen
+  const handleConfirmFile = useCallback((trackingId) => {
+    cache.confirmFile(trackingId);
+  }, [cache]);
+
+  // Handle file unconfirmation in ReviewScreen (re-review mode)
+  const handleUnconfirmFile = useCallback((trackingId) => {
+    cache.unconfirmFile(trackingId);
+  }, [cache]);
+
+  // Handle file removal in ReviewScreen
+  const handleRemoveFile = useCallback((trackingId) => {
+    cache.removeFile(trackingId);
+  }, [cache]);
+
+  // Handle file edit in ReviewScreen
+  const handleEditFile = useCallback((trackingId, metadata) => {
+    cache.updateFileMetadata(trackingId, metadata);
+    // Also confirm after edit
+    cache.confirmFile(trackingId);
+  }, [cache]);
+
+  // Handle review completion (all files confirmed)
+  const handleReviewComplete = useCallback(() => {
+    setStage(UploadStage.COMPLETE);
+  }, [setStage]);
+
+  // Handle exit from review
+  const handleExitReview = useCallback(() => {
+    // If in reviewAll mode and all files are confirmed, go to complete
+    if (reviewAll && cache.allFilesConfirmed) {
+      setStage(UploadStage.COMPLETE);
+    } else {
+      setStage(UploadStage.PROCESS);
     }
-  }, [trackedFiles.length, review.reset]);
+    setReviewAll(false);
+  }, [reviewAll, cache.allFilesConfirmed, setStage, setReviewAll]);
 
-  // Handle file selection (resets review mode)
-  const handleSelectFiles = async () => {
-    review.reset();
-    await selectFiles();
-  };
+  // Handle going back to review from complete stage
+  const handleBackToReview = useCallback(() => {
+    cache.updateWorkflowState({ 
+      stage: UploadStage.REVIEW, 
+      reviewAll: true,
+      reviewIndex: 0,
+      isEditMode: false,
+    });
+  }, [cache]);
 
-  // Handle clear/cancel (resets everything or cancels processing)
-  const handleClearOrCancel = () => {
-    review.reset();
-    if (isProcessing) {
-      cancelProcessing();
+  // Handle review state changes (position, edit mode)
+  const handleReviewStateChange = useCallback((state) => {
+    cache.updateWorkflowState({ 
+      reviewIndex: state.currentIndex, 
+      isEditMode: state.isEditMode,
+    });
+  }, [cache]);
+
+  // Save confirmed files to library
+  const handleSaveToLibrary = useCallback(async () => {
+    if (!libraryPath) {
+      setSaveError('Library path not configured');
+      return;
     }
-    clearFiles();
-  };
 
+    const filesToSave = cache.confirmedFiles.filter(
+      f => f.metadataStatus === MetadataStatus.COMPLETE
+    );
+
+    if (filesToSave.length === 0) {
+      setSaveError('No complete files to add');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setSaveError(null);
+      setSuccessMessage(null);
+
+      const files = filesToSave.map(f => ({
+        sourcePath: f.filePath,
+        metadata: f.metadata,
+      }));
+
+      const result = await saveToLibrary(libraryPath, files);
+
+      setSuccessMessage(
+        `Added ${result.filesSaved} file(s) to library. ` +
+        `${result.artistsAdded} artist(s), ${result.albumsAdded} album(s), ${result.songsAdded} song(s).`
+      );
+
+      // Clear saved files from cache
+      cache.removeConfirmedFiles();
+      
+      // Reset to process stage
+      cache.resetWorkflowState();
+    } catch (err) {
+      setSaveError(`Failed to save to library: ${err}`);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [libraryPath, cache]);
+
+  // Reset everything
+  const handleReset = useCallback(() => {
+    cache.clearAll();
+    setSuccessMessage(null);
+    setSaveError(null);
+  }, [cache]);
+
+  // Render based on current stage
   return (
     <div className={styles.uploadContainer}>
-      {/* Header */}
-      <div className={styles.header}>
-        <h3 className={styles.title}>Select Audio Files</h3>
-        <p className={styles.hint}>
-          Files will be scanned for ID3 metadata. Complete files have artist, album, and title.
-        </p>
-      </div>
+      {/* Success message */}
+      {successMessage && (
+        <div className={styles.successMessage}>{successMessage}</div>
+      )}
 
-      {/* Select/Clear buttons */}
-      <div className={styles.actions}>
-        <button 
-          className={styles.selectButton} 
-          onClick={handleSelectFiles}
-          disabled={isProcessing}
-        >
-          {isProcessing ? formatProgress(processingProgress) : 'Select Audio Files'}
-        </button>
-        
-        {(trackedFiles.length > 0 || isProcessing) && (
-          <button 
-            className={styles.clearButton}
-            onClick={handleClearOrCancel}
-          >
-            {isProcessing ? 'Cancel' : 'Clear'}
-          </button>
-        )}
-      </div>
+      {/* Save error */}
+      {saveError && (
+        <div className={styles.error}>{saveError}</div>
+      )}
 
-      {/* Error/Success messages */}
-      {error && <div className={styles.error}>{error}</div>}
-      {successMessage && <div className={styles.successMessage}>{successMessage}</div>}
+      {/* Process stage - file selection and processing */}
+      {stage === UploadStage.PROCESS && (
+        <ProcessFile onStartReview={handleStartReview} />
+      )}
 
-      {/* File list section */}
-      {trackedFiles.length > 0 && (
-        <div className={styles.fileListContainer}>
-          <FileStats stats={stats} isProcessing={isProcessing} />
+      {/* Review stage - confirming metadata */}
+      {stage === UploadStage.REVIEW && (
+        <ReviewScreen
+          files={cache.trackedFiles}
+          reviewAll={reviewAll}
+          initialState={{ currentIndex: reviewIndex, isEditMode }}
+          onStateChange={handleReviewStateChange}
+          onComplete={handleReviewComplete}
+          onExit={handleExitReview}
+          onConfirmFile={handleConfirmFile}
+          onUnconfirmFile={handleUnconfirmFile}
+          onRemoveFile={handleRemoveFile}
+          onEditFile={handleEditFile}
+        />
+      )}
 
-          <ActionButtons
-            stats={stats}
-            allFilesReady={allFilesReady}
-            isReviewMode={review.isReviewMode}
-            editingFileId={review.editingFileId}
-            isSaving={isSaving}
-            isProcessing={isProcessing}
-            onReview={review.startReview}
-            onAddToLibrary={saveToLibrary}
-          />
+      {/* Complete stage - ready to save */}
+      {stage === UploadStage.COMPLETE && (
+        <div className={styles.completeContainer}>
+          <div className={styles.completeHeader}>
+            <h3 className={styles.completeTitle}>Ready to Add to Library</h3>
+            <p className={styles.completeMessage}>
+              {cache.confirmedFiles.length} file(s) confirmed and ready to be added.
+            </p>
+          </div>
 
-          {/* Review mode panel */}
-          {review.isReviewMode && review.currentReviewFile && (
-            <ReviewPanel
-              currentFile={review.currentReviewFile}
-              currentIndex={review.currentIndex}
-              totalFiles={review.totalIncomplete}
-              onSave={review.handleSave}
-              onSkip={review.handleSkip}
-              onExit={review.exitReview}
-            />
-          )}
+          <div className={styles.completeActions}>
+            <button
+              className={styles.saveButton}
+              onClick={handleSaveToLibrary}
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving...' : `Add ${cache.confirmedFiles.length} File(s) to Library`}
+            </button>
 
-          {/* Single file edit form */}
-          {review.editingFile && !review.isReviewMode && (
-            <MetadataForm
-              file={review.editingFile}
-              onSave={review.handleSave}
-              onCancel={review.cancelEdit}
-              onSkip={review.handleSkip}
-            />
-          )}
+            <button
+              className={styles.backButton}
+              onClick={handleBackToReview}
+              disabled={isSaving}
+            >
+              Back to Review
+            </button>
 
-          {/* File list */}
-          <FileList
-            files={trackedFiles}
-            editingFileId={review.editingFileId}
-            isReviewMode={review.isReviewMode}
-            onEdit={review.editFile}
-          />
+            <button
+              className={styles.resetButton}
+              onClick={handleReset}
+              disabled={isSaving}
+            >
+              Start Over
+            </button>
+          </div>
+
+          {/* Confirmed files list */}
+          <div className={styles.confirmedList}>
+            <h4 className={styles.confirmedListTitle}>Confirmed Files:</h4>
+            <ul className={styles.fileList}>
+              {cache.confirmedFiles.map(file => (
+                <li key={file.trackingId} className={styles.fileItem}>
+                  <span className={styles.fileName}>
+                    {file.metadata?.title || file.fileName}
+                  </span>
+                  <span className={styles.fileMeta}>
+                    {file.metadata?.artist} - {file.metadata?.album}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       )}
     </div>

@@ -5,7 +5,7 @@
  * that have incomplete ID3 tags.
  * 
  * Required fields: title, artist, album
- * These are the only fields displayed on the ESP32.
+ * Optional fields: year
  */
 
 import React, { useState, useEffect } from 'react';
@@ -21,6 +21,7 @@ export default function MetadataForm({
     title: '',
     artist: '',
     album: '',
+    year: '',
   });
   const [errors, setErrors] = useState({});
 
@@ -31,6 +32,7 @@ export default function MetadataForm({
         title: file.metadata.title || '',
         artist: file.metadata.artist || '',
         album: file.metadata.album || '',
+        year: file.metadata.year?.toString() || '',
       });
     }
   }, [file]);
@@ -62,6 +64,13 @@ export default function MetadataForm({
     if (!formData.album.trim()) {
       newErrors.album = 'Album is required';
     }
+    // Year is optional but must be a valid number if provided
+    if (formData.year.trim()) {
+      const yearNum = parseInt(formData.year.trim(), 10);
+      if (isNaN(yearNum) || yearNum < 1000 || yearNum > new Date().getFullYear() + 1) {
+        newErrors.year = 'Enter a valid year (1000-present)';
+      }
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -72,12 +81,17 @@ export default function MetadataForm({
     
     if (!validate()) return;
 
-    // Trim whitespace from all fields
+    // Trim whitespace and parse year
     const cleanedData = {
       title: formData.title.trim(),
       artist: formData.artist.trim(),
       album: formData.album.trim(),
     };
+
+    // Only include year if provided
+    if (formData.year.trim()) {
+      cleanedData.year = parseInt(formData.year.trim(), 10);
+    }
 
     onSave(file.trackingId, cleanedData);
   };
@@ -156,6 +170,25 @@ export default function MetadataForm({
           />
           {errors.album && (
             <span className={styles.errorText}>{errors.album}</span>
+          )}
+        </div>
+
+        <div className={styles.field}>
+          <label htmlFor={`year-${file?.trackingId}`} className={styles.label}>
+            Year <span className={styles.optional}>(optional)</span>
+          </label>
+          <input
+            type="text"
+            id={`year-${file?.trackingId}`}
+            name="year"
+            value={formData.year}
+            onChange={handleChange}
+            className={`${styles.input} ${errors.year ? styles.inputError : ''}`}
+            placeholder="Release year"
+            maxLength={4}
+          />
+          {errors.year && (
+            <span className={styles.errorText}>{errors.year}</span>
           )}
         </div>
 

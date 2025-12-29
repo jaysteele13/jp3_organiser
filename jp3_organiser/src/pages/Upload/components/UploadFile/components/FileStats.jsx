@@ -2,6 +2,12 @@
  * FileStats Component
  * 
  * Displays a summary bar with file counts by status.
+ * 
+ * Categories:
+ * - Confirmed: User reviewed and approved
+ * - Automated: Has metadata from ID3/fingerprint, awaiting review
+ * - Incomplete: Missing required fields
+ * - Error: Failed to process
  */
 
 import React from 'react';
@@ -13,9 +19,14 @@ export default function FileStats({ stats }) {
       <span className={styles.statItem}>
         {stats.total} file(s)
       </span>
-      {stats.complete > 0 && (
-        <span className={styles.statComplete}>
-          {stats.complete} complete
+      {stats.confirmed > 0 && (
+        <span className={styles.statConfirmed}>
+          {stats.confirmed} confirmed
+        </span>
+      )}
+      {stats.automated > 0 && (
+        <span className={styles.statAutomated}>
+          {stats.automated} automated
         </span>
       )}
       {stats.incomplete > 0 && (
