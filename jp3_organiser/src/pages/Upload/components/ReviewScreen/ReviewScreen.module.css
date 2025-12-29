@@ -239,11 +239,25 @@
 
 .progressIndicator {
   text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .progressText {
   font-size: 0.9rem;
   opacity: 0.8;
+}
+
+.confirmedBadge {
+  padding: 0.2rem 0.6rem;
+  background-color: var(--secondary);
+  color: #fff;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
 .navArrows {
@@ -285,6 +299,21 @@
 
 .confirmButton:hover {
   background-color: var(--secondary-hover);
+}
+
+.unconfirmButton {
+  flex: 2;
+  padding: 0.85rem 1.5rem;
+  background-color: transparent;
+  border: 1px solid var(--secondary);
+  color: var(--secondary);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.unconfirmButton:hover {
+  background-color: var(--secondary);
+  color: #fff;
 }
 
 .editButton {

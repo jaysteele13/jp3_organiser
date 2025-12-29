@@ -145,6 +145,27 @@ export function UploadCacheProvider({ children }) {
     }));
   }, []);
 
+  // Unconfirm a file (for re-reviewing)
+  const unconfirmFile = useCallback((trackingId) => {
+    setTrackedFiles(prev => prev.map(file => {
+      if (file.trackingId === trackingId) {
+        return {
+          ...file,
+          isConfirmed: false,
+        };
+      }
+      return file;
+    }));
+  }, []);
+
+  // Unconfirm all files (for re-reviewing all)
+  const unconfirmAllFiles = useCallback(() => {
+    setTrackedFiles(prev => prev.map(file => ({
+      ...file,
+      isConfirmed: false,
+    })));
+  }, []);
+
   // Remove a file from the list
   const removeFile = useCallback((trackingId) => {
     setTrackedFiles(prev => prev.filter(f => f.trackingId !== trackingId));
@@ -182,6 +203,8 @@ export function UploadCacheProvider({ children }) {
     clearAll,
     updateFileMetadata,
     confirmFile,
+    unconfirmFile,
+    unconfirmAllFiles,
     removeFile,
     removeCompleteFiles,
     removeConfirmedFiles,
@@ -202,6 +225,8 @@ export function UploadCacheProvider({ children }) {
     clearAll,
     updateFileMetadata,
     confirmFile,
+    unconfirmFile,
+    unconfirmAllFiles,
     removeFile,
     removeCompleteFiles,
     removeConfirmedFiles,

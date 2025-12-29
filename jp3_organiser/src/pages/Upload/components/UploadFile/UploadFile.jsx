@@ -5,6 +5,7 @@
  * 1. User selects files -> ProcessFile handles selection and processing
  * 2. Once processed, user enters ReviewScreen to confirm metadata
  * 3. After confirmation, files can be saved to library
+ * 4. User can go back to re-review all files before saving
  * 
  * @param {Object} props
  * @param {string} props.libraryPath - The configured library directory path
@@ -29,18 +30,25 @@ const Stage = {
 export default function UploadFile({ libraryPath }) {
   const cache = useUploadCache();
   const [stage, setStage] = useState(Stage.PROCESS);
+  const [reviewAll, setReviewAll] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
   const [saveError, setSaveError] = useState(null);
 
   // Handle starting review from ProcessFile
   const handleStartReview = useCallback(() => {
+    setReviewAll(false);
     setStage(Stage.REVIEW);
   }, []);
 
   // Handle file confirmation in ReviewScreen
   const handleConfirmFile = useCallback((trackingId) => {
     cache.confirmFile(trackingId);
+  }, [cache]);
+
+  // Handle file unconfirmation in ReviewScreen (re-review mode)
+  const handleUnconfirmFile = useCallback((trackingId) => {
+    cache.unconfirmFile(trackingId);
   }, [cache]);
 
   // Handle file removal in ReviewScreen
@@ -62,7 +70,19 @@ export default function UploadFile({ libraryPath }) {
 
   // Handle exit from review
   const handleExitReview = useCallback(() => {
-    setStage(Stage.PROCESS);
+    // If in reviewAll mode and all files are confirmed, go to complete
+    if (reviewAll && cache.allFilesConfirmed) {
+      setStage(Stage.COMPLETE);
+    } else {
+      setStage(Stage.PROCESS);
+    }
+    setReviewAll(false);
+  }, [reviewAll, cache.allFilesConfirmed]);
+
+  // Handle going back to review from complete stage
+  const handleBackToReview = useCallback(() => {
+    setReviewAll(true);
+    setStage(Stage.REVIEW);
   }, []);
 
   // Save confirmed files to library
@@ -103,6 +123,7 @@ export default function UploadFile({ libraryPath }) {
       
       // Reset to process stage
       setStage(Stage.PROCESS);
+      setReviewAll(false);
     } catch (err) {
       setSaveError(`Failed to save to library: ${err}`);
     } finally {
@@ -114,6 +135,7 @@ export default function UploadFile({ libraryPath }) {
   const handleReset = useCallback(() => {
     cache.clearAll();
     setStage(Stage.PROCESS);
+    setReviewAll(false);
     setSuccessMessage(null);
     setSaveError(null);
   }, [cache]);
@@ -140,9 +162,11 @@ export default function UploadFile({ libraryPath }) {
       {stage === Stage.REVIEW && (
         <ReviewScreen
           files={cache.trackedFiles}
+          reviewAll={reviewAll}
           onComplete={handleReviewComplete}
           onExit={handleExitReview}
           onConfirmFile={handleConfirmFile}
+          onUnconfirmFile={handleUnconfirmFile}
           onRemoveFile={handleRemoveFile}
           onEditFile={handleEditFile}
         />
@@ -169,7 +193,7 @@ export default function UploadFile({ libraryPath }) {
 
             <button
               className={styles.backButton}
-              onClick={() => setStage(Stage.REVIEW)}
+              onClick={handleBackToReview}
               disabled={isSaving}
             >
               Back to Review

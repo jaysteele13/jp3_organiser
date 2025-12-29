@@ -64,7 +64,7 @@ export default function ProcessFile({ onStartReview }) {
       <div className={styles.header}>
         <h3 className={styles.title}>Select Audio Files</h3>
         <p className={styles.hint}>
-          Files will be scanned for metadata using ID3 tags and AcoustID fingerprinting.
+          Files will be scanned for metadata using ID3 tags and AcousticID fingerprinting.
         </p>
       </div>
 
@@ -123,7 +123,7 @@ export default function ProcessFile({ onStartReview }) {
                     {file.metadataSource && file.metadataSource !== 'unknown' && (
                       <span className={styles.sourceTag}>
                         {file.metadataSource === 'id3' && ' (ID3)'}
-                        {file.metadataSource === 'fingerprint' && ' (Fingerprint)'}
+                        {file.metadataSource === 'acoustid' && ' (AcoustID)'}
                         {file.metadataSource === 'manual' && ' (Manual)'}
                       </span>
                     )}

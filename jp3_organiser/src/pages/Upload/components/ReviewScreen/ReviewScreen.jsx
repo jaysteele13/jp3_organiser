@@ -11,12 +11,15 @@
  * - Confirm details or remove from list
  * - Edit metadata inline
  * - Keyboard shortcut: Shift+Enter to confirm
+ * - Re-review mode: view all files including confirmed ones
  * 
  * @param {Object} props
  * @param {Array} props.files - Files to review
+ * @param {boolean} props.reviewAll - If true, show all files including confirmed
  * @param {function} props.onComplete - Called when all files are reviewed
  * @param {function} props.onExit - Called when user exits review
  * @param {function} props.onConfirmFile - Called when a file is confirmed
+ * @param {function} props.onUnconfirmFile - Called when a file is unconfirmed (re-review mode)
  * @param {function} props.onRemoveFile - Called when a file is removed
  * @param {function} props.onEditFile - Called when file metadata is edited
  */
@@ -30,17 +33,21 @@ import styles from './ReviewScreen.module.css';
 
 export default function ReviewScreen({
   files,
+  reviewAll = false,
   onComplete,
   onExit,
   onConfirmFile,
+  onUnconfirmFile,
   onRemoveFile,
   onEditFile,
 }) {
   // Navigation hook
   const navigation = useReviewNavigation(files, {
     onConfirm: onConfirmFile,
+    onUnconfirm: onUnconfirmFile,
     onRemove: onRemoveFile,
     onEdit: onEditFile,
+    reviewAll,
   });
 
   // Audio player hook
@@ -54,17 +61,12 @@ export default function ReviewScreen({
     audio.stop();
   }, [navigation.currentFile?.trackingId]);
 
-  // Check if review is complete
+  // Check if review is complete (only trigger if not in reviewAll mode)
   useEffect(() => {
-    if (navigation.isComplete && files.length > 0) {
+    if (!reviewAll && navigation.isComplete && files.length > 0) {
       onComplete();
     }
-  }, [navigation.isComplete, files.length, onComplete]);
-
-  // Handle save from edit mode
-  const handleSaveEdit = (trackingId, metadata) => {
-    navigation.saveEdit(trackingId, metadata);
-  };
+  }, [reviewAll, navigation.isComplete, files.length, onComplete]);
 
   // If no files, show nothing
   if (!navigation.currentFile) {
@@ -84,9 +86,11 @@ export default function ReviewScreen({
     <div className={styles.container}>
       {/* Header */}
       <div className={styles.header}>
-        <h2 className={styles.title}>Review Song Details</h2>
+        <h2 className={styles.title}>
+          {reviewAll ? 'Re-Review Songs' : 'Review Song Details'}
+        </h2>
         <button className={styles.exitButton} onClick={onExit}>
-          Exit Review
+          {reviewAll ? 'Done Reviewing' : 'Exit Review'}
         </button>
       </div>
 
@@ -97,7 +101,7 @@ export default function ReviewScreen({
           <div className={styles.editContainer}>
             <MetadataForm
               file={navigation.currentFile}
-              onSave={handleSaveEdit}
+              onSave={navigation.saveEdit}
               onCancel={navigation.exitEditMode}
             />
           </div>
@@ -105,7 +109,9 @@ export default function ReviewScreen({
           /* View mode */
           <SongCard
             file={navigation.currentFile}
+            isConfirmed={navigation.currentFile.isConfirmed}
             isPlaying={audio.isPlayingFile(navigation.currentFile.filePath)}
+            isLoading={audio.isLoading}
             playbackPosition={audio.playbackPosition}
             currentTime={audio.currentTime}
             duration={audio.duration}
@@ -120,13 +126,15 @@ export default function ReviewScreen({
         {!navigation.isEditMode && (
           <NavigationControls
             currentPosition={navigation.currentPosition}
-            totalPending={navigation.totalPending}
+            totalFiles={navigation.totalFiles}
             canGoPrevious={navigation.canGoPrevious}
             canGoNext={navigation.canGoNext}
-            isEditMode={navigation.isEditMode}
+            isConfirmed={navigation.currentFile.isConfirmed}
+            reviewAll={reviewAll}
             onPrevious={navigation.goPrevious}
             onNext={navigation.goNext}
             onConfirm={navigation.confirmCurrent}
+            onUnconfirm={navigation.unconfirmCurrent}
             onRemove={navigation.removeCurrent}
             onEdit={navigation.enterEditMode}
           />

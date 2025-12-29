@@ -3,33 +3,41 @@
  * 
  * Manages navigation through files during review process.
  * Handles confirmation, removal, and edit mode.
+ * 
+ * Supports two modes:
+ * - Normal mode: Only shows pending (unconfirmed) files
+ * - Review All mode: Shows all files, allows un-confirming
  */
 
 import { useState, useCallback, useMemo } from 'react';
 
-export function useReviewNavigation(files, { onConfirm, onRemove, onEdit }) {
+export function useReviewNavigation(files, { onConfirm, onUnconfirm, onRemove, onEdit, reviewAll = false }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Get files that haven't been confirmed or removed
-  const pendingFiles = useMemo(() => 
-    files.filter(f => !f.isConfirmed),
-    [files]
-  );
+  // Get files to display based on mode
+  const displayFiles = useMemo(() => {
+    if (reviewAll) {
+      // Show all non-error files in reviewAll mode
+      return files.filter(f => f.metadataStatus !== 'error');
+    }
+    // Normal mode: only show pending (unconfirmed) files
+    return files.filter(f => !f.isConfirmed);
+  }, [files, reviewAll]);
 
   // Current file being reviewed
   const currentFile = useMemo(() => {
-    if (pendingFiles.length === 0) return null;
-    const safeIndex = Math.min(currentIndex, pendingFiles.length - 1);
-    return pendingFiles[safeIndex];
-  }, [pendingFiles, currentIndex]);
+    if (displayFiles.length === 0) return null;
+    const safeIndex = Math.min(currentIndex, displayFiles.length - 1);
+    return displayFiles[safeIndex];
+  }, [displayFiles, currentIndex]);
 
   // Navigation stats
-  const totalPending = pendingFiles.length;
-  const currentPosition = totalPending > 0 ? Math.min(currentIndex + 1, totalPending) : 0;
+  const totalFiles = displayFiles.length;
+  const currentPosition = totalFiles > 0 ? Math.min(currentIndex + 1, totalFiles) : 0;
 
   // Check if we can navigate
-  const canGoNext = currentIndex < pendingFiles.length - 1;
+  const canGoNext = currentIndex < displayFiles.length - 1;
   const canGoPrevious = currentIndex > 0;
 
   // Go to next file
@@ -54,13 +62,23 @@ export function useReviewNavigation(files, { onConfirm, onRemove, onEdit }) {
     
     onConfirm(currentFile.trackingId);
     
-    // Stay at current index (next file will slide into this position)
-    // Adjust if we're at the end
-    if (currentIndex >= pendingFiles.length - 1 && currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1);
+    // In reviewAll mode, stay on the same file (just mark it confirmed)
+    // In normal mode, adjust index as the file will be removed from pending list
+    if (!reviewAll) {
+      if (currentIndex >= displayFiles.length - 1 && currentIndex > 0) {
+        setCurrentIndex(prev => prev - 1);
+      }
     }
     setIsEditMode(false);
-  }, [currentFile, currentIndex, pendingFiles.length, onConfirm]);
+  }, [currentFile, currentIndex, displayFiles.length, onConfirm, reviewAll]);
+
+  // Unconfirm current file (for re-review mode)
+  const unconfirmCurrent = useCallback(() => {
+    if (!currentFile || !onUnconfirm) return;
+    
+    onUnconfirm(currentFile.trackingId);
+    setIsEditMode(false);
+  }, [currentFile, onUnconfirm]);
 
   // Remove current file from list
   const removeCurrent = useCallback(() => {
@@ -69,11 +87,11 @@ export function useReviewNavigation(files, { onConfirm, onRemove, onEdit }) {
     onRemove(currentFile.trackingId);
     
     // Adjust index if needed
-    if (currentIndex >= pendingFiles.length - 1 && currentIndex > 0) {
+    if (currentIndex >= displayFiles.length - 1 && currentIndex > 0) {
       setCurrentIndex(prev => prev - 1);
     }
     setIsEditMode(false);
-  }, [currentFile, currentIndex, pendingFiles.length, onRemove]);
+  }, [currentFile, currentIndex, displayFiles.length, onRemove]);
 
   // Enter edit mode
   const enterEditMode = useCallback(() => {
@@ -97,6 +115,12 @@ export function useReviewNavigation(files, { onConfirm, onRemove, onEdit }) {
     setIsEditMode(false);
   }, []);
 
+  // Check if all files are confirmed (only relevant in normal mode)
+  const isComplete = useMemo(() => {
+    if (reviewAll) return false; // Never auto-complete in reviewAll mode
+    return displayFiles.length === 0;
+  }, [displayFiles.length, reviewAll]);
+
   return {
     // State
     currentIndex,
@@ -104,16 +128,17 @@ export function useReviewNavigation(files, { onConfirm, onRemove, onEdit }) {
     
     // Computed
     currentFile,
-    totalPending,
+    totalFiles,
     currentPosition,
     canGoNext,
     canGoPrevious,
-    isComplete: pendingFiles.length === 0,
+    isComplete,
     
     // Actions
     goNext,
     goPrevious,
     confirmCurrent,
+    unconfirmCurrent,
     removeCurrent,
     enterEditMode,
     exitEditMode,

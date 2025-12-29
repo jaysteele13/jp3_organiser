@@ -3,6 +3,8 @@
  * 
  * Navigation and action buttons for the review screen.
  * Includes previous/next, confirm/remove, and edit buttons.
+ * 
+ * Supports reviewAll mode where files can be un-confirmed.
  */
 
 import React from 'react';
@@ -10,13 +12,15 @@ import styles from '../ReviewScreen.module.css';
 
 export default function NavigationControls({
   currentPosition,
-  totalPending,
+  totalFiles,
   canGoPrevious,
   canGoNext,
-  isEditMode,
+  isConfirmed,
+  reviewAll,
   onPrevious,
   onNext,
   onConfirm,
+  onUnconfirm,
   onRemove,
   onEdit,
 }) {
@@ -25,8 +29,14 @@ export default function NavigationControls({
       {/* Progress indicator */}
       <div className={styles.progressIndicator}>
         <span className={styles.progressText}>
-          {currentPosition} of {totalPending} remaining
+          {reviewAll 
+            ? `${currentPosition} of ${totalFiles} files`
+            : `${currentPosition} of ${totalFiles} remaining`
+          }
         </span>
+        {reviewAll && isConfirmed && (
+          <span className={styles.confirmedBadge}>Confirmed</span>
+        )}
       </div>
 
       {/* Navigation arrows */}
@@ -51,18 +61,28 @@ export default function NavigationControls({
 
       {/* Action buttons */}
       <div className={styles.actionButtons}>
-        <button 
-          className={styles.confirmButton}
-          onClick={onConfirm}
-          title="Confirm details (Shift+Enter)"
-        >
-          Confirm Details
-        </button>
+        {/* Show confirm/unconfirm based on state */}
+        {reviewAll && isConfirmed ? (
+          <button 
+            className={styles.unconfirmButton}
+            onClick={onUnconfirm}
+            title="Unconfirm to make changes"
+          >
+            Unconfirm
+          </button>
+        ) : (
+          <button 
+            className={styles.confirmButton}
+            onClick={onConfirm}
+            title="Confirm details (Shift+Enter)"
+          >
+            Confirm Details
+          </button>
+        )}
         
         <button 
           className={styles.editButton}
           onClick={onEdit}
-          disabled={isEditMode}
         >
           Edit
         </button>
