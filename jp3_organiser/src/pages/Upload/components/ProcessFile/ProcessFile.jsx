@@ -125,27 +125,62 @@ export default function ProcessFile({ onStartReview }) {
     }
   };
 
+  // Determine what state we're in
+  const hasFiles = trackedFiles.length > 0;
+  const showSelectButton = !hasFiles && !isProcessing;
+  const showProcessingButton = isProcessing;
+  const showReviewPrompt = hasFiles && isProcessingComplete;
+
   return (
     <div className={styles.container}>
-      {/* Header */}
+      {/* Header - changes based on state */}
       <div className={styles.header}>
-        <h3 className={styles.title}>Select Audio Files</h3>
+        <h3 className={styles.title}>
+          {!hasFiles && !isProcessing && 'Select Audio Files'}
+          {isProcessing && 'Processing Files'}
+          {hasFiles && !isProcessing && 'Review Files'}
+        </h3>
         <p className={styles.hint}>
-          Files will be scanned for metadata using ID3 tags and audio fingerprinting.
+          {!hasFiles && !isProcessing && 'Files will be scanned for metadata using ID3 tags and audio fingerprinting.'}
+          {isProcessing && 'Extracting metadata from your audio files...'}
+          {hasFiles && !isProcessing && 'Review and confirm metadata before adding to your library.'}
         </p>
       </div>
 
-      {/* Select/Clear buttons */}
+      {/* Action buttons */}
       <div className={styles.actions}>
-        <button 
-          className={styles.selectButton} 
-          onClick={handleSelectFiles}
-          disabled={isProcessing}
-        >
-          {isProcessing ? formatProgress(processingProgress) : 'Select Audio Files'}
-        </button>
+        {/* Select button - only when no files */}
+        {showSelectButton && (
+          <button 
+            className={styles.selectButton} 
+            onClick={handleSelectFiles}
+          >
+            Select Audio Files
+          </button>
+        )}
+
+        {/* Processing indicator */}
+        {showProcessingButton && (
+          <button 
+            className={styles.selectButton} 
+            disabled
+          >
+            {formatProgress(processingProgress)}
+          </button>
+        )}
+
+        {/* Review button - when files ready */}
+        {showReviewPrompt && (
+          <button 
+            className={styles.reviewButton}
+            onClick={handleStartReview}
+          >
+            Review {stats.total} File(s)
+          </button>
+        )}
         
-        {(trackedFiles.length > 0 || isProcessing) && (
+        {/* Clear/Cancel button */}
+        {(hasFiles || isProcessing) && (
           <button 
             className={styles.clearButton}
             onClick={handleClearOrCancel}
@@ -159,24 +194,9 @@ export default function ProcessFile({ onStartReview }) {
       {error && <div className={styles.error}>{error}</div>}
 
       {/* File list section */}
-      {trackedFiles.length > 0 && (
+      {hasFiles && (
         <div className={styles.fileListContainer}>
           <FileStats stats={stats} isProcessing={isProcessing} />
-
-          {/* Processing complete - show review button */}
-          {isProcessingComplete && (
-            <div className={styles.reviewPrompt}>
-              <p className={styles.reviewMessage}>
-                Processing complete. Review and confirm your files before adding to the library.
-              </p>
-              <button 
-                className={styles.reviewButton}
-                onClick={handleStartReview}
-              >
-                Review {stats.total} File(s)
-              </button>
-            </div>
-          )}
 
           {/* Grouped file sections */}
           <div className={styles.fileSections}>
