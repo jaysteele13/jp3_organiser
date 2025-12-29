@@ -15,6 +15,20 @@
 import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { MetadataStatus } from '../services';
 
+/**
+ * Metadata source types for tracking how metadata was obtained.
+ */
+export const MetadataSource = {
+  /** Metadata source not yet determined */
+  UNKNOWN: 'unknown',
+  /** Metadata from ID3 tags */
+  ID3: 'id3',
+  /** Metadata from AcoustID API */
+  ACOUSTID: 'acoustid',
+  /** Metadata entered manually by user */
+  MANUAL: 'manual',
+};
+
 // =============================================================================
 // Context
 // =============================================================================
@@ -48,6 +62,8 @@ export function UploadCacheProvider({ children }) {
     complete: trackedFiles.filter(f => f.metadataStatus === MetadataStatus.COMPLETE).length,
     incomplete: trackedFiles.filter(f => f.metadataStatus === MetadataStatus.INCOMPLETE).length,
     error: trackedFiles.filter(f => f.metadataStatus === MetadataStatus.ERROR).length,
+    confirmed: trackedFiles.filter(f => f.isConfirmed).length,
+    pending: trackedFiles.filter(f => !f.isConfirmed && f.metadataStatus !== MetadataStatus.ERROR).length,
   }), [trackedFiles]);
 
   // Get incomplete files for review
@@ -56,11 +72,29 @@ export function UploadCacheProvider({ children }) {
     [trackedFiles]
   );
 
+  // Get files pending confirmation (not yet confirmed by user)
+  const pendingConfirmation = useMemo(() =>
+    trackedFiles.filter(f => !f.isConfirmed && f.metadataStatus !== MetadataStatus.ERROR),
+    [trackedFiles]
+  );
+
+  // Get confirmed files (ready to add to library)
+  const confirmedFiles = useMemo(() =>
+    trackedFiles.filter(f => f.isConfirmed),
+    [trackedFiles]
+  );
+
   // Check if all files are ready (complete or skipped, ignoring errors)
   const allFilesReady = useMemo(() => {
     const nonErrorFiles = trackedFiles.filter(f => f.metadataStatus !== MetadataStatus.ERROR);
     return nonErrorFiles.length > 0 && stats.incomplete === 0;
   }, [trackedFiles, stats.incomplete]);
+
+  // Check if all non-error files have been confirmed
+  const allFilesConfirmed = useMemo(() => {
+    const nonErrorFiles = trackedFiles.filter(f => f.metadataStatus !== MetadataStatus.ERROR);
+    return nonErrorFiles.length > 0 && nonErrorFiles.every(f => f.isConfirmed);
+  }, [trackedFiles]);
 
   // Add a single file to the cache
   const addFile = useCallback((file) => {
@@ -91,6 +125,20 @@ export function UploadCacheProvider({ children }) {
           ...file,
           metadata: { ...file.metadata, ...metadata },
           metadataStatus: MetadataStatus.COMPLETE,
+          metadataSource: 'manual', // Mark as manually edited
+        };
+      }
+      return file;
+    }));
+  }, []);
+
+  // Mark a file as confirmed by user
+  const confirmFile = useCallback((trackingId) => {
+    setTrackedFiles(prev => prev.map(file => {
+      if (file.trackingId === trackingId) {
+        return {
+          ...file,
+          isConfirmed: true,
         };
       }
       return file;
@@ -109,6 +157,11 @@ export function UploadCacheProvider({ children }) {
     );
   }, []);
 
+  // Remove confirmed files (after saving to library)
+  const removeConfirmedFiles = useCallback(() => {
+    setTrackedFiles(prev => prev.filter(f => !f.isConfirmed));
+  }, []);
+
   const value = useMemo(() => ({
     // State
     trackedFiles,
@@ -117,7 +170,10 @@ export function UploadCacheProvider({ children }) {
     // Computed
     stats,
     incompleteFiles,
+    pendingConfirmation,
+    confirmedFiles,
     allFilesReady,
+    allFilesConfirmed,
     
     // Actions
     addFile,
@@ -125,8 +181,10 @@ export function UploadCacheProvider({ children }) {
     setFiles,
     clearAll,
     updateFileMetadata,
+    confirmFile,
     removeFile,
     removeCompleteFiles,
+    removeConfirmedFiles,
     setError,
     clearError: () => setError(null),
   }), [
@@ -134,14 +192,19 @@ export function UploadCacheProvider({ children }) {
     error,
     stats,
     incompleteFiles,
+    pendingConfirmation,
+    confirmedFiles,
     allFilesReady,
+    allFilesConfirmed,
     addFile,
     addFiles,
     setFiles,
     clearAll,
     updateFileMetadata,
+    confirmFile,
     removeFile,
     removeCompleteFiles,
+    removeConfirmedFiles,
   ]);
 
   return (

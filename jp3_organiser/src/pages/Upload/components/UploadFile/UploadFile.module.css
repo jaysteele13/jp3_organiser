@@ -321,3 +321,90 @@
   opacity: 0.7;
   cursor: wait;
 }
+
+/* Complete stage styles */
+.completeContainer {
+  margin-top: 1rem;
+  background-color: var(--secondary);
+  border-radius: 8px;
+  padding: 1.5rem;
+  color: #fff;
+}
+
+.completeHeader {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.completeTitle {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.completeMessage {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.completeActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.saveButton {
+  flex: 2;
+  padding: 0.85rem 1.5rem;
+  background-color: #fff;
+  color: var(--secondary);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.saveButton:hover {
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.saveButton:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.backButton {
+  flex: 1;
+  padding: 0.85rem 1rem;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+
+.backButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.resetButton {
+  flex: 1;
+  padding: 0.85rem 1rem;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.resetButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.confirmedList {
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.confirmedListTitle {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  opacity: 0.9;
+}
