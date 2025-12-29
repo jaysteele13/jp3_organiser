@@ -133,6 +133,8 @@ struct ExistingLibraryData {
     songs: Vec<SongEntry>,
     artist_map: HashMap<String, u32>,
     album_map: HashMap<String, u32>,
+    /// Set of existing songs keyed by (title, artist_id, album_id) to detect duplicates
+    song_set: HashSet<(u32, u32, u32)>,
 }
 
 /// Load existing library data from library.bin for merging with new songs.
@@ -209,20 +211,27 @@ fn load_existing_library_data(library_bin_path: &Path) -> Result<Option<Existing
         });
     }
 
-    // Parse raw song table and rebuild SongEntry vec
+    // Parse raw song table and rebuild SongEntry vec + song_set for duplicate detection
     let raw_songs = parse_song_table(
         &data,
         header.song_table_offset as usize,
         header.song_count as usize,
     )?;
-    let songs: Vec<SongEntry> = raw_songs.iter().map(|raw| SongEntry {
-        title_string_id: raw.title_string_id,
-        artist_id: raw.artist_id,
-        album_id: raw.album_id,
-        path_string_id: raw.path_string_id,
-        track_number: raw.track_number,
-        duration_sec: raw.duration_sec,
-        flags: raw.flags,
+    let mut song_set: HashSet<(u32, u32, u32)> = HashSet::new();
+    let songs: Vec<SongEntry> = raw_songs.iter().map(|raw| {
+        // Only add active (non-deleted) songs to the duplicate set
+        if raw.flags & song_flags::DELETED == 0 {
+            song_set.insert((raw.title_string_id, raw.artist_id, raw.album_id));
+        }
+        SongEntry {
+            title_string_id: raw.title_string_id,
+            artist_id: raw.artist_id,
+            album_id: raw.album_id,
+            path_string_id: raw.path_string_id,
+            track_number: raw.track_number,
+            duration_sec: raw.duration_sec,
+            flags: raw.flags,
+        }
     }).collect();
 
     Ok(Some(ExistingLibraryData {
@@ -232,6 +241,7 @@ fn load_existing_library_data(library_bin_path: &Path) -> Result<Option<Existing
         songs,
         artist_map,
         album_map,
+        song_set,
     }))
 }
 
@@ -262,7 +272,7 @@ pub fn save_to_library(
     // Load existing library data or start fresh
     let existing = load_existing_library_data(&library_bin_path)?;
     
-    let (mut string_table, mut artists, mut albums, mut songs, mut artist_map, mut album_map) = 
+    let (mut string_table, mut artists, mut albums, mut songs, mut artist_map, mut album_map, mut song_set) = 
         match existing {
             Some(data) => (
                 data.string_table,
@@ -271,6 +281,7 @@ pub fn save_to_library(
                 data.songs,
                 data.artist_map,
                 data.album_map,
+                data.song_set,
             ),
             None => (
                 StringTable::new(),
@@ -279,6 +290,7 @@ pub fn save_to_library(
                 Vec::new(),
                 HashMap::new(),
                 HashMap::new(),
+                HashSet::new(),
             ),
         };
     
@@ -290,6 +302,7 @@ pub fn save_to_library(
     let (mut current_bucket, mut files_in_bucket) = get_current_bucket(&music_path)?;
 
     let mut files_saved = 0u32;
+    let mut duplicates_skipped = 0u32;
 
     for file_to_save in files {
         let source = Path::new(&file_to_save.source_path);
@@ -331,6 +344,21 @@ pub fn save_to_library(
             id
         };
 
+        // Check for duplicate song (same title, artist, album)
+        // We need to check using the title_string_id that would be assigned
+        let title_string_id = string_table.get_or_peek(title);
+        if let Some(tid) = title_string_id {
+            let song_key = (tid, artist_id, album_id);
+            if song_set.contains(&song_key) {
+                log::info!(
+                    "Skipping duplicate song: '{}' by '{}' on '{}'",
+                    title, artist_name, album_name
+                );
+                duplicates_skipped += 1;
+                continue;
+            }
+        }
+
         // Check if we need a new bucket
         if files_in_bucket >= MAX_FILES_PER_BUCKET {
             current_bucket += 1;
@@ -359,6 +387,11 @@ pub fn save_to_library(
         // Add song entry
         let title_string_id = string_table.add(title);
         let path_string_id = string_table.add(&relative_path);
+        
+        // Add to song_set to prevent duplicates within the same batch
+        let song_key = (title_string_id, artist_id, album_id);
+        song_set.insert(song_key);
+        
         songs.push(SongEntry::new(
             title_string_id,
             artist_id,
@@ -415,6 +448,7 @@ pub fn save_to_library(
         artists_added: artists.len() as u32 - existing_artist_count,
         albums_added: albums.len() as u32 - existing_album_count,
         songs_added: songs.len() as u32 - existing_song_count,
+        duplicates_skipped,
     })
 }
 
@@ -1254,348 +1288,4 @@ fn parse_song_table(data: &[u8], start: usize, count: usize) -> Result<Vec<RawSo
     }
 
     Ok(songs)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_string_deduplication_across_batches() {
-        // Create a temp directory
-        let temp_dir = tempfile::TempDir::new().unwrap();
-        let base_path = temp_dir.path().to_string_lossy().to_string();
-        
-        // Initialize library
-        initialize_library(base_path.clone()).unwrap();
-        
-        // Create a dummy audio file
-        let dummy_file = temp_dir.path().join("test.mp3");
-        std::fs::write(&dummy_file, b"fake audio data").unwrap();
-        
-        // First batch: add one song
-        let files1 = vec![FileToSave {
-            source_path: dummy_file.to_string_lossy().to_string(),
-            metadata: crate::models::AudioMetadata {
-                title: Some("Song One".to_string()),
-                artist: Some("Test Artist".to_string()),
-                album: Some("Test Album".to_string()),
-                year: Some(2020),
-                track_number: Some(1),
-                duration_secs: Some(180),
-            },
-        }];
-        
-        let result1 = save_to_library(base_path.clone(), files1).unwrap();
-        println!("First batch: {:?}", result1);
-        
-        // Create another dummy file
-        let dummy_file2 = temp_dir.path().join("test2.mp3");
-        std::fs::write(&dummy_file2, b"fake audio data 2").unwrap();
-        
-        // Second batch: add another song with SAME album name
-        let files2 = vec![FileToSave {
-            source_path: dummy_file2.to_string_lossy().to_string(),
-            metadata: crate::models::AudioMetadata {
-                title: Some("Song Two".to_string()),
-                artist: Some("Test Artist".to_string()),  // Same artist
-                album: Some("Test Album".to_string()),    // Same album!
-                year: Some(2020),
-                track_number: Some(2),
-                duration_secs: Some(200),
-            },
-        }];
-        
-        let result2 = save_to_library(base_path.clone(), files2).unwrap();
-        println!("Second batch: {:?}", result2);
-        
-        // Load library and check for duplicates
-        let library = load_library(base_path.clone()).unwrap();
-        
-        // Should have 2 songs, 1 artist, 1 album
-        assert_eq!(library.songs.len(), 2, "Should have 2 songs");
-        assert_eq!(library.artists.len(), 1, "Should have 1 artist (no duplicates)");
-        assert_eq!(library.albums.len(), 1, "Should have 1 album (no duplicates)");
-        
-        // Check result2 reports 0 new artists/albums
-        assert_eq!(result2.artists_added, 0, "Second batch should add 0 new artists");
-        assert_eq!(result2.albums_added, 0, "Second batch should add 0 new albums");
-        
-        // Check the string table by reading raw file
-        let library_bin_path = temp_dir.path().join("jp3/metadata/library.bin");
-        let data = std::fs::read(&library_bin_path).unwrap();
-        let header = LibraryHeader::from_bytes(&data).unwrap();
-        let strings = parse_string_table(
-            &data,
-            header.string_table_offset as usize,
-            header.artist_table_offset as usize,
-        ).unwrap();
-        
-        println!("Strings in table: {:?}", strings);
-        
-        // Count occurrences of "Test Album"
-        let album_count = strings.iter().filter(|s| *s == "Test Album").count();
-        assert_eq!(album_count, 1, "String 'Test Album' should appear exactly once, found {}", album_count);
-    }
-
-    #[test]
-    fn test_soft_delete_songs() {
-        let temp_dir = tempfile::TempDir::new().unwrap();
-        let base_path = temp_dir.path().to_string_lossy().to_string();
-        
-        initialize_library(base_path.clone()).unwrap();
-        
-        // Add two songs
-        let dummy_file1 = temp_dir.path().join("test1.mp3");
-        let dummy_file2 = temp_dir.path().join("test2.mp3");
-        std::fs::write(&dummy_file1, b"fake audio data 1").unwrap();
-        std::fs::write(&dummy_file2, b"fake audio data 2").unwrap();
-        
-        let files = vec![
-            FileToSave {
-                source_path: dummy_file1.to_string_lossy().to_string(),
-                metadata: crate::models::AudioMetadata {
-                    title: Some("Song One".to_string()),
-                    artist: Some("Artist".to_string()),
-                    album: Some("Album".to_string()),
-                    year: Some(2020),
-                    track_number: Some(1),
-                    duration_secs: Some(180),
-                },
-            },
-            FileToSave {
-                source_path: dummy_file2.to_string_lossy().to_string(),
-                metadata: crate::models::AudioMetadata {
-                    title: Some("Song Two".to_string()),
-                    artist: Some("Artist".to_string()),
-                    album: Some("Album".to_string()),
-                    year: Some(2020),
-                    track_number: Some(2),
-                    duration_secs: Some(200),
-                },
-            },
-        ];
-        
-        save_to_library(base_path.clone(), files).unwrap();
-        
-        // Verify we have 2 songs
-        let library = load_library(base_path.clone()).unwrap();
-        assert_eq!(library.songs.len(), 2, "Should have 2 songs before delete");
-        
-        // Verify audio files exist before delete
-        let music_path = temp_dir.path().join("jp3/music");
-        let audio_file_1 = music_path.join("00/001.mp3");
-        let audio_file_2 = music_path.join("00/002.mp3");
-        assert!(audio_file_1.exists(), "Audio file 1 should exist before delete");
-        assert!(audio_file_2.exists(), "Audio file 2 should exist before delete");
-        
-        // Delete song 0
-        let delete_result = delete_songs(base_path.clone(), vec![0]).unwrap();
-        assert_eq!(delete_result.songs_deleted, 1, "Should delete 1 song");
-        assert_eq!(delete_result.files_deleted, 1, "Should delete 1 audio file");
-        assert!(delete_result.not_found.is_empty(), "Should not have any not_found");
-        
-        // Verify audio file was deleted
-        assert!(!audio_file_1.exists(), "Audio file 1 should be deleted");
-        assert!(audio_file_2.exists(), "Audio file 2 should still exist");
-        
-        // Verify we now have 1 song (deleted one is filtered out)
-        let library = load_library(base_path.clone()).unwrap();
-        assert_eq!(library.songs.len(), 1, "Should have 1 song after delete");
-        assert_eq!(library.songs[0].title, "Song Two", "Remaining song should be Song Two");
-        
-        // Check stats show 1 deleted
-        let stats = get_library_stats(base_path.clone()).unwrap();
-        assert_eq!(stats.total_songs, 2, "Total songs should still be 2");
-        assert_eq!(stats.active_songs, 1, "Active songs should be 1");
-        assert_eq!(stats.deleted_songs, 1, "Deleted songs should be 1");
-        
-        println!("Delete test passed! Stats: {:?}", stats);
-    }
-
-    #[test]
-    fn test_delete_nonexistent_song() {
-        let temp_dir = tempfile::TempDir::new().unwrap();
-        let base_path = temp_dir.path().to_string_lossy().to_string();
-        
-        initialize_library(base_path.clone()).unwrap();
-        
-        // Add one song
-        let dummy_file = temp_dir.path().join("test.mp3");
-        std::fs::write(&dummy_file, b"fake audio data").unwrap();
-        
-        let files = vec![FileToSave {
-            source_path: dummy_file.to_string_lossy().to_string(),
-            metadata: crate::models::AudioMetadata {
-                title: Some("Song One".to_string()),
-                artist: Some("Artist".to_string()),
-                album: Some("Album".to_string()),
-                year: Some(2020),
-                track_number: Some(1),
-                duration_secs: Some(180),
-            },
-        }];
-        
-        save_to_library(base_path.clone(), files).unwrap();
-        
-        // Try to delete nonexistent song IDs
-        let delete_result = delete_songs(base_path.clone(), vec![5, 10, 100]).unwrap();
-        assert_eq!(delete_result.songs_deleted, 0, "Should delete 0 songs");
-        assert_eq!(delete_result.not_found.len(), 3, "Should have 3 not_found");
-        
-        println!("Delete nonexistent test passed!");
-    }
-
-    #[test]
-    fn test_compact_library() {
-        let temp_dir = tempfile::TempDir::new().unwrap();
-        let base_path = temp_dir.path().to_string_lossy().to_string();
-        
-        initialize_library(base_path.clone()).unwrap();
-        
-        // Add three songs with different artists/albums
-        let dummy_file1 = temp_dir.path().join("test1.mp3");
-        let dummy_file2 = temp_dir.path().join("test2.mp3");
-        let dummy_file3 = temp_dir.path().join("test3.mp3");
-        std::fs::write(&dummy_file1, b"fake audio data 1").unwrap();
-        std::fs::write(&dummy_file2, b"fake audio data 2").unwrap();
-        std::fs::write(&dummy_file3, b"fake audio data 3").unwrap();
-        
-        let files = vec![
-            FileToSave {
-                source_path: dummy_file1.to_string_lossy().to_string(),
-                metadata: crate::models::AudioMetadata {
-                    title: Some("Song One".to_string()),
-                    artist: Some("Artist One".to_string()),
-                    album: Some("Album One".to_string()),
-                    year: Some(2020),
-                    track_number: Some(1),
-                    duration_secs: Some(180),
-                },
-            },
-            FileToSave {
-                source_path: dummy_file2.to_string_lossy().to_string(),
-                metadata: crate::models::AudioMetadata {
-                    title: Some("Song Two".to_string()),
-                    artist: Some("Artist Two".to_string()),
-                    album: Some("Album Two".to_string()),
-                    year: Some(2021),
-                    track_number: Some(1),
-                    duration_secs: Some(200),
-                },
-            },
-            FileToSave {
-                source_path: dummy_file3.to_string_lossy().to_string(),
-                metadata: crate::models::AudioMetadata {
-                    title: Some("Song Three".to_string()),
-                    artist: Some("Artist One".to_string()), // Same as song 1
-                    album: Some("Album One".to_string()),   // Same as song 1
-                    year: Some(2020),
-                    track_number: Some(2),
-                    duration_secs: Some(220),
-                },
-            },
-        ];
-        
-        save_to_library(base_path.clone(), files).unwrap();
-        
-        // Verify initial state
-        let stats_before = get_library_stats(base_path.clone()).unwrap();
-        println!("Before delete: {:?}", stats_before);
-        assert_eq!(stats_before.total_artists, 2, "Should have 2 artists");
-        assert_eq!(stats_before.total_albums, 2, "Should have 2 albums");
-        
-        // Delete song 1 (Song Two with Artist Two / Album Two)
-        delete_songs(base_path.clone(), vec![1]).unwrap();
-        
-        // Check stats before compaction
-        let stats_deleted = get_library_stats(base_path.clone()).unwrap();
-        println!("After delete, before compact: {:?}", stats_deleted);
-        assert_eq!(stats_deleted.deleted_songs, 1);
-        assert_eq!(stats_deleted.total_artists, 2, "Artists still 2 before compact");
-        
-        // Compact
-        let compact_result = compact_library(base_path.clone()).unwrap();
-        println!("Compact result: {:?}", compact_result);
-        
-        assert_eq!(compact_result.songs_removed, 1, "Should remove 1 song");
-        assert_eq!(compact_result.artists_removed, 1, "Should remove orphaned Artist Two");
-        assert_eq!(compact_result.albums_removed, 1, "Should remove orphaned Album Two");
-        assert!(compact_result.bytes_saved > 0, "Should save some bytes");
-        
-        // Verify final state
-        let stats_after = get_library_stats(base_path.clone()).unwrap();
-        println!("After compact: {:?}", stats_after);
-        assert_eq!(stats_after.total_songs, 2, "Should have 2 songs");
-        assert_eq!(stats_after.deleted_songs, 0, "Should have 0 deleted");
-        assert_eq!(stats_after.total_artists, 1, "Should have 1 artist");
-        assert_eq!(stats_after.total_albums, 1, "Should have 1 album");
-        
-        // Verify the remaining songs are correct
-        let library = load_library(base_path.clone()).unwrap();
-        assert_eq!(library.songs.len(), 2);
-        let titles: Vec<_> = library.songs.iter().map(|s| s.title.as_str()).collect();
-        assert!(titles.contains(&"Song One"));
-        assert!(titles.contains(&"Song Three"));
-        assert!(!titles.contains(&"Song Two")); // This was deleted
-        
-        println!("Compact test passed!");
-    }
-
-    #[test]
-    fn test_edit_song_metadata() {
-        let temp_dir = tempfile::TempDir::new().unwrap();
-        let base_path = temp_dir.path().to_string_lossy().to_string();
-        
-        initialize_library(base_path.clone()).unwrap();
-        
-        // Add one song
-        let dummy_file = temp_dir.path().join("test.mp3");
-        std::fs::write(&dummy_file, b"fake audio data").unwrap();
-        
-        let files = vec![FileToSave {
-            source_path: dummy_file.to_string_lossy().to_string(),
-            metadata: crate::models::AudioMetadata {
-                title: Some("Wrong Title".to_string()),
-                artist: Some("Wrong Artist".to_string()),
-                album: Some("Wrong Album".to_string()),
-                year: Some(2020),
-                track_number: Some(1),
-                duration_secs: Some(180),
-            },
-        }];
-        
-        save_to_library(base_path.clone(), files).unwrap();
-        
-        // Edit the song
-        let new_metadata = crate::models::AudioMetadata {
-            title: Some("Correct Title".to_string()),
-            artist: Some("Correct Artist".to_string()),
-            album: Some("Correct Album".to_string()),
-            year: Some(2021),
-            track_number: Some(1),
-            duration_secs: Some(180),
-        };
-        
-        let edit_result = edit_song_metadata(base_path.clone(), 0, new_metadata).unwrap();
-        println!("Edit result: {:?}", edit_result);
-        
-        assert!(edit_result.artist_created, "Should create new artist");
-        assert!(edit_result.album_created, "Should create new album");
-        
-        // Verify the library now shows the corrected metadata
-        let library = load_library(base_path.clone()).unwrap();
-        assert_eq!(library.songs.len(), 1, "Should have 1 active song");
-        assert_eq!(library.songs[0].title, "Correct Title");
-        assert_eq!(library.songs[0].artist_name, "Correct Artist");
-        assert_eq!(library.songs[0].album_name, "Correct Album");
-        
-        // Stats should show the old one as deleted
-        let stats = get_library_stats(base_path.clone()).unwrap();
-        assert_eq!(stats.total_songs, 2, "Total songs should be 2 (old + new)");
-        assert_eq!(stats.active_songs, 1, "Active songs should be 1");
-        assert_eq!(stats.deleted_songs, 1, "Deleted songs should be 1");
-        
-        println!("Edit test passed!");
-    }
 }

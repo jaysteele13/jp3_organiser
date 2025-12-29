@@ -2,46 +2,87 @@
  * useFileUpload Hook
  * 
  * Manages audio file selection, processing, and library saving.
- * Extracts file management logic from UploadFile component.
+ * 
+ * Files are processed incrementally - each file appears in the UI
+ * as soon as it completes, rather than waiting for all files.
+ * Failed files are also shown with error status.
+ * 
+ * State is persisted via UploadCacheContext so files remain
+ * available when navigating away and back.
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
-import { processAudioFiles, MetadataStatus, saveToLibrary } from '../../../../../services';
+import { processAudioFilesIncremental, MetadataStatus, saveToLibrary } from '../../../../../services';
+import { useUploadCache } from '../../../../../hooks';
 
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'flac', 'm4a', 'ogg'];
 
+/**
+ * Extract filename from a file path.
+ * @param {string} filePath - Full file path
+ * @returns {string} Just the filename
+ */
+function getFileName(filePath) {
+  return filePath.split('/').pop() || filePath.split('\\').pop() || filePath;
+}
+
+/**
+ * Extract file extension from a file path.
+ * @param {string} filePath - Full file path
+ * @returns {string} File extension without dot
+ */
+function getFileExtension(filePath) {
+  const fileName = getFileName(filePath);
+  const lastDot = fileName.lastIndexOf('.');
+  return lastDot > 0 ? fileName.slice(lastDot + 1).toLowerCase() : '';
+}
+
+/**
+ * Create a placeholder file entry for failed processing.
+ * @param {string} filePath - Original file path
+ * @param {Error|string} error - The error that occurred
+ * @returns {Object} TrackedAudioFile-like object with error status
+ */
+function createErrorFile(filePath, error) {
+  return {
+    trackingId: crypto.randomUUID(),
+    filePath,
+    fileName: getFileName(filePath),
+    fileExtension: getFileExtension(filePath),
+    fileSize: 0,
+    metadataStatus: MetadataStatus.ERROR,
+    metadata: {
+      title: null,
+      artist: null,
+      album: null,
+      trackNumber: null,
+      year: null,
+      durationSecs: null,
+    },
+    errorMessage: error?.toString() || 'Unknown error',
+  };
+}
+
 export function useFileUpload(libraryPath) {
-  const [trackedFiles, setTrackedFiles] = useState([]);
+  // Get persisted state from context
+  const cache = useUploadCache();
+  
+  // Local state (not persisted - transient)
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState(null);
+  const [processingProgress, setProcessingProgress] = useState({ current: 0, total: 0 });
   const [successMessage, setSuccessMessage] = useState(null);
+  
+  // Ref for cancellation
+  const cancelRef = useRef(false);
 
-  // Calculate stats from current files
-  const stats = useMemo(() => ({
-    total: trackedFiles.length,
-    complete: trackedFiles.filter(f => f.metadataStatus === MetadataStatus.COMPLETE).length,
-    incomplete: trackedFiles.filter(f => f.metadataStatus === MetadataStatus.INCOMPLETE).length,
-    error: trackedFiles.filter(f => f.metadataStatus === MetadataStatus.ERROR).length,
-  }), [trackedFiles]);
-
-  // Get incomplete files for review
-  const incompleteFiles = useMemo(() => 
-    trackedFiles.filter(f => f.metadataStatus === MetadataStatus.INCOMPLETE),
-    [trackedFiles]
-  );
-
-  // Check if all files are ready (complete or skipped)
-  const allFilesReady = useMemo(() => 
-    trackedFiles.length > 0 && stats.incomplete === 0,
-    [trackedFiles.length, stats.incomplete]
-  );
-
-  // Select and process files
+  // Select and process files incrementally
   const selectFiles = useCallback(async () => {
     try {
-      setError(null);
+      cache.clearError();
+      setSuccessMessage(null);
+      cancelRef.current = false;
       
       const selected = await open({
         multiple: true,
@@ -55,65 +96,71 @@ export function useFileUpload(libraryPath) {
       if (!selected) return false;
 
       const paths = Array.isArray(selected) ? selected : [selected];
+      
+      // Reset state for new batch
+      cache.setFiles([]);
       setIsProcessing(true);
+      setProcessingProgress({ current: 0, total: paths.length });
 
-      const result = await processAudioFiles(paths);
-      setTrackedFiles(result.files);
+      // Process files one at a time, appending each as it completes
+      await processAudioFilesIncremental(paths, {
+        onFileProcessed: (file, currentIndex, totalFiles) => {
+          cache.addFile(file);
+          setProcessingProgress({ current: currentIndex + 1, total: totalFiles });
+        },
+        onFileError: (err, filePath, currentIndex, totalFiles) => {
+          console.error(`Failed to process ${filePath}:`, err);
+          // Add placeholder file with error status so user can see what failed
+          const errorFile = createErrorFile(filePath, err);
+          cache.addFile(errorFile);
+          setProcessingProgress({ current: currentIndex + 1, total: totalFiles });
+        },
+        shouldCancel: () => cancelRef.current,
+      });
+
       return true;
     } catch (err) {
-      setError(err.toString());
+      cache.setError(err.toString());
       console.error('Failed to process files:', err);
       return false;
     } finally {
       setIsProcessing(false);
+      setProcessingProgress({ current: 0, total: 0 });
     }
+  }, [cache]);
+
+  // Cancel ongoing processing
+  const cancelProcessing = useCallback(() => {
+    cancelRef.current = true;
   }, []);
 
   // Clear all files and reset state
   const clearFiles = useCallback(() => {
-    setTrackedFiles([]);
-    setError(null);
+    cancelRef.current = true;
+    cache.clearAll();
     setSuccessMessage(null);
-  }, []);
-
-  // Update metadata for a file and mark as complete
-  const updateFileMetadata = useCallback((trackingId, metadata) => {
-    setTrackedFiles(prev => prev.map(file => {
-      if (file.trackingId === trackingId) {
-        return {
-          ...file,
-          metadata: { ...file.metadata, ...metadata },
-          metadataStatus: MetadataStatus.COMPLETE,
-        };
-      }
-      return file;
-    }));
-  }, []);
-
-  // Remove a file from the list
-  const removeFile = useCallback((trackingId) => {
-    setTrackedFiles(prev => prev.filter(f => f.trackingId !== trackingId));
-  }, []);
+    setProcessingProgress({ current: 0, total: 0 });
+  }, [cache]);
 
   // Save complete files to library
   const saveToLibraryHandler = useCallback(async () => {
     if (!libraryPath) {
-      setError('Library path not configured');
+      cache.setError('Library path not configured');
       return false;
     }
 
-    const completeFiles = trackedFiles.filter(
+    const completeFiles = cache.trackedFiles.filter(
       f => f.metadataStatus === MetadataStatus.COMPLETE
     );
 
     if (completeFiles.length === 0) {
-      setError('No complete files to add');
+      cache.setError('No complete files to add');
       return false;
     }
 
     try {
       setIsSaving(true);
-      setError(null);
+      cache.clearError();
       setSuccessMessage(null);
 
       const filesToSave = completeFiles.map(f => ({
@@ -129,39 +176,41 @@ export function useFileUpload(libraryPath) {
       );
 
       // Clear saved files from the list
-      setTrackedFiles(prev => 
-        prev.filter(f => f.metadataStatus !== MetadataStatus.COMPLETE)
-      );
+      cache.removeCompleteFiles();
       return true;
     } catch (err) {
-      setError(`Failed to save to library: ${err}`);
+      cache.setError(`Failed to save to library: ${err}`);
       console.error('Failed to save to library:', err);
       return false;
     } finally {
       setIsSaving(false);
     }
-  }, [libraryPath, trackedFiles]);
+  }, [libraryPath, cache]);
 
   return {
-    // State
-    trackedFiles,
+    // State (from cache - persisted)
+    trackedFiles: cache.trackedFiles,
+    error: cache.error,
+    
+    // State (local - transient)
     isProcessing,
     isSaving,
-    error,
+    processingProgress,
     successMessage,
     
-    // Computed
-    stats,
-    incompleteFiles,
-    allFilesReady,
+    // Computed (from cache)
+    stats: cache.stats,
+    incompleteFiles: cache.incompleteFiles,
+    allFilesReady: cache.allFilesReady,
     
     // Actions
     selectFiles,
+    cancelProcessing,
     clearFiles,
-    updateFileMetadata,
-    removeFile,
+    updateFileMetadata: cache.updateFileMetadata,
+    removeFile: cache.removeFile,
     saveToLibrary: saveToLibraryHandler,
-    clearError: () => setError(null),
+    clearError: cache.clearError,
     clearSuccess: () => setSuccessMessage(null),
   };
 }

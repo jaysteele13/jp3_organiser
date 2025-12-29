@@ -12,14 +12,19 @@
 //! - `models/` - Data structures
 //!   - `audio` - TrackedAudioFile, MetadataStatus, AudioMetadata
 //!   - `library` - LibraryHeader, LibraryInfo
+//! - `services/` - Business logic services
+//!   - `fingerprint_service` - Audio fingerprinting with fpcalc
+//!   - `metadata_ranking_service` - AcoustID response ranking
 
-mod commands;
-mod models;
+pub mod commands;
+pub mod models;
+pub mod services;
 
 use commands::{
     // Audio commands
     get_audio_metadata,
     process_audio_files,
+    process_single_audio_file,
     // Config commands
     clear_library_path,
     get_library_path,
@@ -42,9 +47,16 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_upload::init())
         .plugin(tauri_plugin_opener::init())
+        .setup(|_app| {
+            dotenvy::from_filename(".env.local").ok();
+            env_logger::init();
+            log::info!("JP3 Organiser starting...");
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             // Audio commands
             process_audio_files,
+            process_single_audio_file,
             get_audio_metadata,
             // Config commands
             get_library_path,

@@ -5,7 +5,7 @@
  * 
  * Flow:
  * 1. User selects files -> assigned trackingId
- * 2. Extract ID3 metadata -> mark as Complete or Incomplete
+ * 2. Files are processed incrementally (shown as they complete)
  * 3. Review/edit incomplete files manually
  * 4. Save complete files to library
  * 
@@ -19,6 +19,16 @@ import { FileStats, FileList, ReviewPanel, ActionButtons } from './components';
 import MetadataForm from '../MetadataForm';
 import styles from './UploadFile.module.css';
 
+/**
+ * Format processing progress for display.
+ * @param {Object} progress - { current, total }
+ * @returns {string} Formatted progress string
+ */
+function formatProgress(progress) {
+  if (progress.total === 0) return 'Processing...';
+  return `Processing ${progress.current}/${progress.total}...`;
+}
+
 export default function UploadFile({ libraryPath }) {
   // File management state and actions
   const {
@@ -27,10 +37,12 @@ export default function UploadFile({ libraryPath }) {
     isSaving,
     error,
     successMessage,
+    processingProgress,
     stats,
     incompleteFiles,
     allFilesReady,
     selectFiles,
+    cancelProcessing,
     clearFiles,
     updateFileMetadata,
     removeFile,
@@ -56,9 +68,12 @@ export default function UploadFile({ libraryPath }) {
     await selectFiles();
   };
 
-  // Handle clear (resets everything)
-  const handleClear = () => {
+  // Handle clear/cancel (resets everything or cancels processing)
+  const handleClearOrCancel = () => {
     review.reset();
+    if (isProcessing) {
+      cancelProcessing();
+    }
     clearFiles();
   };
 
@@ -79,16 +94,15 @@ export default function UploadFile({ libraryPath }) {
           onClick={handleSelectFiles}
           disabled={isProcessing}
         >
-          {isProcessing ? 'Processing...' : 'Select Audio Files'}
+          {isProcessing ? formatProgress(processingProgress) : 'Select Audio Files'}
         </button>
         
-        {trackedFiles.length > 0 && (
+        {(trackedFiles.length > 0 || isProcessing) && (
           <button 
             className={styles.clearButton}
-            onClick={handleClear}
-            disabled={isProcessing}
+            onClick={handleClearOrCancel}
           >
-            Clear
+            {isProcessing ? 'Cancel' : 'Clear'}
           </button>
         )}
       </div>
@@ -100,7 +114,7 @@ export default function UploadFile({ libraryPath }) {
       {/* File list section */}
       {trackedFiles.length > 0 && (
         <div className={styles.fileListContainer}>
-          <FileStats stats={stats} />
+          <FileStats stats={stats} isProcessing={isProcessing} />
 
           <ActionButtons
             stats={stats}
@@ -108,6 +122,7 @@ export default function UploadFile({ libraryPath }) {
             isReviewMode={review.isReviewMode}
             editingFileId={review.editingFileId}
             isSaving={isSaving}
+            isProcessing={isProcessing}
             onReview={review.startReview}
             onAddToLibrary={saveToLibrary}
           />

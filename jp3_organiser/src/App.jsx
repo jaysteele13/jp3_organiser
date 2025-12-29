@@ -5,7 +5,7 @@ import Navbar from './components/Navbar';
 import About from './pages/About';
 import Upload from './pages/Upload';
 import View from './pages/View';
-import { useKeyboardShortcut } from './hooks/useKeyboardShortcut';
+import { useKeyboardShortcut, UploadCacheProvider } from './hooks';
 
 function App() {
   const [isNavCollapsed, setIsNavCollapsed] = useState(false);
@@ -17,17 +17,19 @@ function App() {
   useKeyboardShortcut('s', toggleNav, { ctrl: true });
 
   return (
-    <div className={styles.appLayout}>
-      <Navbar isCollapsed={isNavCollapsed} onToggle={toggleNav} />
-      <main className={`${styles.content} ${isNavCollapsed ? styles.contentCollapsed : ''}`}>
-        <Routes>
-          <Route path="/" element={<Navigate to="/upload" replace />} />
-          <Route path="/upload" element={<Upload />} />
-          <Route path="/view" element={<View />} />
-          <Route path="/about" element={<About />} />
-        </Routes>
-      </main>
-    </div>
+    <UploadCacheProvider>
+      <div className={styles.appLayout}>
+        <Navbar isCollapsed={isNavCollapsed} onToggle={toggleNav} />
+        <main className={`${styles.content} ${isNavCollapsed ? styles.contentCollapsed : ''}`}>
+          <Routes>
+            <Route path="/" element={<Navigate to="/upload" replace />} />
+            <Route path="/upload" element={<Upload />} />
+            <Route path="/view" element={<View />} />
+            <Route path="/about" element={<About />} />
+          </Routes>
+        </main>
+      </div>
+    </UploadCacheProvider>
   );
 }
 
