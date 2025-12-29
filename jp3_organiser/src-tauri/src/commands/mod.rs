@@ -5,9 +5,9 @@
 //! - `library`: Library initialization and management
 //! - `audio`: Audio file processing and metadata extraction
 
-mod audio;
-mod config;
-mod library;
+pub mod audio;
+pub mod config;
+pub mod library;
 
 pub use audio::*;
 pub use config::*;

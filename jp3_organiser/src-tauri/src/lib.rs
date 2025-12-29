@@ -12,10 +12,13 @@
 //! - `models/` - Data structures
 //!   - `audio` - TrackedAudioFile, MetadataStatus, AudioMetadata
 //!   - `library` - LibraryHeader, LibraryInfo
+//! - `services/` - Business logic services
+//!   - `fingerprint_service` - Audio fingerprinting with fpcalc
+//!   - `metadata_ranking_service` - AcoustID response ranking
 
-mod commands;
-mod models;
-mod services;
+pub mod commands;
+pub mod models;
+pub mod services;
 
 use commands::{
     // Audio commands
