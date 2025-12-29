@@ -2,12 +2,14 @@
  * useFileUpload Hook
  * 
  * Manages audio file selection, processing, and library saving.
- * Extracts file management logic from UploadFile component.
+ * 
+ * Files are processed incrementally - each file appears in the UI
+ * as soon as it completes, rather than waiting for all files.
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
-import { processAudioFiles, MetadataStatus, saveToLibrary } from '../../../../../services';
+import { processAudioFilesIncremental, MetadataStatus, saveToLibrary } from '../../../../../services';
 
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'flac', 'm4a', 'ogg'];
 
@@ -17,6 +19,12 @@ export function useFileUpload(libraryPath) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  
+  // Processing progress state
+  const [processingProgress, setProcessingProgress] = useState({ current: 0, total: 0 });
+  
+  // Ref for cancellation
+  const cancelRef = useRef(false);
 
   // Calculate stats from current files
   const stats = useMemo(() => ({
@@ -38,10 +46,11 @@ export function useFileUpload(libraryPath) {
     [trackedFiles.length, stats.incomplete]
   );
 
-  // Select and process files
+  // Select and process files incrementally
   const selectFiles = useCallback(async () => {
     try {
       setError(null);
+      cancelRef.current = false;
       
       const selected = await open({
         multiple: true,
@@ -55,10 +64,25 @@ export function useFileUpload(libraryPath) {
       if (!selected) return false;
 
       const paths = Array.isArray(selected) ? selected : [selected];
+      
+      // Reset state for new batch
+      setTrackedFiles([]);
       setIsProcessing(true);
+      setProcessingProgress({ current: 0, total: paths.length });
 
-      const result = await processAudioFiles(paths);
-      setTrackedFiles(result.files);
+      // Process files one at a time, appending each as it completes
+      await processAudioFilesIncremental(paths, {
+        onFileProcessed: (file, currentIndex, totalFiles) => {
+          setTrackedFiles(prev => [...prev, file]);
+          setProcessingProgress({ current: currentIndex + 1, total: totalFiles });
+        },
+        onFileError: (err, filePath, currentIndex) => {
+          console.error(`Failed to process ${filePath}:`, err);
+          // Could optionally add a placeholder file with error status
+        },
+        shouldCancel: () => cancelRef.current,
+      });
+
       return true;
     } catch (err) {
       setError(err.toString());
@@ -66,14 +90,22 @@ export function useFileUpload(libraryPath) {
       return false;
     } finally {
       setIsProcessing(false);
+      setProcessingProgress({ current: 0, total: 0 });
     }
+  }, []);
+
+  // Cancel ongoing processing
+  const cancelProcessing = useCallback(() => {
+    cancelRef.current = true;
   }, []);
 
   // Clear all files and reset state
   const clearFiles = useCallback(() => {
+    cancelRef.current = true;
     setTrackedFiles([]);
     setError(null);
     setSuccessMessage(null);
+    setProcessingProgress({ current: 0, total: 0 });
   }, []);
 
   // Update metadata for a file and mark as complete
@@ -149,6 +181,7 @@ export function useFileUpload(libraryPath) {
     isSaving,
     error,
     successMessage,
+    processingProgress,
     
     // Computed
     stats,
@@ -157,6 +190,7 @@ export function useFileUpload(libraryPath) {
     
     // Actions
     selectFiles,
+    cancelProcessing,
     clearFiles,
     updateFileMetadata,
     removeFile,

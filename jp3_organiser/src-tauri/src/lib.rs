@@ -24,6 +24,7 @@ use commands::{
     // Audio commands
     get_audio_metadata,
     process_audio_files,
+    process_single_audio_file,
     // Config commands
     clear_library_path,
     get_library_path,
@@ -55,6 +56,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             // Audio commands
             process_audio_files,
+            process_single_audio_file,
             get_audio_metadata,
             // Config commands
             get_library_path,

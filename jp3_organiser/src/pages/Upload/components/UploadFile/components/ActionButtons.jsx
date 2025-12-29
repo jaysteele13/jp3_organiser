@@ -13,9 +13,15 @@ export default function ActionButtons({
   isReviewMode,
   editingFileId,
   isSaving,
+  isProcessing,
   onReview,
   onAddToLibrary,
 }) {
+  // Don't show action buttons while still processing
+  if (isProcessing) {
+    return null;
+  }
+
   const showReviewButton = stats.incomplete > 0 && !isReviewMode && !editingFileId;
   const showPrimaryAddButton = allFilesReady;
   const showSecondaryAddButton = !allFilesReady && stats.complete > 0 && !isReviewMode && !editingFileId;

@@ -227,7 +227,106 @@ fn extract_id3_metadata(tracked_file: &mut TrackedAudioFile) {
     }
 }
 
-/// Get metadata for a single audio file by its path.
+/// Process a single audio file with fingerprinting and AcoustID lookup.
+///
+/// This command is designed to be called repeatedly from the frontend,
+/// allowing files to be displayed as they are processed rather than
+/// waiting for all files to complete.
+///
+/// The frontend is responsible for rate limiting by waiting between calls.
+/// Recommended: wait 500ms between calls to stay under AcoustID's 3/sec limit.
+#[tauri::command]
+pub async fn process_single_audio_file(file_path: String) -> Result<TrackedAudioFile, String> {
+    log::info!("Processing single file: {}", file_path);
+
+    let tracking_id = Uuid::new_v4().to_string();
+    let mut tracked_file = TrackedAudioFile::new(tracking_id.clone(), file_path.clone());
+
+    log::info!("File extension: {}", tracked_file.file_extension);
+
+    // Extract metadata based on file extension
+    match tracked_file.file_extension.as_str() {
+        "mp3" => {
+            log::info!("Extracting ID3 metadata for MP3 file");
+            extract_id3_metadata(&mut tracked_file);
+        }
+        "wav" | "flac" | "m4a" | "ogg" | "opus" => {
+            log::info!(
+                "Skipping ID3 extraction for {} file (not supported yet)",
+                tracked_file.file_extension
+            );
+            tracked_file.metadata_status = MetadataStatus::Incomplete;
+        }
+        _ => {
+            log::warn!("Unsupported file format: {}", tracked_file.file_extension);
+            tracked_file.metadata_status = MetadataStatus::Error;
+            tracked_file.error_message = Some("Unsupported file format".to_string());
+            return Ok(tracked_file);
+        }
+    }
+
+    // Generate fingerprint
+    let audio_finger_print = process_audio_fingerprint(&file_path, tracking_id);
+
+    if audio_finger_print.fingerprint_status == MetadataStatus::Failed {
+        log::error!("Fingerprint processing failed for file: {}", file_path);
+        if tracked_file.error_message.is_none() {
+            tracked_file.error_message = audio_finger_print.error_message;
+        }
+        return Ok(tracked_file);
+    }
+
+    // Lookup in AcoustID
+    log::info!(
+        "Calling AcousticID API for file: {} (fingerprint length: {})",
+        file_path,
+        audio_finger_print.fingerprint_id.len()
+    );
+
+    match lookup_acoustid(&audio_finger_print).await {
+        Ok(result_json) => {
+            log::info!("Successfully got AcousticID result for file: {}", file_path);
+
+            match extract_metadata_from_acoustic_json(&result_json) {
+                Ok(extracted_metadata) => {
+                    log::info!(
+                        "Extracted metadata from AcousticID JSON for file: {}",
+                        file_path
+                    );
+                    tracked_file.metadata = extracted_metadata;
+                    tracked_file.update_status();
+                    log::info!("Final metadata: {:?}", tracked_file.metadata);
+                }
+                Err(e) => {
+                    log::error!(
+                        "Failed to extract metadata from AcousticID JSON for file: {}: {}",
+                        file_path,
+                        e
+                    );
+                    if tracked_file.error_message.is_none() {
+                        tracked_file.error_message =
+                            Some(format!("Metadata extraction failed: {}", e));
+                    }
+                }
+            }
+        }
+        Err(e) => {
+            log::error!(
+                "Failed to get metadata from AcousticID for file: {}: {}",
+                file_path,
+                e
+            );
+            if tracked_file.error_message.is_none() {
+                tracked_file.error_message = Some(format!("AcousticID lookup failed: {}", e));
+            }
+        }
+    }
+
+    log::info!("Finished processing file: {}", file_path);
+    Ok(tracked_file)
+}
+
+/// Get metadata for a single audio file by its path (ID3 only, no AcoustID).
 #[tauri::command]
 pub fn get_audio_metadata(file_path: String) -> Result<TrackedAudioFile, String> {
     let tracking_id = Uuid::new_v4().to_string();
