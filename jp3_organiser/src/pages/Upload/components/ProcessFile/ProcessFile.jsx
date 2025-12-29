@@ -123,7 +123,7 @@ export default function ProcessFile({ onStartReview }) {
                     {file.metadataSource && file.metadataSource !== 'unknown' && (
                       <span className={styles.sourceTag}>
                         {file.metadataSource === 'id3' && ' (ID3)'}
-                        {file.metadataSource === 'acoustid' && ' (AcoustID)'}
+                        {file.metadataSource === 'fingerprint' && ' (Fingerprint)'}
                         {file.metadataSource === 'manual' && ' (Manual)'}
                       </span>
                     )}

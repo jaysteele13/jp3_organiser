@@ -21,10 +21,10 @@ import { MetadataStatus } from '../services';
 export const MetadataSource = {
   /** Metadata source not yet determined */
   UNKNOWN: 'unknown',
-  /** Metadata from ID3 tags */
+  /** Metadata from ID3 tags embedded in the file */
   ID3: 'id3',
-  /** Metadata from AcoustID API */
-  ACOUSTID: 'acoustid',
+  /** Metadata from audio fingerprint matching (Chromaprint -> AcoustID -> MusicBrainz) */
+  FINGERPRINT: 'fingerprint',
   /** Metadata entered manually by user */
   MANUAL: 'manual',
 };

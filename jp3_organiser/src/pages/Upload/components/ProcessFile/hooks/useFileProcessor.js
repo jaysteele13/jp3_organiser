@@ -19,20 +19,6 @@ import { useUploadCache } from '../../../../../hooks';
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'flac', 'm4a', 'ogg', 'opus'];
 
 /**
- * Metadata source types for tracking how metadata was obtained.
- */
-export const MetadataSource = {
-  /** Metadata source not yet determined */
-  UNKNOWN: 'unknown',
-  /** Metadata from ID3 tags */
-  ID3: 'id3',
-  /** Metadata from AcoustID API */
-  ACOUSTID: 'acoustid',
-  /** Metadata entered manually by user */
-  MANUAL: 'manual',
-};
-
-/**
  * Extract filename from a file path.
  * @param {string} filePath - Full file path
  * @returns {string} Just the filename
@@ -66,7 +52,7 @@ function createErrorFile(filePath, error) {
     fileExtension: getFileExtension(filePath),
     fileSize: 0,
     metadataStatus: MetadataStatus.ERROR,
-    metadataSource: MetadataSource.UNKNOWN,
+    metadataSource: 'unknown',
     metadata: {
       title: null,
       artist: null,
@@ -76,43 +62,19 @@ function createErrorFile(filePath, error) {
       durationSecs: null,
     },
     errorMessage: error?.toString() || 'Unknown error',
+    isConfirmed: false,
   };
 }
 
 /**
- * Determine the metadata source based on the processed file.
+ * Enhance a processed file with confirmation tracking.
+ * The metadataSource is now provided by the backend.
  * @param {Object} file - Processed file from backend
- * @returns {string} MetadataSource value
+ * @returns {Object} File with isConfirmed flag added
  */
-function determineMetadataSource(file) {
-  if (file.metadataStatus === MetadataStatus.ERROR) {
-    return MetadataSource.UNKNOWN;
-  }
-  
-  // If we have complete metadata, it came from either ID3 or AcoustID
-  // The backend processes ID3 first, then AcoustID
-  // For now, we'll mark it as automated if complete
-  if (file.metadataStatus === MetadataStatus.COMPLETE) {
-    // Check if it's an MP3 - likely ID3
-    if (file.fileExtension === 'mp3') {
-      return MetadataSource.ID3;
-    }
-    // Other formats use AcoustID
-    return MetadataSource.ACOUSTID;
-  }
-  
-  return MetadataSource.UNKNOWN;
-}
-
-/**
- * Enhance a processed file with metadata source information.
- * @param {Object} file - Processed file from backend
- * @returns {Object} File with metadataSource added
- */
-function enhanceFileWithSource(file) {
+function enhanceFile(file) {
   return {
     ...file,
-    metadataSource: determineMetadataSource(file),
     isConfirmed: false, // User hasn't confirmed yet
   };
 }
@@ -157,7 +119,7 @@ export function useFileProcessor() {
       // Process files one at a time, appending each as it completes
       await processAudioFilesIncremental(paths, {
         onFileProcessed: (file, currentIndex, totalFiles) => {
-          const enhancedFile = enhanceFileWithSource(file);
+          const enhancedFile = enhanceFile(file);
           cache.addFile(enhancedFile);
           setProcessingProgress({ current: currentIndex + 1, total: totalFiles });
         },

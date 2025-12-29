@@ -16,8 +16,8 @@ function getSourceLabel(source) {
   switch (source) {
     case 'id3':
       return 'ID3 Tags';
-    case 'acoustid':
-      return 'AcoustID';
+    case 'fingerprint':
+      return 'Audio Fingerprint';
     case 'manual':
       return 'Manual Entry';
     default:
@@ -29,7 +29,7 @@ export default function MetadataDisplay({ file }) {
   if (!file) return null;
 
   const { metadata, metadataSource, metadataStatus } = file;
-  const isAutomated = metadataSource === 'id3' || metadataSource === 'acoustid';
+  const isAutomated = metadataSource === 'id3' || metadataSource === 'fingerprint';
 
   return (
     <div className={styles.metadataDisplay}>

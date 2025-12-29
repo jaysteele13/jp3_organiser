@@ -9,7 +9,7 @@ use id3::{Tag, TagLike};
 use std::path::Path;
 use uuid::Uuid;
 
-use crate::models::{AudioMetadata, MetadataStatus, ProcessedFilesResult, TrackedAudioFile};
+use crate::models::{AudioMetadata, MetadataStatus, MetadataSource, ProcessedFilesResult, TrackedAudioFile};
 use crate::services::fingerprint_service::{lookup_acoustid, process_audio_fingerprint, rate_limit_delay};
 use crate::services::metadata_ranking_service::extract_metadata_from_acoustic_json;
 
@@ -98,6 +98,10 @@ pub async fn process_audio_files(file_paths: Vec<String>) -> Result<ProcessedFil
             "mp3" => {
                 log::info!("Extracting ID3 metadata for MP3 file");
                 extract_id3_metadata(&mut tracked_file);
+                // Mark as ID3 source initially (may be overwritten by AcoustID)
+                if tracked_file.metadata.is_complete() {
+                    tracked_file.metadata_source = MetadataSource::Id3;
+                }
             }
             "wav" | "flac" | "m4a" | "ogg" | "opus" => {
                 log::info!(
@@ -153,6 +157,7 @@ pub async fn process_audio_files(file_paths: Vec<String>) -> Result<ProcessedFil
                             file_path
                         );
                         tracked_file.metadata = extracted_metadata;
+                        tracked_file.metadata_source = MetadataSource::Fingerprint;
                         tracked_file.update_status();
                         log::info!("Final metadata: {:?}", tracked_file.metadata);
                     }
@@ -162,6 +167,7 @@ pub async fn process_audio_files(file_paths: Vec<String>) -> Result<ProcessedFil
                             file_path,
                             e
                         );
+                        // Keep ID3 source if we had it, otherwise mark as unknown
                         if tracked_file.error_message.is_none() {
                             tracked_file.error_message =
                                 Some(format!("Metadata extraction failed: {}", e));
@@ -175,6 +181,7 @@ pub async fn process_audio_files(file_paths: Vec<String>) -> Result<ProcessedFil
                     file_path,
                     e
                 );
+                // Keep ID3 source if we had it, otherwise mark as unknown
                 if tracked_file.error_message.is_none() {
                     tracked_file.error_message = Some(format!("AcousticID lookup failed: {}", e));
                 }
@@ -249,6 +256,10 @@ pub async fn process_single_audio_file(file_path: String) -> Result<TrackedAudio
         "mp3" => {
             log::info!("Extracting ID3 metadata for MP3 file");
             extract_id3_metadata(&mut tracked_file);
+            // Mark as ID3 source initially (may be overwritten by AcoustID)
+            if tracked_file.metadata.is_complete() {
+                tracked_file.metadata_source = MetadataSource::Id3;
+            }
         }
         "wav" | "flac" | "m4a" | "ogg" | "opus" => {
             log::info!(
@@ -294,6 +305,7 @@ pub async fn process_single_audio_file(file_path: String) -> Result<TrackedAudio
                         file_path
                     );
                     tracked_file.metadata = extracted_metadata;
+                    tracked_file.metadata_source = MetadataSource::Fingerprint;
                     tracked_file.update_status();
                     log::info!("Final metadata: {:?}", tracked_file.metadata);
                 }
@@ -303,6 +315,7 @@ pub async fn process_single_audio_file(file_path: String) -> Result<TrackedAudio
                         file_path,
                         e
                     );
+                    // Keep ID3 source if we had it, otherwise mark as unknown
                     if tracked_file.error_message.is_none() {
                         tracked_file.error_message =
                             Some(format!("Metadata extraction failed: {}", e));
@@ -316,6 +329,7 @@ pub async fn process_single_audio_file(file_path: String) -> Result<TrackedAudio
                 file_path,
                 e
             );
+            // Keep ID3 source if we had it, otherwise mark as unknown
             if tracked_file.error_message.is_none() {
                 tracked_file.error_message = Some(format!("AcousticID lookup failed: {}", e));
             }
