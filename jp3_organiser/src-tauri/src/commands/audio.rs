@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use crate::models::{AudioMetadata, MetadataStatus, ProcessedFilesResult, TrackedAudioFile};
 use crate::services::fingerprint_service::{process_audio_fingerprint, lookup_acoustid};
+use crate::services::metadata_ranking_service::extract_metadata_from_acoustic_json;
 
 
 
@@ -97,7 +98,26 @@ pub fn process_audio_files(file_paths: Vec<String>) -> Result<ProcessedFilesResu
             Ok(result_json) => {
                 log::info!("Successfully got AcousticID result for file: {}", file_path);
                 // TODO: Parse the result and update tracked_file metadata
+
+                // Now that we got the AcousticID result we must Parse and Rank the JSOn to gather the correct metadata
+                let metadata_result = extract_metadata_from_acoustic_json(&result_json);
+                match metadata_result {
+                    Ok(extracted_metadata) => {
+                        log::info!("Extracted metadata from AcousticID JSON for file: {}", file_path);
+                        tracked_file.metadata = extracted_metadata;
+                        tracked_file.update_status();
+                        log::info!("here is final metadata: {:?}", tracked_file.metadata);
+
+                    }
+                    Err(e) => {
+                        log::error!("Failed to extract metadata from AcousticID JSON for file: {}: {}", file_path, e);
+                        // Don't fail the entire file processing, just log the error
+                        if tracked_file.error_message.is_none() {
+                            tracked_file.error_message = Some(format!("Metadata extraction failed: {}", e));
+                        }
+                }
             }
+        }
             Err(e) => {
                 log::error!("Failed to get metadata from AcousticID for file: {}: {}", file_path, e);
                 // Don't fail the entire file processing, just log the error

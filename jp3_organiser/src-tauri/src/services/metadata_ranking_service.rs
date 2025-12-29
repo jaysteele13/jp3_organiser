@@ -4,7 +4,7 @@
 //! to find the best metadata match for a song.
 
 use serde::Deserialize;
-use crate::models::SongMetadata;
+use crate::models::AudioMetadata;
 
 /// Date structure from AcoustID response
 #[derive(Debug, Clone, Deserialize)]
@@ -28,6 +28,7 @@ impl ReleaseDate {
 /// Individual release within a release group
 #[derive(Debug, Clone, Deserialize)]
 pub struct Release {
+    #[serde(default)]
     pub id: String,
     pub country: Option<String>,
     pub date: Option<ReleaseDate>,
@@ -38,16 +39,20 @@ pub struct Release {
 /// Artist structure
 #[derive(Debug, Clone, Deserialize)]
 pub struct Artist {
+    #[serde(default)]
     pub id: String,
+    #[serde(default)]
     pub name: String,
 }
 
 /// Release group (album, single, compilation, etc.)
 #[derive(Debug, Clone, Deserialize)]
 pub struct ReleaseGroup {
+    #[serde(default)]
     pub id: String,
     #[serde(rename = "type")]
     pub release_type: Option<String>,
+    #[serde(default)]
     pub title: String,
     pub artists: Option<Vec<Artist>>,
     pub releases: Option<Vec<Release>>,
@@ -56,7 +61,9 @@ pub struct ReleaseGroup {
 /// Recording from AcoustID response
 #[derive(Debug, Clone, Deserialize)]
 pub struct Recording {
+    #[serde(default)]
     pub id: String,
+    #[serde(default)]
     pub title: String,
     pub duration: Option<f64>,
     pub sources: Option<u32>,
@@ -130,7 +137,7 @@ fn get_first_release_group(recording: &Recording) -> Option<&ReleaseGroup> {
 /// Returns the best matching metadata or None if no valid recordings found.
 pub fn extract_metadata_from_acoustic_json(
     json: &serde_json::Value,
-) -> Result<SongMetadata, String> {
+) -> Result<AudioMetadata, String> {
     log::info!("extract_metadata_from_acoustic_json called");
 
     // Parse the JSON into our structures
@@ -141,12 +148,13 @@ pub fn extract_metadata_from_acoustic_json(
         return Err(format!("AcoustID API returned status: {}", response.status));
     }
 
-    // Collect all recordings from all results
+    // Collect all recordings from all results, filtering out those with empty titles
     let recordings: Vec<Recording> = response
         .results
         .unwrap_or_default()
         .into_iter()
         .flat_map(|result| result.recordings.unwrap_or_default())
+        .filter(|r| !r.title.is_empty())
         .collect();
 
     if recordings.is_empty() {
@@ -184,7 +192,7 @@ pub fn extract_metadata_from_acoustic_json(
     );
 
     // Extract metadata from best recording
-    build_song_metadata(&best.recording)
+    build_audio_metadata(&best.recording)
 }
 
 /// Award points based on sources count (higher sources = more points)
@@ -245,21 +253,27 @@ fn rank_by_oldest_date(ranked: &mut [RankedRecording]) {
     }
 }
 
-/// Build SongMetadata from the best ranked recording
-fn build_song_metadata(recording: &Recording) -> Result<SongMetadata, String> {
+/// Build AudioMetadata from the best ranked recording
+fn build_audio_metadata(recording: &Recording) -> Result<AudioMetadata, String> {
     let title = recording.title.clone();
 
-    // Get artist from recording level
+    if title.is_empty() {
+        return Err("Recording has empty title".to_string());
+    }
+
+    // Get artist from recording level, filter out empty names
     let artist = recording
         .artists
         .as_ref()
-        .and_then(|artists| artists.first())
+        .and_then(|artists| artists.iter().find(|a| !a.name.is_empty()))
         .map(|a| a.name.clone())
         .ok_or("No artist found in recording")?;
 
     // Prefer album release groups, fallback to first release group
+    // Filter out release groups with empty titles
     let release_group = get_album_release_group(recording)
-        .or_else(|| get_first_release_group(recording))
+        .filter(|rg| !rg.title.is_empty())
+        .or_else(|| get_first_release_group(recording).filter(|rg| !rg.title.is_empty()))
         .ok_or("No release group found in recording")?;
 
     let album = release_group.title.clone();
@@ -284,11 +298,13 @@ fn build_song_metadata(recording: &Recording) -> Result<SongMetadata, String> {
         year
     );
 
-    Ok(SongMetadata {
-        title,
-        artist,
-        album,
+    Ok(AudioMetadata {
+        title: Some(title),
+        artist: Some(artist),
+        album: Some(album),
         year,
+        track_number: None,
+        duration_secs: None,
     })
 }
 
@@ -338,10 +354,12 @@ mod tests {
         });
 
         let result = extract_metadata_from_acoustic_json(&json).unwrap();
-        assert_eq!(result.title, "Jealousy");
-        assert_eq!(result.artist, "Queen");
-        assert_eq!(result.album, "Jazz");
+        assert_eq!(result.title, Some("Jealousy".to_string()));
+        assert_eq!(result.artist, Some("Queen".to_string()));
+        assert_eq!(result.album, Some("Jazz".to_string()));
         assert_eq!(result.year, Some(1978));
+        assert_eq!(result.track_number, None);
+        assert_eq!(result.duration_secs, None);
     }
 
     #[test]
@@ -385,8 +403,8 @@ mod tests {
         let result = extract_metadata_from_acoustic_json(&json).unwrap();
         // Song High wins: 20 (sources rank 1) + 20 (oldest date) = 40
         // Song Low gets: 16 (sources rank 2) + 16 (newer date) = 32
-        assert_eq!(result.title, "Song High");
-        assert_eq!(result.album, "Album High");
+        assert_eq!(result.title, Some("Song High".to_string()));
+        assert_eq!(result.album, Some("Album High".to_string()));
     }
 
     #[test]
@@ -414,5 +432,68 @@ mod tests {
 
         let result = extract_metadata_from_acoustic_json(&json);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_missing_title_field_handled() {
+        // Recording without a title field should be filtered out
+        let json = json!({
+            "status": "ok",
+            "results": [{
+                "id": "test-result-id",
+                "recordings": [{
+                    "id": "no-title-recording",
+                    "sources": 100,
+                    "artists": [{"id": "1", "name": "Artist"}],
+                    "releasegroups": [{
+                        "id": "rg1",
+                        "type": "Album",
+                        "title": "Album"
+                    }]
+                }]
+            }]
+        });
+
+        // Should error because the only recording has no title
+        let result = extract_metadata_from_acoustic_json(&json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_skips_recordings_without_title() {
+        // Should skip the recording without title and use the one with title
+        let json = json!({
+            "status": "ok",
+            "results": [{
+                "id": "test-result-id",
+                "recordings": [
+                    {
+                        "id": "no-title-recording",
+                        "sources": 5000,
+                        "artists": [{"id": "1", "name": "Artist"}],
+                        "releasegroups": [{
+                            "id": "rg1",
+                            "type": "Album",
+                            "title": "Album"
+                        }]
+                    },
+                    {
+                        "id": "has-title-recording",
+                        "title": "Good Song",
+                        "sources": 100,
+                        "artists": [{"id": "2", "name": "Good Artist"}],
+                        "releasegroups": [{
+                            "id": "rg2",
+                            "type": "Album",
+                            "title": "Good Album"
+                        }]
+                    }
+                ]
+            }]
+        });
+
+        let result = extract_metadata_from_acoustic_json(&json).unwrap();
+        assert_eq!(result.title, Some("Good Song".to_string()));
+        assert_eq!(result.album, Some("Good Album".to_string()));
     }
 }
