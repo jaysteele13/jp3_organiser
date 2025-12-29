@@ -127,8 +127,7 @@ export default function View() {
           songs={songsToDelete}
           onConfirm={handleConfirmDelete}
           onCancel={handleCancelDelete}
-          isDeleting={isDeleting}
-editcate        />
+          isDeleting={isDeleting}/>
       )}
     </div>
   );
