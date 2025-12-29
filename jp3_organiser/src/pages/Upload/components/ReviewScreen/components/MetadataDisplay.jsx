@@ -94,21 +94,18 @@ export default function MetadataDisplay({ file }) {
             <span className={styles.fieldValue}>{metadata.year}</span>
           </div>
         )}
-
-        {metadata?.trackNumber && (
-          <div className={styles.metadataField}>
-            <label className={styles.fieldLabel}>Track</label>
-            <span className={styles.fieldValue}>{metadata.trackNumber}</span>
-          </div>
-        )}
       </div>
 
       {/* Status indicator */}
+      {statusDisplay.label == 'Confirmed' && (
+
+      
       <div className={styles.statusRow}>
         <span className={`${styles.statusBadge} ${styles[statusDisplay.className]}`}>
           {statusDisplay.label}
         </span>
       </div>
+      )}
     </div>
   );
 }
