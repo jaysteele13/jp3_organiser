@@ -129,6 +129,7 @@ fn extract_id3_metadata(tracked_file: &mut TrackedAudioFile) {
                 duration_secs: tag.duration(),
             };
             tracked_file.update_status();
+             log::info!("here is id3 data: {:?}", tag.artist().map(|s| s.to_string()));
         }
         Err(id3::Error {
             kind: id3::ErrorKind::NoTag,
