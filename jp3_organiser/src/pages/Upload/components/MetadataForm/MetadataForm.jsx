@@ -67,8 +67,8 @@ export default function MetadataForm({
     // Year is optional but must be a valid number if provided
     if (formData.year.trim()) {
       const yearNum = parseInt(formData.year.trim(), 10);
-      if (isNaN(yearNum) || yearNum < 1900 || yearNum > new Date().getFullYear() + 1) {
-        newErrors.year = 'Enter a valid year (1900-present)';
+      if (isNaN(yearNum) || yearNum < 1000 || yearNum > new Date().getFullYear() + 1) {
+        newErrors.year = 'Enter a valid year (1000-present)';
       }
     }
 
