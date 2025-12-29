@@ -15,7 +15,7 @@ User's Audio Files → JP3 Organiser → library.bin → MicroSD Card → ESP32 
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | React 18 + Vite |
+| Frontend | React 18 + Vite + React Router |
 | Backend | Rust (Tauri 2) |
 | Desktop | Tauri 2 |
 | Styling | CSS Modules + Global CSS |
@@ -28,28 +28,30 @@ jp3_organiser/
 ├── src/                      # React frontend
 │   ├── assets/               # Static assets (fonts, images, test files)
 │   ├── components/           # Shared/reusable components
-│   │   ├── Header/           # App header with logo
-│   │   ├── Navbar/           # Vertical navigation bar
+│   │   ├── Header/           # App header with title/description
+│   │   ├── Navbar/           # Collapsible sidebar navigation
 │   │   ├── LoadingState/     # Reusable loading spinner
 │   │   ├── ErrorState/       # Reusable error display
 │   │   └── EmptyState/       # Reusable empty state message
 │   ├── hooks/                # Custom React hooks
 │   │   ├── useKeyboardShortcut.js  # Keyboard shortcut handler
 │   │   ├── useLibraryConfig.js     # Library path configuration
-│   │   └── useLibrary.js           # Library data fetching
+│   │   ├── useLibrary.js           # Library data fetching
+│   │   └── useUploadCache.jsx      # Persistent upload state context
 │   ├── pages/                # Route-level page components
 │   │   ├── About/            # About page with info cards
 │   │   ├── Upload/           # File upload and metadata workflow
 │   │   │   └── components/   # DirectoryConfig, MetadataForm, UploadFile
 │   │   └── View/             # Library viewer with tabs
-│   │       └── components/   # StatsBar, ViewHeader, Tabs (Songs/Albums/Artists/Playlists)
+│   │       └── components/   # StatsBar, ViewHeader, Tabs, DeleteConfirmModal
 │   ├── services/             # API services, Tauri command wrappers
 │   │   ├── audioService.js   # Audio file processing & metadata
 │   │   └── libraryService.js # Library CRUD operations
 │   ├── styles/               # Global styles
 │   │   └── global.css        # Color palette, fonts, base styles
 │   ├── utils/                # Utility/helper functions
-│   │   └── enums.js          # Shared enums (e.g., NavRoutes)
+│   │   ├── enums.js          # Shared enums (TABS)
+│   │   └── formatters.js     # File size, duration formatters
 │   ├── App.jsx               # Root component with routing
 │   ├── App.module.css        # App-scoped styles
 │   └── main.jsx              # Entry point
@@ -61,9 +63,15 @@ jp3_organiser/
 │   │   │   └── library.rs    # Library management commands
 │   │   ├── models/           # Data structures
 │   │   │   ├── audio.rs      # TrackedAudioFile, AudioMetadata
-│   │   │   └── library.rs    # Library, Artist, Album, Song
+│   │   │   └── library.rs    # Library binary format, parsed types
+│   │   ├── services/         # Business logic services
+│   │   │   ├── fingerprint_service.rs  # Audio fingerprinting + AcoustID
+│   │   │   └── metadata_ranking_service.rs  # Metadata ranking algorithm
 │   │   ├── lib.rs            # Tauri plugin setup and exports
 │   │   └── main.rs           # Entry point
+│   ├── tests/                # Integration tests
+│   │   ├── library_tests.rs  # Library management tests
+│   │   └── metadata_ranking_tests.rs  # Ranking algorithm tests
 │   ├── Cargo.toml            # Rust dependencies
 │   └── tauri.conf.json       # Tauri configuration
 └── package.json              # Node dependencies
@@ -72,19 +80,22 @@ jp3_organiser/
 ## Key Features
 
 ### Implemented
-1. **File Upload** - Select MP3/WAV/FLAC/M4A/OGG files via native file picker
-2. **Metadata Extraction** - Read ID3 tags, mark files as Complete/Incomplete
-3. **Manual Metadata Entry** - Form to complete missing metadata
-4. **Review Mode** - Step through incomplete files one-by-one
-5. **Library Management** - Save songs to library.bin with artist/album structure
-6. **Library Viewer** - Browse library by Songs, Albums, Artists, Playlists (tabs)
-7. **Directory Configuration** - Set and persist library output directory
+1. **File Upload** - Select MP3/WAV/FLAC/M4A/OGG/OPUS files via native file picker
+2. **Metadata Extraction** - Read ID3 tags (MP3) + AcoustID fingerprinting for all formats
+3. **Metadata Ranking** - Algorithm to select best metadata from AcoustID results
+4. **Manual Metadata Entry** - Form to complete missing metadata
+5. **Review Mode** - Step through incomplete files one-by-one
+6. **Library Management** - Save songs to library.bin with artist/album structure
+7. **Library Viewer** - Browse library by Songs, Albums, Artists, Playlists (tabs)
+8. **Directory Configuration** - Set and persist library output directory
+9. **Song Deletion** - Soft-delete songs with audio file removal
+10. **Song Editing** - Edit metadata for existing songs
+11. **Library Compaction** - Remove deleted entries and orphaned data
+12. **Upload Caching** - Persist upload state across navigation
 
 ### Planned
-- AI/API enrichment for missing metadata
-- Duplicate detection before adding to library
-- SD Card export workflow
 - Playlist creation and management
+- SD Card export workflow
 
 ## Coding Standards
 
@@ -149,14 +160,14 @@ Commands are organized into modules under `src-tauri/src/commands/`:
 
 | Module | Commands |
 |--------|----------|
-| `audio.rs` | `process_audio_files`, `get_audio_metadata` |
-| `config.rs` | `get_library_path`, `set_library_path` |
-| `library.rs` | `save_to_library`, `load_library` |
+| `audio.rs` | `process_audio_files`, `process_single_audio_file`, `get_audio_metadata`, `get_audio_metadata_from_acoustic_id` |
+| `config.rs` | `get_library_path`, `set_library_path`, `clear_library_path` |
+| `library.rs` | `initialize_library`, `get_library_info`, `save_to_library`, `load_library`, `delete_songs`, `edit_song_metadata`, `get_library_stats`, `compact_library` |
 
 ```rust
 // Backend (commands/audio.rs)
 #[tauri::command]
-pub fn process_audio_files(file_paths: Vec<String>) -> Result<ProcessedFilesResult, String> {
+pub async fn process_single_audio_file(file_path: String) -> Result<TrackedAudioFile, String> {
     // Implementation
 }
 ```
@@ -164,21 +175,70 @@ pub fn process_audio_files(file_paths: Vec<String>) -> Result<ProcessedFilesResu
 ```jsx
 // Frontend (services/audioService.js)
 import { invoke } from '@tauri-apps/api/core';
-const result = await invoke('process_audio_files', { filePaths });
+const result = await invoke('process_single_audio_file', { filePath });
 ```
+
+### Rust Services
+
+Services are in `src-tauri/src/services/`:
+
+| Service | Purpose |
+|---------|---------|
+| `fingerprint_service.rs` | Audio fingerprinting via fpcalc + AcoustID API lookup |
+| `metadata_ranking_service.rs` | Ranking algorithm to select best metadata from AcoustID results |
+
+**Fingerprint Service:**
+- Uses external `fpcalc` CLI tool (must be installed)
+- Requires `ACOUSTIC_ID_API_KEY` environment variable
+- Rate limiting: 500ms between API calls
+- Retry logic for transient errors
+
+**Metadata Ranking Algorithm:**
+| Criterion | Points (Top 5) | Rationale |
+|-----------|----------------|-----------|
+| Oldest release date | 30/24/18/12/6 | Older = original release |
+| Sources count | 25/20/15/10/5 | More sources = more reliable |
+| Album type bonus | +10 | Prefer full albums over singles |
 
 ### Data Models (Rust)
 
 Models are in `src-tauri/src/models/`:
 
+#### Audio Models (`audio.rs`)
+
 | Model | Fields |
 |-------|--------|
-| `TrackedAudioFile` | trackingId, filePath, fileName, fileSize, metadataStatus, metadata |
+| `MetadataStatus` | Enum: Pending, Complete, Incomplete, Error, Success, Failed |
 | `AudioMetadata` | title, artist, album, trackNumber, year, durationSecs |
-| `Library` | artists (Vec<Artist>) |
-| `Artist` | name, albums (Vec<Album>) |
-| `Album` | name, year, songs (Vec<Song>) |
-| `Song` | trackNumber, title, filePath |
+| `TrackedAudioFile` | trackingId, filePath, fileName, fileExtension, fileSize, metadataStatus, metadata, errorMessage |
+| `ProcessedAudioFingerprint` | fingerprintId, trackingId, fingerprintStatus, errorMessage, durationSeconds |
+| `ProcessedFilesResult` | files, completeCount, incompleteCount, errorCount |
+
+#### Library Models (`library.rs`)
+
+**Binary Format (ESP32 optimized):**
+
+| Structure | Size | Fields |
+|-----------|------|--------|
+| `LibraryHeader` | 40 bytes | magic ("LIB1"), version, songCount, artistCount, albumCount, table offsets |
+| `ArtistEntry` | 8 bytes | nameStringId, reserved |
+| `AlbumEntry` | 16 bytes | nameStringId, artistId, year, reserved |
+| `SongEntry` | 24 bytes | titleStringId, artistId, albumId, pathStringId, trackNumber, durationSec, flags |
+
+**Parsed Types (Frontend display):**
+
+| Model | Fields |
+|-------|--------|
+| `ParsedLibrary` | version, artists, albums, songs |
+| `ParsedArtist` | id, name |
+| `ParsedAlbum` | id, name, artistId, artistName, year |
+| `ParsedSong` | id, title, artistId, artistName, albumId, albumName, path, trackNumber, durationSec |
+| `LibraryInfo` | initialized, jp3Path, musicBuckets, hasLibraryBin |
+| `LibraryStats` | totalSongs, activeSongs, deletedSongs, shouldCompact, fileSizeBytes |
+| `SaveToLibraryResult` | filesSaved, artistsAdded, albumsAdded, songsAdded, duplicatesSkipped |
+| `DeleteSongsResult` | songsDeleted, notFound, filesDeleted |
+| `EditSongResult` | newSongId, artistCreated, albumCreated |
+| `CompactResult` | songsRemoved, artistsRemoved, albumsRemoved, stringsRemoved, bytesSaved |
 
 ### File Organization
 
@@ -193,32 +253,58 @@ Models are in `src-tauri/src/models/`:
 | Global CSS | `src/styles/global.css` |
 | Rust commands | `src-tauri/src/commands/` |
 | Rust models | `src-tauri/src/models/` |
+| Rust services | `src-tauri/src/services/` |
+| Rust tests | `src-tauri/tests/` |
 
 ## Services
 
 ### audioService.js
-- `processAudioFiles(filePaths)` - Process files and extract metadata
-- `getAudioMetadata(filePath)` - Get metadata for single file
 - `MetadataStatus` enum - PENDING, COMPLETE, INCOMPLETE, ERROR
-- `saveToLibrary(libraryPath, files)` - Save files to library.bin
+- `API_RATE_LIMIT_DELAY` - 500ms rate limit for AcoustID calls
+- `processSingleAudioFile(filePath)` - Process one file with fingerprinting
+- `processAudioFilesIncremental(filePaths, callbacks)` - Process files one-by-one with rate limiting
+- `processAudioFiles(filePaths)` - Legacy batch processing
+- `getAudioMetadata(filePath)` - Get ID3 metadata only (no AcoustID)
 
 ### libraryService.js
-- `loadLibrary(libraryPath)` - Load library.bin and return parsed data
-- `getLibraryStats(library)` - Calculate artist/album/song counts
+- `getLibraryPath()` - Get saved library path
+- `setLibraryPath(path)` - Save library path
+- `clearLibraryPath()` - Clear saved path
+- `initializeLibrary(basePath)` - Create JP3 directory structure
+- `getLibraryInfo(basePath)` - Get library info
+- `saveToLibrary(basePath, files)` - Save files to library
+- `loadLibrary(basePath)` - Load and parse library.bin
+- `deleteSongs(basePath, songIds)` - Soft-delete songs
+- `getLibraryStats(basePath)` - Get stats including compaction recommendation
+- `compactLibrary(basePath)` - Remove deleted entries
 
 ## Custom Hooks
 
 | Hook | Purpose |
 |------|---------|
-| `useLibraryConfig()` | Manage library path (get/set from Rust backend) |
+| `useLibraryConfig()` | Manage library path (get/set from Rust backend), auto-initialize JP3 structure |
 | `useLibrary(libraryPath)` | Fetch and return library data with loading/error states |
-| `useKeyboardShortcut(key, callback)` | Register keyboard shortcuts |
+| `useKeyboardShortcut(key, callback)` | Register keyboard shortcuts with modifier support |
+| `useUploadCache()` | Context hook for persistent upload state across navigation |
+| `UploadCacheProvider` | Context provider wrapping app for upload state persistence |
+
+## Routing
+
+Uses React Router for navigation:
+
+| Route | Page | Description |
+|-------|------|-------------|
+| `/` | Redirects to `/upload` | Default route |
+| `/upload` | Upload | File upload workflow |
+| `/view` | View | Library browser |
+| `/about` | About | App information |
 
 ## Available Tauri Plugins
 
 - `tauri-plugin-dialog` - Native file picker dialogs
 - `tauri-plugin-upload` - File upload handling
 - `tauri-plugin-opener` - Open files/URLs with default apps
+- `tauri-plugin-store` - Persistent key-value storage
 
 ## Development
 
@@ -235,38 +321,64 @@ npm run tauri-clean
 
 **Note:** On `npm run tauri dev`, there's a race condition where Tauri may start before Vite is ready. If you see a white screen, reload the app.
 
+**Requirements:**
+- `fpcalc` CLI tool must be installed for audio fingerprinting
+- `ACOUSTIC_ID_API_KEY` environment variable must be set (in `.env.local`)
+
+## Testing
+
+### Rust Integration Tests (`src-tauri/tests/`)
+
+| Test File | Purpose |
+|-----------|---------|
+| `library_tests.rs` | Library management: string deduplication, duplicate detection, soft delete, edit, compaction |
+| `metadata_ranking_tests.rs` | Metadata ranking algorithm: source counting, date ranking, album type bonus |
+
+Run tests:
+```bash
+cd src-tauri
+cargo test
+```
+
 ## Performance Considerations
 
 - ESP32 has limited RAM - `library.bin` must be compact and streamable
-- Avoid loading all song data at once
-- Use efficient binary serialization (consider bincode or custom format)
-- Deduplicate songs before export
+- Binary format uses little-endian, fixed-size entries for minimal parsing
+- String deduplication reduces storage (single string table with ID references)
+- Soft delete pattern minimizes SD card write cycles
+- Bucketed file storage: `music/00/`, `music/01/`, etc. (256 files per bucket)
+- Incremental processing with rate limiting (500ms) for better UX
+
+## Architectural Patterns
+
+### Soft Delete Pattern
+- Songs marked with `DELETED` flag rather than removed
+- Audio files ARE immediately deleted (frees disk space)
+- Metadata cleanup deferred to explicit `compact_library` call
+- Minimizes SD card write cycles (important for embedded devices)
+
+### Incremental Updates
+- `save_to_library` loads existing data and merges
+- Duplicate detection by (title, artist_id, album_id) tuple
+- New entries appended rather than rebuilding entire file
+
+### Upload State Persistence
+- `UploadCacheProvider` wraps app for persistent upload state
+- State survives navigation between pages
+- Cleared on successful library save or user action
 
 ## Future Considerations
 
-- React Router for navigation (currently uses manual component switching via NavRoutes enum)
 - State management (Context API or Zustand) as app grows
 - Don't use TypeScript - this is a ReactJS project
 - Testing setup (Vitest for React, Rust tests for backend)
 
 ## Known Technical Debt
 
-### UploadFile.jsx (403 lines) - Needs Refactoring
+### SongView.jsx has duplicate formatDuration
+- `formatDuration` function is duplicated in SongView instead of using `utils/formatters.js`
+- Should consolidate to single utility function
 
-**Current issues:**
-- 8 useState hooks (too many)
-- Mixed concerns: file selection, review mode, library saving, UI rendering
-- Helper functions mixed with component logic
-
-**Recommended refactoring:**
-
-| Extract To | What | Approx Lines |
-|------------|------|--------------|
-| `useFileUpload.js` | File selection, processing, clearing, stats | ~50 |
-| `useReviewMode.js` | Review navigation, current file, skip/save handlers | ~60 |
-| `FileStats.jsx` | Stats bar rendering | ~25 |
-| `FileList.jsx` | File list with status badges and edit buttons | ~40 |
-| `ReviewPanel.jsx` | Review mode wrapper with progress header | ~25 |
-| `utils/formatters.js` | `formatFileSize()`, `getStatusBadge()` | ~20 |
-
-**Target:** Reduce UploadFile.jsx to ~150 lines as an orchestration component.
+### useLibrary hook not exported from hooks/index.js
+- Hook is imported directly in View.jsx
+- Should be added to barrel export for consistency
