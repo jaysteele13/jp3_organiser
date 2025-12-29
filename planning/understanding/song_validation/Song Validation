@@ -1,0 +1,390 @@
+Song Validation
+
+Exists (Upload File)
+
+---
+
+read oc_context for context on the workspace first, now
+
+I want to include a big feature when the user uploads a file in pages/Upload. I want to do this in small increments starting with:
+
+
+'Ask what Directory they want jp3_organiser to save there files too. Once we get this. This will be saved locally.'
+
+Design and implement this with best practice. 
+For context this is what is to come next but don't implement this yet:
+
+
+Ok when the library is selected. We will now make a direcotry called 'jp3'
+Now that we know where they will be saving the files to. If dir jp3 doesn't exist create it.
+
+In here we will make three directories
+
+music/ 
+metadata/
+playlists/
+
+Inside music:
+
+there will be sub folders of 00/ 01, 02 as to keep parsing quick we must have folders with no more than 256 songs in each. These will store .mp3, .wav and other audio files.
+
+Inside metadata/
+
+the aim of this is to store data in a binary file like this:
+
+This is what library.bin would look like:
+
+```
+LibraryHeader {
+  magic = "LIB1",
+  version = 1,
+  song_count = 1,
+  artist_count = 1,
+  album_count = 1,
+
+  string_table_offset = 0x0030,
+  artist_table_offset = 0x0008,
+  album_table_offset  = 0x0010,
+  song_table_offset   = 0x0020
+}
+
+ArtistEntry {
+  name_string_id = 0;   // "Paul Simon"
+}
+
+StringEntry {
+    [0] = "Paul Simon";
+    [1] = "Still Crazy after All of these Years"
+}
+
+AlbumEntry {
+  name_string_id = 1;   // "Still Crazy After All These Years"
+  artist_id = 0;        // Paul Simon
+  year = 1975;
+}
+
+SongEntry {
+  title_string_id = 1;
+  artist_id = 0;
+  album_id = 0;
+  path_string_id = 2;
+  track_number = 1;
+  duration_sec = 215;
+}
+```
+
+This is way it removes duplicates which is highly necessary for syncing. Playlist would be referincing songs that would be associated with it.
+
+Now we need to implement a check when a file is added
+
+The Steps to do this for now are as follows:
+
+1. User selects a file or files. We temporarily store these with a temportTrackingId to do checks.
+
+2. Most music files have an ID3 tag with music metadata like node-id3, ifg all required fields are present mark as metadata-complete, if not -> metadata-incomplete and move on to the next section.
+
+4. Ask user for manual confirmation go through the ones we couldn't find for and get manual input. Here have validation to ensure that the strings in the sd card are the same e.g. cant do queen and Queen. (Drop down of bands that exist). Unless we make strings with the same name and different capitals just be associated to the same band.
+
+5. For all the song input have a duplicate checker flag songs that may be duplicates for an air tight system
+6. Before we save we must remove illegal filename characters like ' i believe with a percentage. Trim whitespace also.
+
+
+Between steps 2 and 4 there will be an AI /API cross checker which I will implement later. So design this system so an extra layer can be added here.
+
+---
+
+
+
+
+We Now need to start implementing the feature where we can track the audio files submitted. We do this as we will enfore many checks on them before we can officially write to library.bin important data like: stringTable (artistName, Album, songName) then artistId, albumId etc. We will also need to set an id of sort so if something goes wrong with a file we can pinpoint which one.
+
+
+
+The Steps to do this for now are as follows:
+
+1. User selects a file or files. We temporarily store these with a temportTrackingId to do checks.
+
+
+
+2. Then in the background, we will look if this audio file has ID3 tag with information on Artist, Album and Song Name. Most music files have an ID3 tag with music metadata like node-id3, ifg all required fields are present mark as metadata-complete, if not -> metadata-incomplete and move on to the next section.
+For now we will change the frontend. So beside the song will say metadata complete or metadataIncomplete. This will be an ENUM.
+
+Can you implement this for me please with good practice at all times
+
+
+---
+
+If audio metadata is returned as 'incomplete' after the ID3 checker. Create a component and a form to ask the user for manual confirmation. Should I include all data like duration and track number, year. I think artist, album and title will be as much as I show on the esp32. Once this is added save the form data as the next step will be parsing this into the library.bin
+
+
+
+
+
+
+
+--- understanding About
+
+returns custom <Header> Component for title and description.
+
+Uses AboutCard Components for other data!
+
+Has a fun Section at the end where text style is different.
+
+
+
+
+
+--- understanding Upload
+
+Read through first then aim to give a summary:
+
+Good File Size.
+
+
+we Immeditiately destructure useLibraryConfig which is an easy way of using all of the services from rust.
+
+useLibraryConfig hook:
+
+uses try and catch to call rust functions. Also on call we use a useEffect to load libraryPAth -> if this exists then fetch the library info data (this calls getLibraryInfo in rust)
+
+### Rust getLibraryInfo (takes a string as path)
+
+In this library file we assume if a path exists we 'cd' to it. once here there must be default JP3, music, metatdata, playlists so they are consts here
+
+For type saftey we return ok if !path doesn't exist that means we have not initialised the library which is done with another function: initialize_library
+
+We then create the path for music, playlist and metadata.
+
+we then have code calledmusic buckets which I believe counts instances of songs in /music to return the song count.
+
+This doesn't return what I expected... returns:
+
+initialised: true
+jp3_path (where library stored)
+music_buckets (must be something more)
+has_library_bin: boolean if library bin exists.
+
+in my head library_info is still worthless for view. Maybe it is enough for this section though?
+
+---
+
+
+### Upload.jsx
+
+get many variables and functions from useLibraryConfig hook
+
+if loading show -> loading screen 'loading config'
+
+else:
+
+
+return
+
+Header (upload your music)
+
+<DirecotryConfig (takes in libraryInfo (which is like path and music count..., save and clearLibraryPath which calls rust services))
+
+if isConfigured and isInitialised states are true from the useLibraryconfig (which runs these services as checks when the page is loaded) then we will show the component:
+
+<UploadFile, which takes the libraryPAth>
+
+
+
+
+
+#### U may be wondering how do we actually save paths here?
+
+
+we use Tauri_Plugin_store which saves locally saved path lcoally to a config.json saved under a constant name like STORE_FILENAME = 'config.json'
+
+To clear this we can call the .store plugin commands like .save, .delete and .get
+
+
+----
+
+### DirecotryConfig
+
+
+Summary
+
+This is the card which shows the frontend to saving the libraryPath.
+We also use a buuilt in open tauri function so this makes this application cross platform. 
+
+
+if library path exists show compacted card where the librar is stored and we are ready for upload. Thios upload will also show if libraryPath existrs and is configured properly. In this menu we also call rust service if we want to clear or set a new path. 
+
+We also have a larger card if library path isn't configured. This gives informatiun about how the fiule structure will be. Here will also call initalise and saveDirecotry based on where the user selects where they want there directory t be sacved. 
+
+### UploadFile
+
+
+(Long ass file this can perhaps be optimised after I understand it look for opprutinities along the way! maybe update instruction file so files should aim to be no more than 250 lines of code!!! Ideally less the better!)
+
+
+Summary:
+
+
+list of states for tracking files, processing, saving, editingField, currentReviewIndex
+
+Immediately there is too much stuff gping on in this file. 
+
+
+Also we broing in rust packages
+
+processAudioFiles,
+MetadatStatus (ENUM)
+saveToLibrary (pasre to library.bin)
+
+
+We create a useMemo (rendered once per reload. )
+
+this takes in state trackedFiles (which is an array). filters them by their enum metadataStatus.
+
+we then populate inComplete files (files that when we went through the pipeline didn't get assigned an artist or anything)
+
+we also design a function called selectFiles which uses tauris open. There is a built in filter to only allow certain auido extensions. 
+
+if selected (files chosen is null) then return. 
+
+we then pass the paths of these files into our big rust function processAudioFiles
+
+
+
+
+
+
+
+### ProcessAduioFiles
+
+we get an mp3 file path for example:
+
+filePaths are a vector as they are dynamic we won't know the size of the array before hand. They are of ttype TrackedAudioFile which has this data:
+   tracking_id,
+            file_path,
+            file_name,
+            file_extension,
+            file_size,
+            metadata_status: MetadataStatus::Pending,
+            metadata: AudioMetadata::default(),
+            error_message: None,
+
+
+
+To create a TrackedAudioFile we just have to pass in tracking_id (which is a uuid here) and file path. Everything else can be gathered from this data.
+
+When we process an mp3 file. The id3_metadata function is called ONLY on mp3 files. For this reason it is crucial we have other means to extract song data. many songs will not be mp3 files. We must text these.
+
+What extract_id3_metadata does:
+
+get path go to to filePath
+
+We have a library called Tag. Which attmpts to read id3 data for us. if match (Tag(filepath)) returns a OK then we attempt to extract .title, artist, album, track number, year, duration.
+
+If we error out and this fails we simply return metadata incpmplete
+
+if song is not mp3 or wav, flac etc we by default return metadata_incomplete.
+
+---
+
+After we process Audio Files (function creation) we instantiate other functions like clearFiles (reset all states)
+
+And a function to SaveMetaData (if grabbed) this function does:
+
+we grab all data from using setTrackedFiles -> using prev in react is a way to also access the data of the corresponding state.
+
+So we filter the trackedFiles for the tracking id given in this function.
+
+if we get an id match we set the data of that index in the setTrackedFiles with the given metadata (if incomplete the only metadata we give is artist, album and songName).
+
+if state showReviewMode is still true that meansthere are other incomplete files. Earlier we made an aray called incompleteFiles. We filter through these files to show where to review next.
+
+There is an option to skip file. I don't know what this does. It removes file completely -> skip is misleading either should add skip status (ideal) or change it to delete file for now.
+
+
+We now have a function which adds files to a library. This is a heavy rust function using the library.bin logic. Files to save are put into an object with sourcePath, metadata.
+
+What is going on in saveToLibrary:
+
+takes libraryPath and fileToSave (struct made to match the one in frontend)
+
+we get the paths based off of the library path. 
+
+We build library tables from models page, stringTable, album, artist, song
+
+We have HashMaps for duplication in ere incase artists and albums have the same name (dk if this is the best practice)
+
+We get current bucket and fileType as songs will be split up into divisions of 256.
+
+dk what this does: 
+    let mut files_saved = 0u32;
+
+
+Now we go through the data given checking each source_ppath (ensure auuido file exists)
+
+have validation to ensure title, album and artist are there and not empty.
+
+We go through and create album artist and songs (checking if there ids match up to the given metadata string counterparts so they can be reused).
+
+We organise song files into different folders if they exceed limit of 256 (music/00, music/01).
+
+With this data we add byte data which is optimial. We have a parse which can parse this in.
+
+Now back in Upload we return to the frontend.
+
+We show menu to add files from folder 9which calls selectFiles which processes audio files and setStates to show which files are incomplete.
+
+We have a button to clear files if we added many by mistake.
+
+
+
+
+- Say I want to upload an Album and I say the Album is Perhelion and by Sungazer. Then the only other metadata I would need to know would be the songName.
+
+If these match up then this is fine. Ultimately. The rate limiting ffrom MusicBrainz is the issue. However If I do want to add 500 songs (500 seconds + 100seconds buffering -> that is -> 10 minutes (ok ths isn't great but it is a free music player where I sort out the songs for the user. if anything I can have a double check for names)).
+
+I feel I should push the working approach.
+
+Then I can begin to start designing the API middle man, fuzzy logic and pre writing possible artist and title
+
+Say file name is artist-album-song parse these in.
+
+Have menu to add certain kinds of file types for the file parsers to know
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

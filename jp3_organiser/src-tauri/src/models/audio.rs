@@ -164,6 +164,21 @@ pub struct AudioFingerprintResult {
 
 
 
+/// Extracted song metadata from AcoustID ranking.
+/// This is the final result returned after ranking candidates.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SongMetadata {
+    /// Song title
+    pub title: String,
+    /// Artist name
+    pub artist: String,
+    /// Album name
+    pub album: String,
+    /// Release year (optional)
+    pub year: Option<i32>,
+}
+
 /// Result of processing multiple audio files.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

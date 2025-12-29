@@ -1,0 +1,1 @@
+When running dev should append with RUST_LOG=jp3_organiser=debug,tauri=info npm run tauri dev

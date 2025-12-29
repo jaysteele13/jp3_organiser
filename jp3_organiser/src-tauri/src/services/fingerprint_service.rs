@@ -38,7 +38,7 @@ pub fn lookup_acoustid(fingerprint_result: &ProcessedAudioFingerprint) -> anyhow
         .query(&[
             ("client", api_key.as_str()),
             ("format", "json"),
-            ("meta", "recordings releasegroups compress"),  
+            ("meta", "recordings releasegroups compress sources releases"),  
             ("duration", &fingerprint_result.duration_seconds.to_string()),
             ("fingerprint", &fingerprint_result.fingerprint_id),
         ])
@@ -54,10 +54,6 @@ pub fn lookup_acoustid(fingerprint_result: &ProcessedAudioFingerprint) -> anyhow
         log::error!("Failed to read response body: {}", e);
         anyhow::anyhow!("Failed to read response: {}", e)
     })?;
-
-    log::info!("Response body (first 200 chars): {}",
-        &response_text[..std::cmp::min(200, response_text.len())]
-    );
 
     let json: serde_json::Value = serde_json::from_str(&response_text).map_err(|e| {
         log::error!("Failed to parse JSON response: {}", e);

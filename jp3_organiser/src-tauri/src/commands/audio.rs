@@ -44,7 +44,7 @@ pub fn get_audio_metadata_from_acoustic_id(file_path: String, tracking_id: Strin
         format!("AcousticID lookup failed: {}", e)
     })?;
 
-    log::info!("AcousticID lookup successful: {:?}", result_json);
+    log::info!("AcousticID lookup successful!");
     Ok(result_json)
 }
 
@@ -96,7 +96,6 @@ pub fn process_audio_files(file_paths: Vec<String>) -> Result<ProcessedFilesResu
         match acoustic_id_result {
             Ok(result_json) => {
                 log::info!("Successfully got AcousticID result for file: {}", file_path);
-                log::info!("AcousticID result: {:?}", result_json);
                 // TODO: Parse the result and update tracked_file metadata
             }
             Err(e) => {
