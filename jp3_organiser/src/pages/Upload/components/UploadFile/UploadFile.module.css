@@ -88,8 +88,12 @@
   opacity: 0.9;
 }
 
-.statComplete {
+.statConfirmed {
   color: var(--secondary);
+}
+
+.statAutomated {
+  color: var(--tertiary-light, #5dade2);
 }
 
 .statIncomplete {
@@ -235,7 +239,8 @@
 }
 
 /* Status badges */
-.statusComplete,
+.statusConfirmed,
+.statusAutomated,
 .statusIncomplete,
 .statusError,
 .statusPending {
@@ -248,8 +253,13 @@
   letter-spacing: 0.5px;
 }
 
-.statusComplete {
+.statusConfirmed {
   background-color: var(--secondary);
+  color: #fff;
+}
+
+.statusAutomated {
+  background-color: var(--tertiary);
   color: #fff;
 }
 

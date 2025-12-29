@@ -163,6 +163,16 @@
   color: #fff;
 }
 
+.statusconfirmed {
+  background-color: var(--secondary);
+  color: #fff;
+}
+
+.statusautomated {
+  background-color: var(--tertiary);
+  color: #fff;
+}
+
 .statusincomplete {
   background-color: #f0ad4e;
   color: #000;

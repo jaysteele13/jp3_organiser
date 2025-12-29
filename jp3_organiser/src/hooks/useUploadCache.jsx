@@ -57,14 +57,25 @@ export function UploadCacheProvider({ children }) {
   const [error, setError] = useState(null);
 
   // Calculate stats from current files
-  const stats = useMemo(() => ({
-    total: trackedFiles.length,
-    complete: trackedFiles.filter(f => f.metadataStatus === MetadataStatus.COMPLETE).length,
-    incomplete: trackedFiles.filter(f => f.metadataStatus === MetadataStatus.INCOMPLETE).length,
-    error: trackedFiles.filter(f => f.metadataStatus === MetadataStatus.ERROR).length,
-    confirmed: trackedFiles.filter(f => f.isConfirmed).length,
-    pending: trackedFiles.filter(f => !f.isConfirmed && f.metadataStatus !== MetadataStatus.ERROR).length,
-  }), [trackedFiles]);
+  const stats = useMemo(() => {
+    const confirmed = trackedFiles.filter(f => f.isConfirmed).length;
+    const automated = trackedFiles.filter(
+      f => f.metadataStatus === MetadataStatus.COMPLETE && !f.isConfirmed
+    ).length;
+    const incomplete = trackedFiles.filter(f => f.metadataStatus === MetadataStatus.INCOMPLETE).length;
+    const error = trackedFiles.filter(f => f.metadataStatus === MetadataStatus.ERROR).length;
+    
+    return {
+      total: trackedFiles.length,
+      confirmed,
+      automated,
+      incomplete,
+      error,
+      // Legacy: keep 'complete' for backward compatibility (all files with complete metadata)
+      complete: trackedFiles.filter(f => f.metadataStatus === MetadataStatus.COMPLETE).length,
+      pending: trackedFiles.filter(f => !f.isConfirmed && f.metadataStatus !== MetadataStatus.ERROR).length,
+    };
+  }, [trackedFiles]);
 
   // Get incomplete files for review
   const incompleteFiles = useMemo(() => 

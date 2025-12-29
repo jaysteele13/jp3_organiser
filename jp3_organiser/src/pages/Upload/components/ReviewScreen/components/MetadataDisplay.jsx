@@ -2,6 +2,11 @@
  * MetadataDisplay Component
  * 
  * Displays the metadata for a song with source indicator.
+ * 
+ * Status labels:
+ * - Confirmed: User has reviewed and approved
+ * - Automated: Has complete metadata from ID3/fingerprint
+ * - Incomplete: Missing required fields
  */
 
 import React from 'react';
@@ -25,11 +30,28 @@ function getSourceLabel(source) {
   }
 }
 
+/**
+ * Get display status label based on file state.
+ * @param {string} metadataStatus - The raw metadata status
+ * @param {boolean} isConfirmed - Whether user has confirmed this file
+ * @returns {Object} { label, className }
+ */
+function getStatusDisplay(metadataStatus, isConfirmed) {
+  if (isConfirmed) {
+    return { label: 'Confirmed', className: 'statusconfirmed' };
+  }
+  if (metadataStatus === 'complete') {
+    return { label: 'Automated', className: 'statusautomated' };
+  }
+  return { label: 'Incomplete', className: 'statusincomplete' };
+}
+
 export default function MetadataDisplay({ file }) {
   if (!file) return null;
 
-  const { metadata, metadataSource, metadataStatus } = file;
+  const { metadata, metadataSource, metadataStatus, isConfirmed } = file;
   const isAutomated = metadataSource === 'id3' || metadataSource === 'fingerprint';
+  const statusDisplay = getStatusDisplay(metadataStatus, isConfirmed);
 
   return (
     <div className={styles.metadataDisplay}>
@@ -83,8 +105,8 @@ export default function MetadataDisplay({ file }) {
 
       {/* Status indicator */}
       <div className={styles.statusRow}>
-        <span className={`${styles.statusBadge} ${styles[`status${metadataStatus}`]}`}>
-          {metadataStatus === 'complete' ? 'Complete' : 'Incomplete'}
+        <span className={`${styles.statusBadge} ${styles[statusDisplay.className]}`}>
+          {statusDisplay.label}
         </span>
       </div>
     </div>

@@ -41,7 +41,7 @@ export default function FileList({
               </button>
             )}
             <div className={styles.fileStatus}>
-              <StatusBadge status={file.metadataStatus} />
+              <StatusBadge status={file.metadataStatus} isConfirmed={file.isConfirmed} />
             </div>
           </div>
         </li>
