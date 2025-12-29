@@ -131,6 +131,7 @@ export default function ReviewScreen({
             canGoNext={navigation.canGoNext}
             isConfirmed={navigation.currentFile.isConfirmed}
             reviewAll={reviewAll}
+            validationError={navigation.validationError}
             onPrevious={navigation.goPrevious}
             onNext={navigation.goNext}
             onConfirm={navigation.confirmCurrent}

@@ -56,6 +56,12 @@
   color: var(--primary);
 }
 
+.optional {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+  font-size: 0.75rem;
+}
+
 .input {
   padding: 0.5rem 0.75rem;
   font-size: 0.9rem;

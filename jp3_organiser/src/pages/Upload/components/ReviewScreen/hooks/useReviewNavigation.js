@@ -7,13 +7,41 @@
  * Supports two modes:
  * - Normal mode: Only shows pending (unconfirmed) files
  * - Review All mode: Shows all files, allows un-confirming
+ * 
+ * Includes validation to ensure required fields are present before confirming.
  */
 
 import { useState, useCallback, useMemo } from 'react';
 
+/**
+ * Validate that a file has all required metadata fields.
+ * @param {Object} file - The file to validate
+ * @returns {Object} { isValid: boolean, missingFields: string[] }
+ */
+function validateMetadata(file) {
+  const missingFields = [];
+  const metadata = file?.metadata;
+
+  if (!metadata?.title?.trim()) {
+    missingFields.push('Title');
+  }
+  if (!metadata?.artist?.trim()) {
+    missingFields.push('Artist');
+  }
+  if (!metadata?.album?.trim()) {
+    missingFields.push('Album');
+  }
+
+  return {
+    isValid: missingFields.length === 0,
+    missingFields,
+  };
+}
+
 export function useReviewNavigation(files, { onConfirm, onUnconfirm, onRemove, onEdit, reviewAll = false }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [validationError, setValidationError] = useState(null);
 
   // Get files to display based on mode
   const displayFiles = useMemo(() => {
@@ -32,6 +60,12 @@ export function useReviewNavigation(files, { onConfirm, onUnconfirm, onRemove, o
     return displayFiles[safeIndex];
   }, [displayFiles, currentIndex]);
 
+  // Validate current file
+  const currentValidation = useMemo(() => {
+    if (!currentFile) return { isValid: true, missingFields: [] };
+    return validateMetadata(currentFile);
+  }, [currentFile]);
+
   // Navigation stats
   const totalFiles = displayFiles.length;
   const currentPosition = totalFiles > 0 ? Math.min(currentIndex + 1, totalFiles) : 0;
@@ -40,26 +74,41 @@ export function useReviewNavigation(files, { onConfirm, onUnconfirm, onRemove, o
   const canGoNext = currentIndex < displayFiles.length - 1;
   const canGoPrevious = currentIndex > 0;
 
+  // Clear validation error when navigating
+  const clearValidationError = useCallback(() => {
+    setValidationError(null);
+  }, []);
+
   // Go to next file
   const goNext = useCallback(() => {
     if (canGoNext) {
       setCurrentIndex(prev => prev + 1);
       setIsEditMode(false);
+      clearValidationError();
     }
-  }, [canGoNext]);
+  }, [canGoNext, clearValidationError]);
 
   // Go to previous file
   const goPrevious = useCallback(() => {
     if (canGoPrevious) {
       setCurrentIndex(prev => prev - 1);
       setIsEditMode(false);
+      clearValidationError();
     }
-  }, [canGoPrevious]);
+  }, [canGoPrevious, clearValidationError]);
 
-  // Confirm current file
+  // Confirm current file (with validation)
   const confirmCurrent = useCallback(() => {
     if (!currentFile) return;
     
+    // Validate required fields
+    const validation = validateMetadata(currentFile);
+    if (!validation.isValid) {
+      setValidationError(`Missing required fields: ${validation.missingFields.join(', ')}`);
+      return;
+    }
+    
+    clearValidationError();
     onConfirm(currentFile.trackingId);
     
     // In reviewAll mode, stay on the same file (just mark it confirmed)
@@ -70,20 +119,22 @@ export function useReviewNavigation(files, { onConfirm, onUnconfirm, onRemove, o
       }
     }
     setIsEditMode(false);
-  }, [currentFile, currentIndex, displayFiles.length, onConfirm, reviewAll]);
+  }, [currentFile, currentIndex, displayFiles.length, onConfirm, reviewAll, clearValidationError]);
 
   // Unconfirm current file (for re-review mode)
   const unconfirmCurrent = useCallback(() => {
     if (!currentFile || !onUnconfirm) return;
     
+    clearValidationError();
     onUnconfirm(currentFile.trackingId);
     setIsEditMode(false);
-  }, [currentFile, onUnconfirm]);
+  }, [currentFile, onUnconfirm, clearValidationError]);
 
   // Remove current file from list
   const removeCurrent = useCallback(() => {
     if (!currentFile) return;
     
+    clearValidationError();
     onRemove(currentFile.trackingId);
     
     // Adjust index if needed
@@ -91,12 +142,13 @@ export function useReviewNavigation(files, { onConfirm, onUnconfirm, onRemove, o
       setCurrentIndex(prev => prev - 1);
     }
     setIsEditMode(false);
-  }, [currentFile, currentIndex, displayFiles.length, onRemove]);
+  }, [currentFile, currentIndex, displayFiles.length, onRemove, clearValidationError]);
 
   // Enter edit mode
   const enterEditMode = useCallback(() => {
+    clearValidationError();
     setIsEditMode(true);
-  }, []);
+  }, [clearValidationError]);
 
   // Exit edit mode
   const exitEditMode = useCallback(() => {
@@ -105,14 +157,16 @@ export function useReviewNavigation(files, { onConfirm, onUnconfirm, onRemove, o
 
   // Save edited metadata
   const saveEdit = useCallback((trackingId, metadata) => {
+    clearValidationError();
     onEdit(trackingId, metadata);
     setIsEditMode(false);
-  }, [onEdit]);
+  }, [onEdit, clearValidationError]);
 
   // Reset navigation
   const reset = useCallback(() => {
     setCurrentIndex(0);
     setIsEditMode(false);
+    setValidationError(null);
   }, []);
 
   // Check if all files are confirmed (only relevant in normal mode)
@@ -125,9 +179,11 @@ export function useReviewNavigation(files, { onConfirm, onUnconfirm, onRemove, o
     // State
     currentIndex,
     isEditMode,
+    validationError,
     
     // Computed
     currentFile,
+    currentValidation,
     totalFiles,
     currentPosition,
     canGoNext,
@@ -144,5 +200,6 @@ export function useReviewNavigation(files, { onConfirm, onUnconfirm, onRemove, o
     exitEditMode,
     saveEdit,
     reset,
+    clearValidationError,
   };
 }

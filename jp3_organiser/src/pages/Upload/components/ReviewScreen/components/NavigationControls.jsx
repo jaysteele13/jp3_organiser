@@ -17,6 +17,7 @@ export default function NavigationControls({
   canGoNext,
   isConfirmed,
   reviewAll,
+  validationError,
   onPrevious,
   onNext,
   onConfirm,
@@ -95,6 +96,13 @@ export default function NavigationControls({
           Remove
         </button>
       </div>
+
+      {/* Validation error */}
+      {validationError && (
+        <div className={styles.validationError}>
+          {validationError}
+        </div>
+      )}
 
       {/* Keyboard hint */}
       <div className={styles.keyboardHint}>
