@@ -4,6 +4,9 @@
  * Provides persistent storage for processed audio files across navigation.
  * Files remain cached until explicitly cleared or saved to library.
  * 
+ * Note: Only trackedFiles and error are persisted. Success messages are
+ * transient and should be managed locally in the consuming component.
+ * 
  * Usage:
  * 1. Wrap app with <UploadCacheProvider>
  * 2. Use useUploadCache() hook to access cached state
@@ -25,12 +28,19 @@ const UploadCacheContext = createContext(null);
 /**
  * Provider component that maintains upload state across navigation.
  * Place this near the top of the component tree (e.g., in App.jsx).
+ * 
+ * Persisted state:
+ * - trackedFiles: The processed audio files
+ * - error: Any error message (persisted so user sees it when returning)
+ * 
+ * NOT persisted (should be local state):
+ * - successMessage: Transient feedback after saving to library
+ * - isProcessing, isSaving: Loading states
  */
 export function UploadCacheProvider({ children }) {
   // Core state that persists across navigation
   const [trackedFiles, setTrackedFiles] = useState([]);
   const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
 
   // Calculate stats from current files
   const stats = useMemo(() => ({
@@ -67,11 +77,10 @@ export function UploadCacheProvider({ children }) {
     setTrackedFiles(files);
   }, []);
 
-  // Clear all files and messages
+  // Clear all files and error
   const clearAll = useCallback(() => {
     setTrackedFiles([]);
     setError(null);
-    setSuccessMessage(null);
   }, []);
 
   // Update metadata for a file and mark as complete
@@ -104,7 +113,6 @@ export function UploadCacheProvider({ children }) {
     // State
     trackedFiles,
     error,
-    successMessage,
     
     // Computed
     stats,
@@ -120,13 +128,10 @@ export function UploadCacheProvider({ children }) {
     removeFile,
     removeCompleteFiles,
     setError,
-    setSuccessMessage,
     clearError: () => setError(null),
-    clearSuccess: () => setSuccessMessage(null),
   }), [
     trackedFiles,
     error,
-    successMessage,
     stats,
     incompleteFiles,
     allFilesReady,

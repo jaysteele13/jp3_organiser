@@ -68,10 +68,11 @@ export function useFileUpload(libraryPath) {
   // Get persisted state from context
   const cache = useUploadCache();
   
-  // Local processing state (not persisted - transient)
+  // Local state (not persisted - transient)
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [processingProgress, setProcessingProgress] = useState({ current: 0, total: 0 });
+  const [successMessage, setSuccessMessage] = useState(null);
   
   // Ref for cancellation
   const cancelRef = useRef(false);
@@ -80,6 +81,7 @@ export function useFileUpload(libraryPath) {
   const selectFiles = useCallback(async () => {
     try {
       cache.clearError();
+      setSuccessMessage(null);
       cancelRef.current = false;
       
       const selected = await open({
@@ -136,6 +138,7 @@ export function useFileUpload(libraryPath) {
   const clearFiles = useCallback(() => {
     cancelRef.current = true;
     cache.clearAll();
+    setSuccessMessage(null);
     setProcessingProgress({ current: 0, total: 0 });
   }, [cache]);
 
@@ -158,7 +161,7 @@ export function useFileUpload(libraryPath) {
     try {
       setIsSaving(true);
       cache.clearError();
-      cache.clearSuccess();
+      setSuccessMessage(null);
 
       const filesToSave = completeFiles.map(f => ({
         sourcePath: f.filePath,
@@ -167,7 +170,7 @@ export function useFileUpload(libraryPath) {
 
       const result = await saveToLibrary(libraryPath, filesToSave);
 
-      cache.setSuccessMessage(
+      setSuccessMessage(
         `Added ${result.filesSaved} file(s) to library. ` +
         `${result.artistsAdded} artist(s), ${result.albumsAdded} album(s), ${result.songsAdded} song(s).`
       );
@@ -188,12 +191,12 @@ export function useFileUpload(libraryPath) {
     // State (from cache - persisted)
     trackedFiles: cache.trackedFiles,
     error: cache.error,
-    successMessage: cache.successMessage,
     
     // State (local - transient)
     isProcessing,
     isSaving,
     processingProgress,
+    successMessage,
     
     // Computed (from cache)
     stats: cache.stats,
@@ -208,6 +211,6 @@ export function useFileUpload(libraryPath) {
     removeFile: cache.removeFile,
     saveToLibrary: saveToLibraryHandler,
     clearError: cache.clearError,
-    clearSuccess: cache.clearSuccess,
+    clearSuccess: () => setSuccessMessage(null),
   };
 }
