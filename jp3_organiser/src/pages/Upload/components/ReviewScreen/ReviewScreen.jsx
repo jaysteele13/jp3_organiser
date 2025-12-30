@@ -13,6 +13,7 @@
  * - Keyboard shortcut: Shift+Enter to confirm
  * - Re-review mode: view all files including confirmed ones
  * - Persists navigation position across page navigation
+ * - Autosuggest from library data when editing
  * 
  * @param {Object} props
  * @param {Array} props.files - Files to review
@@ -25,6 +26,7 @@
  * @param {function} props.onUnconfirmFile - Called when a file is unconfirmed (re-review mode)
  * @param {function} props.onRemoveFile - Called when a file is removed
  * @param {function} props.onEditFile - Called when file metadata is edited
+ * @param {Object} props.library - Parsed library data for autosuggest
  */
 
 import React, { useEffect } from 'react';
@@ -45,6 +47,7 @@ export default function ReviewScreen({
   onUnconfirmFile,
   onRemoveFile,
   onEditFile,
+  library,
 }) {
   // Navigation hook
   const navigation = useReviewNavigation(files, {
@@ -110,6 +113,7 @@ export default function ReviewScreen({
               file={navigation.currentFile}
               onSave={navigation.saveEdit}
               onCancel={navigation.exitEditMode}
+              library={library}
             />
           </div>
         ) : (

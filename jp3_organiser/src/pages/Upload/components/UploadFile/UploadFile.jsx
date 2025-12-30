@@ -11,6 +11,7 @@
  * 
  * @param {Object} props
  * @param {string} props.libraryPath - The configured library directory path
+ * @param {Object} props.library - Parsed library data for autosuggest
  */
 
 import React, { useState, useCallback } from 'react';
@@ -20,7 +21,7 @@ import { useUploadCache, UploadStage } from '../../../../hooks';
 import { saveToLibrary, MetadataStatus } from '../../../../services';
 import styles from './UploadFile.module.css';
 
-export default function UploadFile({ libraryPath }) {
+export default function UploadFile({ libraryPath, library }) {
   const cache = useUploadCache();
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
@@ -188,6 +189,7 @@ export default function UploadFile({ libraryPath }) {
           onUnconfirmFile={handleUnconfirmFile}
           onRemoveFile={handleRemoveFile}
           onEditFile={handleEditFile}
+          library={library}
         />
       )}
 

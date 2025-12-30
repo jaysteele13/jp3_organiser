@@ -14,7 +14,8 @@ export default function ReviewPanel({
   totalFiles,
   onSave,
   onSkip,
-  onExit 
+  onExit,
+  library
 }) {
   if (!currentFile) return null;
 
@@ -35,6 +36,7 @@ export default function ReviewPanel({
         file={currentFile}
         onSave={onSave}
         onSkip={onSkip}
+        library={library}
       />
     </div>
   );

@@ -2,7 +2,7 @@ import React from 'react';
 import Header from '../../components/Header';
 import DirectoryConfig from './components/DirectoryConfig';
 import UploadFile from './components/UploadFile';
-import { useLibraryConfig } from '../../hooks';
+import { useLibraryConfig, useLibrary } from '../../hooks';
 import styles from './Upload.module.css';
 
 /**
@@ -29,6 +29,9 @@ export default function Upload() {
     saveLibraryPath, 
     clearLibraryPath 
   } = useLibraryConfig();
+
+  // Load library data for autosuggest functionality
+  const { library } = useLibrary(isConfigured ? libraryPath : null);
 
   if (isLoading) {
     return (
@@ -61,7 +64,7 @@ export default function Upload() {
       />
 
       {isConfigured && isInitialized && (
-        <UploadFile libraryPath={libraryPath} />
+        <UploadFile libraryPath={libraryPath} library={library} />
       )}
     </div>
   );

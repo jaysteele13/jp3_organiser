@@ -7,15 +7,20 @@
  * Required fields: title, artist, album
  * Optional fields: year
  * 
- * Features autofill suggestions based on filename - press Tab to accept.
+ * Features hybrid autofill suggestions:
+ * - Empty field: Shows filename-based heuristic suggestion (Tab to accept)
+ * - Typing: Shows library-based fuzzy match suggestions (Tab to accept)
  */
 
-import React, { useState, useEffect } from 'react';
-import { useAutoSuggest } from '../../../../hooks';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useAutoSuggest, SuggestionSource } from '../../../../hooks';
+import { extractLibraryEntries } from '../../../../utils';
 import styles from './MetadataForm.module.css';
 
 /**
- * Input field with autofill suggestion overlay
+ * Input field with hybrid autofill suggestions
+ * - Filename suggestion shown as placeholder when empty
+ * - Library suggestion shown as inline completion when typing
  */
 function SuggestibleInput({ 
   id, 
@@ -23,12 +28,21 @@ function SuggestibleInput({
   value, 
   onChange, 
   filename,
+  libraryEntries,
   placeholder,
   error,
   maxLength,
-  showSuggestion = true
+  enableSuggestions = true
 }) {
-  const { suggestion, handleKeyDown } = useAutoSuggest(filename, value);
+  const { suggestion, source, completionText, handleKeyDown } = useAutoSuggest(
+    filename, 
+    value,
+    {
+      libraryEntries,
+      enableFilename: enableSuggestions,
+      enableLibrary: enableSuggestions && libraryEntries?.length > 0,
+    }
+  );
   
   const handleAccept = (suggestedValue) => {
     onChange({ target: { name, value: suggestedValue } });
@@ -38,7 +52,13 @@ function SuggestibleInput({
     handleKeyDown(e, handleAccept);
   };
 
-  const displaySuggestion = showSuggestion ? suggestion : null;
+  // Determine what to show based on suggestion source
+  const isFilenameSuggestion = source === SuggestionSource.FILENAME;
+  const isLibrarySuggestion = source === SuggestionSource.LIBRARY;
+
+  // For filename suggestions, use placeholder
+  // For library suggestions, show inline completion overlay
+  const displayPlaceholder = isFilenameSuggestion ? suggestion : placeholder;
 
   return (
     <div className={styles.inputWrapper}>
@@ -50,13 +70,22 @@ function SuggestibleInput({
         onChange={onChange}
         onKeyDown={onKeyDown}
         className={`${styles.input} ${error ? styles.inputError : ''}`}
-        placeholder={displaySuggestion || placeholder}
+        placeholder={displayPlaceholder}
         maxLength={maxLength}
       />
-      {displaySuggestion && (
-        <span className={styles.suggestionHint}>Tab to accept</span>
+      {/* Library suggestion: show completion text after cursor */}
+      {isLibrarySuggestion && completionText && (
+        <div className={styles.completionOverlay}>
+          <span className={styles.completionTyped}>{value}</span>
+          <span className={styles.completionText}>{completionText}</span>
+        </div>
       )}
-      
+      {/* Show hint badge for either suggestion type */}
+      {suggestion && (
+        <span className={`${styles.suggestionHint} ${isLibrarySuggestion ? styles.libraryHint : ''}`}>
+          Tab to accept
+        </span>
+      )}
     </div>
   );
 }
@@ -65,7 +94,8 @@ export default function MetadataForm({
   file, 
   onSave, 
   onCancel,
-  onSkip 
+  onSkip,
+  library
 }) {
   const [formData, setFormData] = useState({
     title: '',
@@ -74,6 +104,11 @@ export default function MetadataForm({
     year: '',
   });
   const [errors, setErrors] = useState({});
+
+  // Extract library entries for suggestions
+  const libraryData = useMemo(() => {
+    return extractLibraryEntries(library);
+  }, [library]);
 
   // Initialize form with existing metadata
   useEffect(() => {
@@ -179,9 +214,10 @@ export default function MetadataForm({
             value={formData.title}
             onChange={handleChange}
             filename={file?.fileName}
+            libraryEntries={libraryData.titles}
             placeholder="Song title"
             error={errors.title}
-            showSuggestion={!file?.metadata?.title}
+            enableSuggestions={!file?.metadata?.title}
           />
           {errors.title && (
             <span className={styles.errorText}>{errors.title}</span>
@@ -198,9 +234,10 @@ export default function MetadataForm({
             value={formData.artist}
             onChange={handleChange}
             filename={file?.fileName}
+            libraryEntries={libraryData.artists}
             placeholder="Artist name"
             error={errors.artist}
-            showSuggestion={!file?.metadata?.artist}
+            enableSuggestions={!file?.metadata?.artist}
           />
           {errors.artist && (
             <span className={styles.errorText}>{errors.artist}</span>
@@ -217,9 +254,10 @@ export default function MetadataForm({
             value={formData.album}
             onChange={handleChange}
             filename={file?.fileName}
+            libraryEntries={libraryData.albums}
             placeholder="Album name"
             error={errors.album}
-            showSuggestion={!file?.metadata?.album}
+            enableSuggestions={!file?.metadata?.album}
           />
           {errors.album && (
             <span className={styles.errorText}>{errors.album}</span>
