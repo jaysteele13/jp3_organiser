@@ -60,6 +60,14 @@ function SuggestibleInput({
   // For library suggestions, show inline completion overlay
   const displayPlaceholder = isFilenameSuggestion ? suggestion : placeholder;
 
+  // Build input class names based on suggestion source
+  const inputClassNames = [
+    styles.input,
+    error ? styles.inputError : '',
+    isFilenameSuggestion ? styles.inputFilenameFocus : '',
+    isLibrarySuggestion ? styles.inputLibraryFocus : '',
+  ].filter(Boolean).join(' ');
+
   return (
     <div className={styles.inputWrapper}>
       <input
@@ -69,7 +77,7 @@ function SuggestibleInput({
         value={value}
         onChange={onChange}
         onKeyDown={onKeyDown}
-        className={`${styles.input} ${error ? styles.inputError : ''}`}
+        className={inputClassNames}
         placeholder={displayPlaceholder}
         maxLength={maxLength}
       />

@@ -82,6 +82,16 @@
   background-color: rgba(0, 0, 0, 0.3);
 }
 
+/* Filename/heuristic suggestion focus - tertiary (teal) */
+.inputFilenameFocus:focus {
+  border-color: var(--tertiary);
+}
+
+/* Library suggestion focus - secondary (lime) */
+.inputLibraryFocus:focus {
+  border-color: var(--secondary);
+}
+
 .inputError {
   border-color: var(--primary);
 }
