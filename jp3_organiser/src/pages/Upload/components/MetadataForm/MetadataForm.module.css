@@ -135,3 +135,43 @@
   border-color: var(--primary);
   color: #fff;
 }
+
+/* Autofill suggestion styles */
+.inputWrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.suggestionOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.suggestionText {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.suggestionHint {
+  font-size: 0.7rem;
+  color: var(--tertiary);
+  background-color: rgba(73, 182, 156, 0.15);
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+}

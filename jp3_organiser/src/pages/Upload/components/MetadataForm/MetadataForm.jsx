@@ -6,10 +6,62 @@
  * 
  * Required fields: title, artist, album
  * Optional fields: year
+ * 
+ * Features autofill suggestions based on filename - press Tab to accept.
  */
 
 import React, { useState, useEffect } from 'react';
+import { useAutoSuggest } from '../../../../hooks';
 import styles from './MetadataForm.module.css';
+
+/**
+ * Input field with autofill suggestion overlay
+ */
+function SuggestibleInput({ 
+  id, 
+  name, 
+  value, 
+  onChange, 
+  filename,
+  placeholder,
+  error,
+  maxLength,
+  showSuggestion = true
+}) {
+  const { suggestion, handleKeyDown } = useAutoSuggest(filename, value);
+  
+  const handleAccept = (suggestedValue) => {
+    onChange({ target: { name, value: suggestedValue } });
+  };
+
+  const onKeyDown = (e) => {
+    handleKeyDown(e, handleAccept);
+  };
+
+  const displaySuggestion = showSuggestion ? suggestion : null;
+
+  return (
+    <div className={styles.inputWrapper}>
+      <input
+        type="text"
+        id={id}
+        name={name}
+        value={value}
+        onChange={onChange}
+        onKeyDown={onKeyDown}
+        className={`${styles.input} ${error ? styles.inputError : ''}`}
+        placeholder={displaySuggestion ? '' : placeholder}
+        maxLength={maxLength}
+      />
+      {displaySuggestion && (
+        <div className={styles.suggestionOverlay}>
+          <span className={styles.suggestionText}>{displaySuggestion}</span>
+          <span className={styles.suggestionHint}>Tab to accept</span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function MetadataForm({ 
   file, 
@@ -123,14 +175,15 @@ export default function MetadataForm({
           <label htmlFor={`title-${file?.trackingId}`} className={styles.label}>
             Title <span className={styles.required}>*</span>
           </label>
-          <input
-            type="text"
+          <SuggestibleInput
             id={`title-${file?.trackingId}`}
             name="title"
             value={formData.title}
             onChange={handleChange}
-            className={`${styles.input} ${errors.title ? styles.inputError : ''}`}
+            filename={file?.fileName}
             placeholder="Song title"
+            error={errors.title}
+            showSuggestion={!file?.metadata?.title}
           />
           {errors.title && (
             <span className={styles.errorText}>{errors.title}</span>
@@ -141,14 +194,15 @@ export default function MetadataForm({
           <label htmlFor={`artist-${file?.trackingId}`} className={styles.label}>
             Artist <span className={styles.required}>*</span>
           </label>
-          <input
-            type="text"
+          <SuggestibleInput
             id={`artist-${file?.trackingId}`}
             name="artist"
             value={formData.artist}
             onChange={handleChange}
-            className={`${styles.input} ${errors.artist ? styles.inputError : ''}`}
+            filename={file?.fileName}
             placeholder="Artist name"
+            error={errors.artist}
+            showSuggestion={!file?.metadata?.artist}
           />
           {errors.artist && (
             <span className={styles.errorText}>{errors.artist}</span>
@@ -159,14 +213,15 @@ export default function MetadataForm({
           <label htmlFor={`album-${file?.trackingId}`} className={styles.label}>
             Album <span className={styles.required}>*</span>
           </label>
-          <input
-            type="text"
+          <SuggestibleInput
             id={`album-${file?.trackingId}`}
             name="album"
             value={formData.album}
             onChange={handleChange}
-            className={`${styles.input} ${errors.album ? styles.inputError : ''}`}
+            filename={file?.fileName}
             placeholder="Album name"
+            error={errors.album}
+            showSuggestion={!file?.metadata?.album}
           />
           {errors.album && (
             <span className={styles.errorText}>{errors.album}</span>
