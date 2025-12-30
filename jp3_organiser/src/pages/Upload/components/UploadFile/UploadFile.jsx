@@ -13,7 +13,7 @@
  * @param {string} props.libraryPath - The configured library directory path
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import ProcessFile from '../ProcessFile';
 import ReviewScreen from '../ReviewScreen';
 import { 
@@ -38,6 +38,30 @@ export default function UploadFile({ libraryPath }) {
     updateWorkflowState: cache.updateWorkflowState,
     resetWorkflowState: cache.resetWorkflowState,
   });
+
+  // Get reviewable files (non-error files, same filter as useReviewNavigation)
+  const reviewableFiles = useMemo(() => {
+    return cache.trackedFiles.filter(f => f.metadataStatus !== MetadataStatus.ERROR);
+  }, [cache.trackedFiles]);
+
+  // Find index of first unconfirmed file, or 0 if all confirmed
+  const getFirstUnconfirmedIndex = useCallback(() => {
+    const index = reviewableFiles.findIndex(f => !f.isConfirmed);
+    return index >= 0 ? index : 0;
+  }, [reviewableFiles]);
+
+  // Start review at first unconfirmed file
+  const handleStartReview = useCallback(() => {
+    const startIndex = getFirstUnconfirmedIndex();
+    cache.updateWorkflowState({ reviewIndex: startIndex });
+    workflow.startReview();
+  }, [workflow, cache, getFirstUnconfirmedIndex]);
+
+  // Back to review at first unconfirmed file
+  const handleBackToReview = useCallback(() => {
+    const startIndex = getFirstUnconfirmedIndex();
+    workflow.backToReview(startIndex);
+  }, [workflow, getFirstUnconfirmedIndex]);
 
   // Handle file confirmation in ReviewScreen
   const handleConfirmFile = useCallback((trackingId) => {
@@ -132,7 +156,7 @@ export default function UploadFile({ libraryPath }) {
 
       {/* Process stage - file selection and processing */}
       {workflow.isProcessing && (
-        <ProcessFile onStartReview={workflow.startReview} />
+        <ProcessFile onStartReview={handleStartReview} />
       )}
 
       {/* Review stage - confirming metadata */}
@@ -171,7 +195,7 @@ export default function UploadFile({ libraryPath }) {
 
             <button
               className={styles.backButton}
-              onClick={workflow.backToReview}
+              onClick={handleBackToReview}
               disabled={isSaving}
             >
               Back to Review

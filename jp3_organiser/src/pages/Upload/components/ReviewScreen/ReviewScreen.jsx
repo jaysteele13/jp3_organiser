@@ -134,20 +134,29 @@ export default function ReviewScreen({
             />
           </div>
         ) : (
-          /* View mode */
-          <SongCard
-            file={navigation.currentFile}
-            isConfirmed={navigation.currentFile.isConfirmed}
-            isPlaying={audio.isPlayingFile(navigation.currentFile.filePath)}
-            isLoading={audio.isLoading}
-            playbackPosition={audio.playbackPosition}
-            currentTime={audio.currentTime}
-            duration={audio.duration}
-            audioError={audio.error}
-            onPlayFromStart={audio.playFromStart}
-            onPlayFromMiddle={audio.playFromMiddle}
-            onPause={audio.pause}
-          />
+          /* View mode with slide animation */
+          <div 
+            key={navigation.currentFile.trackingId}
+            className={`${styles.songCardWrapper} ${
+              navigation.slideDirection === 'left' ? styles.slideInFromRight :
+              navigation.slideDirection === 'right' ? styles.slideInFromLeft : ''
+            }`}
+            onAnimationEnd={navigation.clearSlideDirection}
+          >
+            <SongCard
+              file={navigation.currentFile}
+              isConfirmed={navigation.currentFile.isConfirmed}
+              isPlaying={audio.isPlayingFile(navigation.currentFile.filePath)}
+              isLoading={audio.isLoading}
+              playbackPosition={audio.playbackPosition}
+              currentTime={audio.currentTime}
+              duration={audio.duration}
+              audioError={audio.error}
+              onPlayFromStart={audio.playFromStart}
+              onPlayFromMiddle={audio.playFromMiddle}
+              onPause={audio.pause}
+            />
+          </div>
         )}
 
         {/* Navigation controls */}

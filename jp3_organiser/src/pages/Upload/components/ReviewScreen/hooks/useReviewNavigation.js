@@ -51,6 +51,8 @@ export function useReviewNavigation(files, {
   const [currentIndex, setCurrentIndex] = useState(initialState?.currentIndex ?? 0);
   const [isEditMode, setIsEditMode] = useState(initialState?.isEditMode ?? false);
   const [validationError, setValidationError] = useState(null);
+  // Track navigation direction for slide animation: 'left', 'right', or null
+  const [slideDirection, setSlideDirection] = useState(null);
 
   // Use ref for callback to avoid effect re-runs
   const onStateChangeRef = useRef(onStateChange);
@@ -105,6 +107,7 @@ export function useReviewNavigation(files, {
   // Go to next file
   const goNext = useCallback(() => {
     if (canGoNext) {
+      setSlideDirection('left');
       setCurrentIndex(prev => prev + 1);
       setIsEditMode(false);
       clearValidationError();
@@ -114,6 +117,7 @@ export function useReviewNavigation(files, {
   // Go to previous file
   const goPrevious = useCallback(() => {
     if (canGoPrevious) {
+      setSlideDirection('right');
       setCurrentIndex(prev => prev - 1);
       setIsEditMode(false);
       clearValidationError();
@@ -182,6 +186,12 @@ export function useReviewNavigation(files, {
     setCurrentIndex(0);
     setIsEditMode(false);
     setValidationError(null);
+    setSlideDirection(null);
+  }, []);
+
+  // Clear slide direction (called after animation completes)
+  const clearSlideDirection = useCallback(() => {
+    setSlideDirection(null);
   }, []);
 
   // Check if all files are confirmed
@@ -194,6 +204,7 @@ export function useReviewNavigation(files, {
     currentIndex,
     isEditMode,
     validationError,
+    slideDirection,
     
     // Computed
     currentFile,
@@ -216,5 +227,6 @@ export function useReviewNavigation(files, {
     saveEdit,
     reset,
     clearValidationError,
+    clearSlideDirection,
   };
 }

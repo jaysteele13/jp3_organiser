@@ -81,6 +81,41 @@
   opacity: 0.8;
 }
 
+/* Song Card Wrapper with slide animations */
+.songCardWrapper {
+  will-change: transform, opacity;
+}
+
+.slideInFromRight {
+  animation: slideInFromRight 0.25s ease-out;
+}
+
+.slideInFromLeft {
+  animation: slideInFromLeft 0.25s ease-out;
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(30px);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-30px);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 /* Song Card */
 .songCard {
   background-color: rgba(0, 0, 0, 0.2);
