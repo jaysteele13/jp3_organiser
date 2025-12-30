@@ -6,28 +6,30 @@
  * and confirm or edit metadata before adding to library.
  * 
  * Features:
- * - Step through files with navigation arrows
+ * - Navigate freely between all files (confirmed or not)
+ * - Confirm/unconfirm any file at any time
  * - Audio preview (play from start or middle)
- * - Confirm details or remove from list
- * - Edit metadata inline
+ * - Edit metadata inline with autosuggest (uses LibraryContext)
  * - Keyboard shortcut: Shift+Enter to confirm
- * - Re-review mode: view all files including confirmed ones
  * - Persists navigation position across page navigation
+ * 
+ * Exit behavior:
+ * - "Done" button: Only enabled when all files confirmed, triggers onDone
+ * - "Exit" button: Always available, exits immediately (confirmed files are already saved)
  * 
  * @param {Object} props
  * @param {Array} props.files - Files to review
- * @param {boolean} props.reviewAll - If true, show all files including confirmed
  * @param {Object} props.initialState - Initial navigation state { currentIndex, isEditMode }
  * @param {function} props.onStateChange - Called when navigation state changes
- * @param {function} props.onComplete - Called when all files are reviewed
+ * @param {function} props.onDone - Called when user clicks Done (all files confirmed)
  * @param {function} props.onExit - Called when user exits review
  * @param {function} props.onConfirmFile - Called when a file is confirmed
- * @param {function} props.onUnconfirmFile - Called when a file is unconfirmed (re-review mode)
+ * @param {function} props.onUnconfirmFile - Called when a file is unconfirmed
  * @param {function} props.onRemoveFile - Called when a file is removed
  * @param {function} props.onEditFile - Called when file metadata is edited
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { SongCard, NavigationControls } from './components';
 import { useReviewNavigation, useAudioPlayer } from './hooks';
 import { useKeyboardShortcut } from '../../../../hooks';
@@ -36,10 +38,9 @@ import styles from './ReviewScreen.module.css';
 
 export default function ReviewScreen({
   files,
-  reviewAll = false,
   initialState,
   onStateChange,
-  onComplete,
+  onDone,
   onExit,
   onConfirmFile,
   onUnconfirmFile,
@@ -52,7 +53,6 @@ export default function ReviewScreen({
     onUnconfirm: onUnconfirmFile,
     onRemove: onRemoveFile,
     onEdit: onEditFile,
-    reviewAll,
     initialState,
     onStateChange,
   });
@@ -68,14 +68,22 @@ export default function ReviewScreen({
     audio.stop();
   }, [navigation.currentFile?.trackingId]);
 
-  // Check if review is complete (only trigger if not in reviewAll mode)
-  useEffect(() => {
-    if (!reviewAll && navigation.isComplete && files.length > 0) {
-      onComplete();
-    }
-  }, [reviewAll, navigation.isComplete, files.length, onComplete]);
+  // Handle Done button click
+  const handleDone = useCallback(() => {
+    audio.stop();
+    onDone();
+  }, [audio, onDone]);
 
-  // If no files, show nothing
+  // Handle Exit button click - exits immediately (confirmed files are already saved)
+  const handleExit = useCallback(() => {
+    audio.stop();
+    onExit();
+  }, [audio, onExit]);
+
+  // Calculate unconfirmed count for Done button tooltip
+  const unconfirmedCount = navigation.totalFiles - navigation.confirmedCount;
+
+  // If no files, show empty state
   if (!navigation.currentFile) {
     return (
       <div className={styles.container}>
@@ -93,12 +101,25 @@ export default function ReviewScreen({
     <div className={styles.container}>
       {/* Header */}
       <div className={styles.header}>
-        <h2 className={styles.title}>
-          {reviewAll ? 'Re-Review Songs' : 'Review Song Details'}
-        </h2>
-        <button className={styles.exitButton} onClick={onExit}>
-          {reviewAll ? 'Done Reviewing' : 'Exit Review'}
-        </button>
+        <h2 className={styles.title}>Review Song Details</h2>
+        <div className={styles.headerActions}>
+          {/* Exit button - always visible */}
+          <button 
+            className={styles.exitButton} 
+            onClick={handleExit}
+          >
+            Exit
+          </button>
+          {/* Done button - only enabled when all confirmed */}
+          <button 
+            className={styles.doneButton} 
+            onClick={handleDone}
+            disabled={!navigation.allConfirmed}
+            title={navigation.allConfirmed ? 'Proceed to save' : `${unconfirmedCount} file${unconfirmedCount === 1 ? '' : 's'} still need confirmation`}
+          >
+            Done
+          </button>
+        </div>
       </div>
 
       {/* Main content */}
@@ -113,20 +134,29 @@ export default function ReviewScreen({
             />
           </div>
         ) : (
-          /* View mode */
-          <SongCard
-            file={navigation.currentFile}
-            isConfirmed={navigation.currentFile.isConfirmed}
-            isPlaying={audio.isPlayingFile(navigation.currentFile.filePath)}
-            isLoading={audio.isLoading}
-            playbackPosition={audio.playbackPosition}
-            currentTime={audio.currentTime}
-            duration={audio.duration}
-            audioError={audio.error}
-            onPlayFromStart={audio.playFromStart}
-            onPlayFromMiddle={audio.playFromMiddle}
-            onPause={audio.pause}
-          />
+          /* View mode with slide animation */
+          <div 
+            key={navigation.currentFile.trackingId}
+            className={`${styles.songCardWrapper} ${
+              navigation.slideDirection === 'left' ? styles.slideInFromRight :
+              navigation.slideDirection === 'right' ? styles.slideInFromLeft : ''
+            }`}
+            onAnimationEnd={navigation.clearSlideDirection}
+          >
+            <SongCard
+              file={navigation.currentFile}
+              isConfirmed={navigation.currentFile.isConfirmed}
+              isPlaying={audio.isPlayingFile(navigation.currentFile.filePath)}
+              isLoading={audio.isLoading}
+              playbackPosition={audio.playbackPosition}
+              currentTime={audio.currentTime}
+              duration={audio.duration}
+              audioError={audio.error}
+              onPlayFromStart={audio.playFromStart}
+              onPlayFromMiddle={audio.playFromMiddle}
+              onPause={audio.pause}
+            />
+          </div>
         )}
 
         {/* Navigation controls */}
@@ -134,10 +164,10 @@ export default function ReviewScreen({
           <NavigationControls
             currentPosition={navigation.currentPosition}
             totalFiles={navigation.totalFiles}
+            confirmedCount={navigation.confirmedCount}
             canGoPrevious={navigation.canGoPrevious}
             canGoNext={navigation.canGoNext}
             isConfirmed={navigation.currentFile.isConfirmed}
-            reviewAll={reviewAll}
             validationError={navigation.validationError}
             onPrevious={navigation.goPrevious}
             onNext={navigation.goNext}

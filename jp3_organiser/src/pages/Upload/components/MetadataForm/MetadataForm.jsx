@@ -6,17 +6,112 @@
  * 
  * Required fields: title, artist, album
  * Optional fields: year
+ * 
+ * Features hybrid autofill suggestions:
+ * - Empty field: Shows filename-based heuristic suggestion (Tab to accept)
+ * - Typing: Shows library-based fuzzy match suggestions (Tab to accept)
+ * 
+ * Uses LibraryContext for autosuggest data (no prop drilling).
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useAutoSuggest, SuggestionSource, useLibraryContext } from '../../../../hooks';
+import { extractLibraryEntries } from '../../../../utils';
 import styles from './MetadataForm.module.css';
+
+/**
+ * Input field with hybrid autofill suggestions
+ * - Filename suggestion shown as placeholder when empty
+ * - Library suggestion shown as inline completion when typing
+ */
+function SuggestibleInput({ 
+  id, 
+  name, 
+  value, 
+  onChange, 
+  filename,
+  libraryEntries,
+  placeholder,
+  error,
+  maxLength,
+  enableSuggestions = true
+}) {
+  const { suggestion, source, completionText, canAccept, acceptSuggestion } = useAutoSuggest(
+    filename, 
+    value,
+    {
+      libraryEntries,
+      enableFilename: enableSuggestions,
+      enableLibrary: enableSuggestions && libraryEntries?.length > 0,
+    }
+  );
+
+  // Handle keyboard events - component owns this responsibility
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Tab' && canAccept) {
+      e.preventDefault();
+      const acceptedValue = acceptSuggestion();
+      if (acceptedValue) {
+        onChange({ target: { name, value: acceptedValue } });
+      }
+    }
+  }, [canAccept, acceptSuggestion, onChange, name]);
+
+  // Determine what to show based on suggestion source
+  const isFilenameSuggestion = source === SuggestionSource.FILENAME;
+  const isLibrarySuggestion = source === SuggestionSource.LIBRARY;
+
+  // For filename suggestions, use placeholder
+  // For library suggestions, show inline completion overlay
+  const displayPlaceholder = isFilenameSuggestion ? suggestion : placeholder;
+
+  // Build input class names based on suggestion source
+  const inputClassNames = [
+    styles.input,
+    error ? styles.inputError : '',
+    isFilenameSuggestion ? styles.inputFilenameFocus : '',
+    isLibrarySuggestion ? styles.inputLibraryFocus : '',
+  ].filter(Boolean).join(' ');
+
+  return (
+    <div className={styles.inputWrapper}>
+      <input
+        type="text"
+        id={id}
+        name={name}
+        value={value}
+        onChange={onChange}
+        onKeyDown={handleKeyDown}
+        className={inputClassNames}
+        placeholder={displayPlaceholder}
+        maxLength={maxLength}
+      />
+      {/* Library suggestion: show completion text after cursor */}
+      {isLibrarySuggestion && completionText && (
+        <div className={styles.completionOverlay}>
+          <span className={styles.completionTyped}>{value}</span>
+          <span className={styles.completionText}>{completionText}</span>
+        </div>
+      )}
+      {/* Show hint badge for either suggestion type */}
+      {suggestion && (
+        <span className={`${styles.suggestionHint} ${isLibrarySuggestion ? styles.libraryHint : ''}`}>
+          Tab to accept
+        </span>
+      )}
+    </div>
+  );
+}
 
 export default function MetadataForm({ 
   file, 
   onSave, 
   onCancel,
-  onSkip 
+  onSkip,
 }) {
+  // Get library data from context
+  const { library } = useLibraryContext();
+
   const [formData, setFormData] = useState({
     title: '',
     artist: '',
@@ -24,6 +119,11 @@ export default function MetadataForm({
     year: '',
   });
   const [errors, setErrors] = useState({});
+
+  // Extract library entries for suggestions
+  const libraryData = useMemo(() => {
+    return extractLibraryEntries(library);
+  }, [library]);
 
   // Initialize form with existing metadata
   useEffect(() => {
@@ -123,14 +223,16 @@ export default function MetadataForm({
           <label htmlFor={`title-${file?.trackingId}`} className={styles.label}>
             Title <span className={styles.required}>*</span>
           </label>
-          <input
-            type="text"
+          <SuggestibleInput
             id={`title-${file?.trackingId}`}
             name="title"
             value={formData.title}
             onChange={handleChange}
-            className={`${styles.input} ${errors.title ? styles.inputError : ''}`}
+            filename={file?.fileName}
+            libraryEntries={libraryData.titles}
             placeholder="Song title"
+            error={errors.title}
+            enableSuggestions={!file?.metadata?.title}
           />
           {errors.title && (
             <span className={styles.errorText}>{errors.title}</span>
@@ -141,14 +243,16 @@ export default function MetadataForm({
           <label htmlFor={`artist-${file?.trackingId}`} className={styles.label}>
             Artist <span className={styles.required}>*</span>
           </label>
-          <input
-            type="text"
+          <SuggestibleInput
             id={`artist-${file?.trackingId}`}
             name="artist"
             value={formData.artist}
             onChange={handleChange}
-            className={`${styles.input} ${errors.artist ? styles.inputError : ''}`}
+            filename={file?.fileName}
+            libraryEntries={libraryData.artists}
             placeholder="Artist name"
+            error={errors.artist}
+            enableSuggestions={!file?.metadata?.artist}
           />
           {errors.artist && (
             <span className={styles.errorText}>{errors.artist}</span>
@@ -159,14 +263,16 @@ export default function MetadataForm({
           <label htmlFor={`album-${file?.trackingId}`} className={styles.label}>
             Album <span className={styles.required}>*</span>
           </label>
-          <input
-            type="text"
+          <SuggestibleInput
             id={`album-${file?.trackingId}`}
             name="album"
             value={formData.album}
             onChange={handleChange}
-            className={`${styles.input} ${errors.album ? styles.inputError : ''}`}
+            filename={file?.fileName}
+            libraryEntries={libraryData.albums}
             placeholder="Album name"
+            error={errors.album}
+            enableSuggestions={!file?.metadata?.album}
           />
           {errors.album && (
             <span className={styles.errorText}>{errors.album}</span>

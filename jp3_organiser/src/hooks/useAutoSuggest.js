@@ -1,0 +1,139 @@
+/**
+ * useAutoSuggest Hook
+ * 
+ * Provides hybrid autofill suggestions for metadata fields:
+ * 1. When field is empty: Shows filename-based heuristic suggestion
+ * 2. When user starts typing: Shows library-based fuzzy matches (debounced)
+ * 
+ * Returns suggestion state and an acceptSuggestion function.
+ * The component is responsible for handling keyboard events.
+ * 
+ * Library matching is debounced to ensure smooth performance with large
+ * libraries (2000+ songs). Default debounce delay is 100ms.
+ */
+
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { suggestFromFilename, findBestMatch } from '../utils';
+import { useDebounce } from './useDebounce';
+
+/**
+ * Suggestion source types
+ */
+export const SuggestionSource = {
+  FILENAME: 'filename',
+  LIBRARY: 'library',
+};
+
+// Default debounce delay for library matching (ms)
+const LIBRARY_SEARCH_DEBOUNCE = 100;
+
+/**
+ * @param {string} filename - The source filename to generate suggestion from
+ * @param {string} currentValue - Current input field value
+ * @param {Object} options - Configuration options
+ * @param {string[]} options.libraryEntries - Array of existing library entries to match against
+ * @param {boolean} options.enableFilename - Whether to show filename suggestions (default: true)
+ * @param {boolean} options.enableLibrary - Whether to show library suggestions (default: true)
+ * @param {number} options.debounceDelay - Debounce delay in ms for library search (default: 100)
+ * @returns {Object} Hook state and handlers
+ */
+export function useAutoSuggest(filename, currentValue, options = {}) {
+  const { 
+    libraryEntries = [], 
+    enableFilename = true,
+    enableLibrary = true,
+    debounceDelay = LIBRARY_SEARCH_DEBOUNCE,
+  } = options;
+
+  const [isFilenameAccepted, setIsFilenameAccepted] = useState(false);
+
+  // Debounce the current value for library searches
+  const debouncedValue = useDebounce(currentValue, debounceDelay);
+
+  // Generate filename-based suggestion (memoized, computed once)
+  const filenameSuggestion = useMemo(() => {
+    if (!enableFilename) return null;
+    return suggestFromFilename(filename);
+  }, [filename, enableFilename]);
+
+  // Generate library-based suggestion based on debounced input
+  const librarySuggestion = useMemo(() => {
+    if (!enableLibrary || !debouncedValue || debouncedValue.trim().length === 0) {
+      return null;
+    }
+    return findBestMatch(debouncedValue, libraryEntries);
+  }, [debouncedValue, libraryEntries, enableLibrary]);
+
+  // Determine current suggestion mode and value
+  const { suggestion, source, showSuggestion } = useMemo(() => {
+    const trimmedValue = currentValue?.trim() || '';
+    
+    // Mode 1: Empty field - show filename suggestion
+    if (trimmedValue.length === 0) {
+      if (isFilenameAccepted || !filenameSuggestion) {
+        return { suggestion: null, source: null, showSuggestion: false };
+      }
+      return { 
+        suggestion: filenameSuggestion, 
+        source: SuggestionSource.FILENAME, 
+        showSuggestion: true,
+      };
+    }
+    
+    // Mode 2: User is typing - show library suggestion
+    if (librarySuggestion) {
+      // Only show if library suggestion is different from what user typed
+      // and starts with what they typed (prefix match for inline completion)
+      const lowerValue = trimmedValue.toLowerCase();
+      const lowerSuggestion = librarySuggestion.toLowerCase();
+      
+      if (lowerSuggestion !== lowerValue && lowerSuggestion.startsWith(lowerValue)) {
+        return { 
+          suggestion: librarySuggestion, 
+          source: SuggestionSource.LIBRARY, 
+          showSuggestion: true,
+        };
+      }
+    }
+    
+    return { suggestion: null, source: null, showSuggestion: false };
+  }, [currentValue, filenameSuggestion, librarySuggestion, isFilenameAccepted]);
+
+  // Reset accepted state when filename changes
+  useEffect(() => {
+    setIsFilenameAccepted(false);
+  }, [filename]);
+
+  // Whether a suggestion can be accepted
+  const canAccept = showSuggestion && suggestion;
+
+  // Accept the current suggestion and return its value
+  const acceptSuggestion = useCallback(() => {
+    if (!canAccept) return null;
+    
+    if (source === SuggestionSource.FILENAME) {
+      setIsFilenameAccepted(true);
+    }
+    return suggestion;
+  }, [canAccept, suggestion, source]);
+
+  // Compute the inline completion text (the part after what user typed)
+  const completionText = useMemo(() => {
+    if (!showSuggestion || !suggestion || source !== SuggestionSource.LIBRARY) {
+      return null;
+    }
+    const trimmedValue = currentValue?.trim() || '';
+    if (suggestion.toLowerCase().startsWith(trimmedValue.toLowerCase())) {
+      return suggestion.slice(trimmedValue.length);
+    }
+    return null;
+  }, [showSuggestion, suggestion, source, currentValue]);
+
+  return {
+    suggestion: showSuggestion ? suggestion : null,
+    source,
+    completionText,
+    canAccept,
+    acceptSuggestion,
+  };
+}

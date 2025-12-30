@@ -1,22 +1,25 @@
 /**
  * UploadFile Component
  * 
- * Orchestrates the complete audio file upload workflow:
- * 1. User selects files -> ProcessFile handles selection and processing
- * 2. Once processed, user enters ReviewScreen to confirm metadata
- * 3. After confirmation, files can be saved to library
- * 4. User can go back to re-review all files before saving
+ * Orchestrates the complete audio file upload workflow using a state machine:
+ * 1. PROCESS: User selects files -> ProcessFile handles selection and processing
+ * 2. REVIEW: User reviews and confirms metadata for each file
+ * 3. READY_TO_SAVE: All files confirmed, user can save to library
  * 
  * Workflow state is persisted in cache so navigation doesn't lose progress.
+ * Uses useWorkflowMachine for explicit, predictable state transitions.
  * 
  * @param {Object} props
  * @param {string} props.libraryPath - The configured library directory path
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import ProcessFile from '../ProcessFile';
 import ReviewScreen from '../ReviewScreen';
-import { useUploadCache, UploadStage } from '../../../../hooks';
+import { 
+  useUploadCache, 
+  useWorkflowMachine,
+} from '../../../../hooks';
 import { saveToLibrary, MetadataStatus } from '../../../../services';
 import styles from './UploadFile.module.css';
 
@@ -27,34 +30,45 @@ export default function UploadFile({ libraryPath }) {
   const [saveError, setSaveError] = useState(null);
 
   // Get workflow state from cache
-  const { stage, reviewAll, reviewIndex, isEditMode } = cache.workflowState;
+  const { reviewIndex, isEditMode } = cache.workflowState;
 
-  // Helper to update stage
-  const setStage = useCallback((newStage) => {
-    cache.updateWorkflowState({ stage: newStage });
-  }, [cache]);
+  // State machine for workflow transitions
+  const workflow = useWorkflowMachine({
+    workflowState: cache.workflowState,
+    updateWorkflowState: cache.updateWorkflowState,
+    resetWorkflowState: cache.resetWorkflowState,
+  });
 
-  // Helper to update reviewAll
-  const setReviewAll = useCallback((value) => {
-    cache.updateWorkflowState({ reviewAll: value });
-  }, [cache]);
+  // Get reviewable files (non-error files, same filter as useReviewNavigation)
+  const reviewableFiles = useMemo(() => {
+    return cache.trackedFiles.filter(f => f.metadataStatus !== MetadataStatus.ERROR);
+  }, [cache.trackedFiles]);
 
-  // Handle starting review from ProcessFile
+  // Find index of first unconfirmed file, or 0 if all confirmed
+  const getFirstUnconfirmedIndex = useCallback(() => {
+    const index = reviewableFiles.findIndex(f => !f.isConfirmed);
+    return index >= 0 ? index : 0;
+  }, [reviewableFiles]);
+
+  // Start review at first unconfirmed file
   const handleStartReview = useCallback(() => {
-    cache.updateWorkflowState({ 
-      stage: UploadStage.REVIEW, 
-      reviewAll: false,
-      reviewIndex: 0,
-      isEditMode: false,
-    });
-  }, [cache]);
+    const startIndex = getFirstUnconfirmedIndex();
+    cache.updateWorkflowState({ reviewIndex: startIndex });
+    workflow.startReview();
+  }, [workflow, cache, getFirstUnconfirmedIndex]);
+
+  // Back to review at first unconfirmed file
+  const handleBackToReview = useCallback(() => {
+    const startIndex = getFirstUnconfirmedIndex();
+    workflow.backToReview(startIndex);
+  }, [workflow, getFirstUnconfirmedIndex]);
 
   // Handle file confirmation in ReviewScreen
   const handleConfirmFile = useCallback((trackingId) => {
     cache.confirmFile(trackingId);
   }, [cache]);
 
-  // Handle file unconfirmation in ReviewScreen (re-review mode)
+  // Handle file unconfirmation in ReviewScreen
   const handleUnconfirmFile = useCallback((trackingId) => {
     cache.unconfirmFile(trackingId);
   }, [cache]);
@@ -64,37 +78,9 @@ export default function UploadFile({ libraryPath }) {
     cache.removeFile(trackingId);
   }, [cache]);
 
-  // Handle file edit in ReviewScreen
+  // Handle file edit in ReviewScreen (does not auto-confirm)
   const handleEditFile = useCallback((trackingId, metadata) => {
     cache.updateFileMetadata(trackingId, metadata);
-    // Also confirm after edit
-    cache.confirmFile(trackingId);
-  }, [cache]);
-
-  // Handle review completion (all files confirmed)
-  const handleReviewComplete = useCallback(() => {
-    setStage(UploadStage.COMPLETE);
-  }, [setStage]);
-
-  // Handle exit from review
-  const handleExitReview = useCallback(() => {
-    // If in reviewAll mode and all files are confirmed, go to complete
-    if (reviewAll && cache.allFilesConfirmed) {
-      setStage(UploadStage.COMPLETE);
-    } else {
-      setStage(UploadStage.PROCESS);
-    }
-    setReviewAll(false);
-  }, [reviewAll, cache.allFilesConfirmed, setStage, setReviewAll]);
-
-  // Handle going back to review from complete stage
-  const handleBackToReview = useCallback(() => {
-    cache.updateWorkflowState({ 
-      stage: UploadStage.REVIEW, 
-      reviewAll: true,
-      reviewIndex: 0,
-      isEditMode: false,
-    });
   }, [cache]);
 
   // Handle review state changes (position, edit mode)
@@ -138,17 +124,15 @@ export default function UploadFile({ libraryPath }) {
         `${result.artistsAdded} artist(s), ${result.albumsAdded} album(s), ${result.songsAdded} song(s).`
       );
 
-      // Clear saved files from cache
+      // Clear saved files from cache and reset workflow
       cache.removeConfirmedFiles();
-      
-      // Reset to process stage
-      cache.resetWorkflowState();
+      workflow.saveComplete();
     } catch (err) {
       setSaveError(`Failed to save to library: ${err}`);
     } finally {
       setIsSaving(false);
     }
-  }, [libraryPath, cache]);
+  }, [libraryPath, cache, workflow]);
 
   // Reset everything
   const handleReset = useCallback(() => {
@@ -171,19 +155,18 @@ export default function UploadFile({ libraryPath }) {
       )}
 
       {/* Process stage - file selection and processing */}
-      {stage === UploadStage.PROCESS && (
+      {workflow.isProcessing && (
         <ProcessFile onStartReview={handleStartReview} />
       )}
 
       {/* Review stage - confirming metadata */}
-      {stage === UploadStage.REVIEW && (
+      {workflow.isReviewing && (
         <ReviewScreen
           files={cache.trackedFiles}
-          reviewAll={reviewAll}
           initialState={{ currentIndex: reviewIndex, isEditMode }}
           onStateChange={handleReviewStateChange}
-          onComplete={handleReviewComplete}
-          onExit={handleExitReview}
+          onDone={workflow.completeReview}
+          onExit={workflow.exitReview}
           onConfirmFile={handleConfirmFile}
           onUnconfirmFile={handleUnconfirmFile}
           onRemoveFile={handleRemoveFile}
@@ -191,8 +174,8 @@ export default function UploadFile({ libraryPath }) {
         />
       )}
 
-      {/* Complete stage - ready to save */}
-      {stage === UploadStage.COMPLETE && (
+      {/* Ready to save stage */}
+      {workflow.isReadyToSave && (
         <div className={styles.completeContainer}>
           <div className={styles.completeHeader}>
             <h3 className={styles.completeTitle}>Ready to Add to Library</h3>

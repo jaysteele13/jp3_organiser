@@ -8,7 +8,7 @@ import View from './pages/View';
 import { useKeyboardShortcut, UploadCacheProvider } from './hooks';
 
 function App() {
-  const [isNavCollapsed, setIsNavCollapsed] = useState(false);
+  const [isNavCollapsed, setIsNavCollapsed] = useState(true);
 
   const toggleNav = useCallback(() => {
     setIsNavCollapsed(prev => !prev);

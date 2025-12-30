@@ -2,9 +2,9 @@
  * NavigationControls Component
  * 
  * Navigation and action buttons for the review screen.
- * Includes previous/next, confirm/remove, and edit buttons.
+ * Includes previous/next, confirm/unconfirm, and edit buttons.
  * 
- * Supports reviewAll mode where files can be un-confirmed.
+ * Shows confirm/unconfirm button based on current file's confirmed state.
  */
 
 import React from 'react';
@@ -13,10 +13,10 @@ import styles from '../ReviewScreen.module.css';
 export default function NavigationControls({
   currentPosition,
   totalFiles,
+  confirmedCount,
   canGoPrevious,
   canGoNext,
   isConfirmed,
-  reviewAll,
   validationError,
   onPrevious,
   onNext,
@@ -30,12 +30,12 @@ export default function NavigationControls({
       {/* Progress indicator */}
       <div className={styles.progressIndicator}>
         <span className={styles.progressText}>
-          {reviewAll 
-            ? `${currentPosition} of ${totalFiles} files`
-            : `${currentPosition} of ${totalFiles} remaining`
-          }
+          File {currentPosition} of {totalFiles}
         </span>
-        {reviewAll && isConfirmed && (
+        <span className={styles.confirmProgress}>
+          ({confirmedCount} of {totalFiles} confirmed)
+        </span>
+        {isConfirmed && (
           <span className={styles.confirmedBadge}>Confirmed</span>
         )}
       </div>
@@ -62,8 +62,8 @@ export default function NavigationControls({
 
       {/* Action buttons */}
       <div className={styles.actionButtons}>
-        {/* Show confirm/unconfirm based on state */}
-        {reviewAll && isConfirmed ? (
+        {/* Show confirm/unconfirm based on current file state */}
+        {isConfirmed ? (
           <button 
             className={styles.unconfirmButton}
             onClick={onUnconfirm}
@@ -103,11 +103,6 @@ export default function NavigationControls({
           {validationError}
         </div>
       )}
-
-      {/* Keyboard hint */}
-      <div className={styles.keyboardHint}>
-        <kbd>Shift</kbd> + <kbd>Enter</kbd> to confirm
-      </div>
     </div>
   );
 }

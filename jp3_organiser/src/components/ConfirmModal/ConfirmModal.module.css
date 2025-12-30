@@ -1,0 +1,118 @@
+/* Modal overlay - covers entire screen */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Modal card */
+.modal {
+  background-color: #1a1a1a;
+  border-radius: 12px;
+  padding: 1.5rem;
+  min-width: 400px;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--tertiary);
+}
+
+/* Modal title */
+.title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.25rem;
+  color: #fff;
+}
+
+/* Message text */
+.message {
+  margin: 0 0 1rem 0;
+  color: #aaa;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Optional content area */
+.content {
+  margin-bottom: 1.5rem;
+}
+
+/* Action buttons container */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+/* Cancel button - secondary style */
+.cancelBtn {
+  background-color: transparent;
+  border: 1px solid #666;
+  color: #ccc;
+  padding: 0.6em 1.2em;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  border-color: #888;
+  color: #fff;
+}
+
+.cancelBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Base confirm button */
+.confirmBtn {
+  border: none;
+  color: #fff;
+  padding: 0.6em 1.2em;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.confirmBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Variant: default (teal) */
+.confirmBtnDefault {
+  background-color: var(--tertiary);
+}
+
+.confirmBtnDefault:hover:not(:disabled) {
+  background-color: var(--tertiary-hover);
+}
+
+/* Variant: warning (lime) */
+.confirmBtnWarning {
+  background-color: var(--secondary);
+}
+
+.confirmBtnWarning:hover:not(:disabled) {
+  background-color: var(--secondary-hover);
+}
+
+/* Variant: danger (rose) */
+.confirmBtnDanger {
+  background-color: var(--primary);
+}
+
+.confirmBtnDanger:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
