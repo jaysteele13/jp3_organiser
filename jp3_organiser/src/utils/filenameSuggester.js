@@ -58,7 +58,7 @@ const CONTRACTIONS = {
 // Words that should remain lowercase (unless first word)
 const LOWERCASE_WORDS = new Set([
   'a', 'an', 'the', 'and', 'but', 'or', 'nor', 'for', 'yet', 'so',
-  'at', 'by', 'in', 'of', 'on', 'to', 'up', 'as', 'vs', 'via'
+  'at', 'by', 'in', 'of', 'on', 'to', 'up', 'as', 'vs', 'via', 'are', 'our'
 ]);
 
 // Words/acronyms that should remain uppercase

@@ -50,15 +50,13 @@ function SuggestibleInput({
         onChange={onChange}
         onKeyDown={onKeyDown}
         className={`${styles.input} ${error ? styles.inputError : ''}`}
-        placeholder={displaySuggestion ? '' : placeholder}
+        placeholder={displaySuggestion || placeholder}
         maxLength={maxLength}
       />
       {displaySuggestion && (
-        <div className={styles.suggestionOverlay}>
-          <span className={styles.suggestionText}>{displaySuggestion}</span>
-          <span className={styles.suggestionHint}>Tab to accept</span>
-        </div>
+        <span className={styles.suggestionHint}>Tab to accept</span>
       )}
+      
     </div>
   );
 }
