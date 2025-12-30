@@ -2,7 +2,7 @@ import React from 'react';
 import Header from '../../components/Header';
 import DirectoryConfig from './components/DirectoryConfig';
 import UploadFile from './components/UploadFile';
-import { useLibraryConfig, useLibrary } from '../../hooks';
+import { useLibraryConfig, LibraryProvider } from '../../hooks';
 import styles from './Upload.module.css';
 
 /**
@@ -16,6 +16,9 @@ import styles from './Upload.module.css';
  * 3. Once configured, compact card shows in top-right
  * 4. User can then upload audio files
  * 5. (Future) Files will be processed through metadata extraction pipeline
+ * 
+ * The LibraryProvider wraps UploadFile to provide library data via context,
+ * eliminating prop drilling through the component tree.
  */
 export default function Upload() {
   const { 
@@ -29,9 +32,6 @@ export default function Upload() {
     saveLibraryPath, 
     clearLibraryPath 
   } = useLibraryConfig();
-
-  // Load library data for autosuggest functionality
-  const { library } = useLibrary(isConfigured ? libraryPath : null);
 
   if (isLoading) {
     return (
@@ -64,7 +64,9 @@ export default function Upload() {
       />
 
       {isConfigured && isInitialized && (
-        <UploadFile libraryPath={libraryPath} library={library} />
+        <LibraryProvider libraryPath={libraryPath}>
+          <UploadFile libraryPath={libraryPath} />
+        </LibraryProvider>
       )}
     </div>
   );

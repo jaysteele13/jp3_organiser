@@ -24,6 +24,13 @@
   font-weight: 600;
 }
 
+/* Header action buttons container */
+.headerActions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
 .exitButton {
   padding: 0.5rem 1rem;
   background-color: transparent;
@@ -35,6 +42,25 @@
 .exitButton:hover {
   background-color: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Done button - prominent when enabled */
+.doneButton {
+  padding: 0.5rem 1.25rem;
+  background-color: var(--secondary);
+  border: none;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.doneButton:hover:not(:disabled) {
+  background-color: var(--secondary-hover);
+}
+
+.doneButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* Content area */
@@ -258,6 +284,11 @@
 .progressText {
   font-size: 0.9rem;
   opacity: 0.8;
+}
+
+.confirmProgress {
+  font-size: 0.8rem;
+  opacity: 0.6;
 }
 
 .confirmedBadge {

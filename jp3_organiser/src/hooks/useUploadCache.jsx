@@ -33,9 +33,9 @@ export const MetadataSource = {
  * Workflow stages for the upload process.
  */
 export const UploadStage = {
-  PROCESS: 'process',   // File selection and processing
-  REVIEW: 'review',     // Reviewing and confirming metadata
-  COMPLETE: 'complete', // All files confirmed, ready to save
+  PROCESS: 'process',        // File selection and processing
+  REVIEW: 'review',          // Reviewing and confirming metadata
+  READY_TO_SAVE: 'ready_to_save', // All files confirmed, ready to save
 };
 
 // =============================================================================
@@ -69,7 +69,6 @@ export function UploadCacheProvider({ children }) {
   // Workflow state that persists across navigation
   const [workflowState, setWorkflowState] = useState({
     stage: UploadStage.PROCESS,
-    reviewAll: false,
     reviewIndex: 0,
     isEditMode: false,
   });
@@ -146,7 +145,6 @@ export function UploadCacheProvider({ children }) {
     setError(null);
     setWorkflowState({
       stage: UploadStage.PROCESS,
-      reviewAll: false,
       reviewIndex: 0,
       isEditMode: false,
     });
@@ -218,7 +216,7 @@ export function UploadCacheProvider({ children }) {
     setTrackedFiles(prev => prev.filter(f => !f.isConfirmed));
   }, []);
 
-  // Update workflow state (stage, reviewAll, reviewIndex, isEditMode)
+  // Update workflow state (stage, reviewIndex, isEditMode)
   const updateWorkflowState = useCallback((updates) => {
     setWorkflowState(prev => ({ ...prev, ...updates }));
   }, []);
@@ -227,7 +225,6 @@ export function UploadCacheProvider({ children }) {
   const resetWorkflowState = useCallback(() => {
     setWorkflowState({
       stage: UploadStage.PROCESS,
-      reviewAll: false,
       reviewIndex: 0,
       isEditMode: false,
     });

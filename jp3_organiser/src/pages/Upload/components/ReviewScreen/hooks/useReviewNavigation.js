@@ -4,9 +4,10 @@
  * Manages navigation through files during review process.
  * Handles confirmation, removal, and edit mode.
  * 
- * Supports two modes:
- * - Normal mode: Only shows pending (unconfirmed) files
- * - Review All mode: Shows all files, allows un-confirming
+ * All files are always visible and navigable. Users can:
+ * - Navigate freely between all files (confirmed or not)
+ * - Confirm/unconfirm any file at any time
+ * - Edit any file at any time
  * 
  * Includes validation to ensure required fields are present before confirming.
  * Supports persisting state via initialState and onStateChange.
@@ -44,7 +45,6 @@ export function useReviewNavigation(files, {
   onUnconfirm, 
   onRemove, 
   onEdit, 
-  reviewAll = false,
   initialState = { currentIndex: 0, isEditMode: false },
   onStateChange,
 }) {
@@ -67,15 +67,13 @@ export function useReviewNavigation(files, {
     isInitialized.current = true;
   }, [currentIndex, isEditMode]);
 
-  // Get files to display based on mode
+  // Show all non-error files - users can navigate freely between confirmed and unconfirmed
   const displayFiles = useMemo(() => {
-    if (reviewAll) {
-      // Show all non-error files in reviewAll mode
-      return files.filter(f => f.metadataStatus !== 'error');
-    }
-    // Normal mode: only show pending (unconfirmed) files
-    return files.filter(f => !f.isConfirmed);
-  }, [files, reviewAll]);
+    const safeFiles = files || [];
+    const filtered = safeFiles.filter(f => f.metadataStatus !== 'error');
+    console.log('[useReviewNavigation] files:', safeFiles.length, 'displayFiles:', filtered.length, 'statuses:', safeFiles.map(f => f.metadataStatus));
+    return filtered;
+  }, [files]);
 
   // Current file being reviewed
   const currentFile = useMemo(() => {
@@ -92,6 +90,9 @@ export function useReviewNavigation(files, {
 
   // Navigation stats
   const totalFiles = displayFiles.length;
+  const confirmedCount = useMemo(() => {
+    return displayFiles.filter(f => f.isConfirmed).length;
+  }, [displayFiles]);
   const currentPosition = totalFiles > 0 ? Math.min(currentIndex + 1, totalFiles) : 0;
 
   // Check if we can navigate
@@ -134,18 +135,10 @@ export function useReviewNavigation(files, {
     
     clearValidationError();
     onConfirm(currentFile.trackingId);
-    
-    // In reviewAll mode, stay on the same file (just mark it confirmed)
-    // In normal mode, adjust index as the file will be removed from pending list
-    if (!reviewAll) {
-      if (currentIndex >= displayFiles.length - 1 && currentIndex > 0) {
-        setCurrentIndex(prev => prev - 1);
-      }
-    }
     setIsEditMode(false);
-  }, [currentFile, currentIndex, displayFiles.length, onConfirm, reviewAll, clearValidationError]);
+  }, [currentFile, onConfirm, clearValidationError]);
 
-  // Unconfirm current file (for re-review mode)
+  // Unconfirm current file
   const unconfirmCurrent = useCallback(() => {
     if (!currentFile || !onUnconfirm) return;
     
@@ -161,7 +154,7 @@ export function useReviewNavigation(files, {
     clearValidationError();
     onRemove(currentFile.trackingId);
     
-    // Adjust index if needed
+    // Adjust index if we're at the end
     if (currentIndex >= displayFiles.length - 1 && currentIndex > 0) {
       setCurrentIndex(prev => prev - 1);
     }
@@ -179,7 +172,7 @@ export function useReviewNavigation(files, {
     setIsEditMode(false);
   }, []);
 
-  // Save edited metadata
+  // Save edited metadata (does NOT auto-confirm)
   const saveEdit = useCallback((trackingId, metadata) => {
     clearValidationError();
     onEdit(trackingId, metadata);
@@ -193,11 +186,10 @@ export function useReviewNavigation(files, {
     setValidationError(null);
   }, []);
 
-  // Check if all files are confirmed (only relevant in normal mode)
-  const isComplete = useMemo(() => {
-    if (reviewAll) return false; // Never auto-complete in reviewAll mode
-    return displayFiles.length === 0;
-  }, [displayFiles.length, reviewAll]);
+  // Check if all files are confirmed
+  const allConfirmed = useMemo(() => {
+    return displayFiles.length > 0 && displayFiles.every(f => f.isConfirmed);
+  }, [displayFiles]);
 
   return {
     // State
@@ -209,10 +201,11 @@ export function useReviewNavigation(files, {
     currentFile,
     currentValidation,
     totalFiles,
+    confirmedCount,
     currentPosition,
     canGoNext,
     canGoPrevious,
-    isComplete,
+    allConfirmed,
     
     // Actions
     goNext,

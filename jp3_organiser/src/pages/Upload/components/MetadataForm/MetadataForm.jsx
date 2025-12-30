@@ -10,10 +10,12 @@
  * Features hybrid autofill suggestions:
  * - Empty field: Shows filename-based heuristic suggestion (Tab to accept)
  * - Typing: Shows library-based fuzzy match suggestions (Tab to accept)
+ * 
+ * Uses LibraryContext for autosuggest data (no prop drilling).
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useAutoSuggest, SuggestionSource } from '../../../../hooks';
+import { useAutoSuggest, SuggestionSource, useLibraryContext } from '../../../../hooks';
 import { extractLibraryEntries } from '../../../../utils';
 import styles from './MetadataForm.module.css';
 
@@ -106,8 +108,10 @@ export default function MetadataForm({
   onSave, 
   onCancel,
   onSkip,
-  library
 }) {
+  // Get library data from context
+  const { library } = useLibraryContext();
+
   const [formData, setFormData] = useState({
     title: '',
     artist: '',

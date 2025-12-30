@@ -6,56 +6,66 @@
  * and confirm or edit metadata before adding to library.
  * 
  * Features:
- * - Step through files with navigation arrows
+ * - Navigate freely between all files (confirmed or not)
+ * - Confirm/unconfirm any file at any time
  * - Audio preview (play from start or middle)
- * - Confirm details or remove from list
- * - Edit metadata inline
+ * - Edit metadata inline with autosuggest (uses LibraryContext)
  * - Keyboard shortcut: Shift+Enter to confirm
- * - Re-review mode: view all files including confirmed ones
  * - Persists navigation position across page navigation
- * - Autosuggest from library data when editing
+ * 
+ * Exit behavior:
+ * - "Done" button: Only enabled when all files confirmed, triggers onDone
+ * - "Exit" button: Always available, shows confirmation if unconfirmed files exist
  * 
  * @param {Object} props
  * @param {Array} props.files - Files to review
- * @param {boolean} props.reviewAll - If true, show all files including confirmed
  * @param {Object} props.initialState - Initial navigation state { currentIndex, isEditMode }
  * @param {function} props.onStateChange - Called when navigation state changes
- * @param {function} props.onComplete - Called when all files are reviewed
- * @param {function} props.onExit - Called when user exits review
+ * @param {function} props.onDone - Called when user clicks Done (all files confirmed)
+ * @param {function} props.onExit - Called when user exits (may have unconfirmed files)
  * @param {function} props.onConfirmFile - Called when a file is confirmed
- * @param {function} props.onUnconfirmFile - Called when a file is unconfirmed (re-review mode)
+ * @param {function} props.onUnconfirmFile - Called when a file is unconfirmed
  * @param {function} props.onRemoveFile - Called when a file is removed
  * @param {function} props.onEditFile - Called when file metadata is edited
- * @param {Object} props.library - Parsed library data for autosuggest
  */
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { SongCard, NavigationControls } from './components';
 import { useReviewNavigation, useAudioPlayer } from './hooks';
 import { useKeyboardShortcut } from '../../../../hooks';
+import { ConfirmModal } from '../../../../components';
 import MetadataForm from '../MetadataForm';
 import styles from './ReviewScreen.module.css';
 
 export default function ReviewScreen({
   files,
-  reviewAll = false,
   initialState,
   onStateChange,
-  onComplete,
+  onDone,
   onExit,
   onConfirmFile,
   onUnconfirmFile,
   onRemoveFile,
   onEditFile,
-  library,
 }) {
+  // DEBUG: Log files received on every render
+  console.log('[ReviewScreen] Render - files:', files?.length, 'initialState:', initialState);
+  console.log('[ReviewScreen] File details:', files?.map(f => ({ 
+    id: f.trackingId?.slice(0, 8), 
+    status: f.metadataStatus, 
+    confirmed: f.isConfirmed,
+    title: f.metadata?.title 
+  })));
+
+  // State for exit confirmation modal
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+
   // Navigation hook
   const navigation = useReviewNavigation(files, {
     onConfirm: onConfirmFile,
     onUnconfirm: onUnconfirmFile,
     onRemove: onRemoveFile,
     onEdit: onEditFile,
-    reviewAll,
     initialState,
     onStateChange,
   });
@@ -71,12 +81,38 @@ export default function ReviewScreen({
     audio.stop();
   }, [navigation.currentFile?.trackingId]);
 
-  // Check if review is complete (only trigger if not in reviewAll mode)
-  useEffect(() => {
-    if (!reviewAll && navigation.isComplete && files.length > 0) {
-      onComplete();
+  // Handle Done button click
+  const handleDone = useCallback(() => {
+    audio.stop();
+    onDone();
+  }, [audio, onDone]);
+
+  // Handle Exit button click - show confirmation if unconfirmed files exist
+  const handleExitClick = useCallback(() => {
+    if (navigation.allConfirmed) {
+      // All confirmed, exit directly
+      audio.stop();
+      onExit();
+    } else {
+      // Has unconfirmed files, show confirmation modal
+      setShowExitConfirm(true);
     }
-  }, [reviewAll, navigation.isComplete, files.length, onComplete]);
+  }, [navigation.allConfirmed, audio, onExit]);
+
+  // Handle confirm exit (from modal)
+  const handleConfirmExit = useCallback(() => {
+    setShowExitConfirm(false);
+    audio.stop();
+    onExit();
+  }, [audio, onExit]);
+
+  // Handle cancel exit (from modal)
+  const handleCancelExit = useCallback(() => {
+    setShowExitConfirm(false);
+  }, []);
+
+  // Calculate unconfirmed count for modal message
+  const unconfirmedCount = navigation.totalFiles - navigation.confirmedCount;
 
   // If no files, show nothing
   if (!navigation.currentFile) {
@@ -94,14 +130,40 @@ export default function ReviewScreen({
 
   return (
     <div className={styles.container}>
+      {/* Exit confirmation modal */}
+      {showExitConfirm && (
+        <ConfirmModal
+          title="Exit Review?"
+          message={`You have ${unconfirmedCount} unconfirmed file${unconfirmedCount === 1 ? '' : 's'}. Unconfirmed files will not be added to your library.`}
+          confirmLabel="Exit Anyway"
+          cancelLabel="Keep Reviewing"
+          variant="warning"
+          onConfirm={handleConfirmExit}
+          onCancel={handleCancelExit}
+        />
+      )}
+
       {/* Header */}
       <div className={styles.header}>
-        <h2 className={styles.title}>
-          {reviewAll ? 'Re-Review Songs' : 'Review Song Details'}
-        </h2>
-        <button className={styles.exitButton} onClick={onExit}>
-          {reviewAll ? 'Done Reviewing' : 'Exit Review'}
-        </button>
+        <h2 className={styles.title}>Review Song Details</h2>
+        <div className={styles.headerActions}>
+          {/* Exit button - always visible */}
+          <button 
+            className={styles.exitButton} 
+            onClick={handleExitClick}
+          >
+            Exit
+          </button>
+          {/* Done button - only enabled when all confirmed */}
+          <button 
+            className={styles.doneButton} 
+            onClick={handleDone}
+            disabled={!navigation.allConfirmed}
+            title={navigation.allConfirmed ? 'Proceed to save' : `${unconfirmedCount} file${unconfirmedCount === 1 ? '' : 's'} still need confirmation`}
+          >
+            Done
+          </button>
+        </div>
       </div>
 
       {/* Main content */}
@@ -113,7 +175,6 @@ export default function ReviewScreen({
               file={navigation.currentFile}
               onSave={navigation.saveEdit}
               onCancel={navigation.exitEditMode}
-              library={library}
             />
           </div>
         ) : (
@@ -138,10 +199,10 @@ export default function ReviewScreen({
           <NavigationControls
             currentPosition={navigation.currentPosition}
             totalFiles={navigation.totalFiles}
+            confirmedCount={navigation.confirmedCount}
             canGoPrevious={navigation.canGoPrevious}
             canGoNext={navigation.canGoNext}
             isConfirmed={navigation.currentFile.isConfirmed}
-            reviewAll={reviewAll}
             validationError={navigation.validationError}
             onPrevious={navigation.goPrevious}
             onNext={navigation.goNext}
