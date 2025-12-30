@@ -155,7 +155,7 @@
   font-size: 0.7rem;
   color: var(--tertiary);
   background-color: rgba(73, 182, 156, 0.15);
-  padding: 0.15rem 0.4rem;
+  padding: 0.00rem 0.3rem;
   border-radius: 3px;
   pointer-events: none;
 }
