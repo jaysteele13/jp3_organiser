@@ -5,7 +5,8 @@
  * 1. When field is empty: Shows filename-based heuristic suggestion
  * 2. When user starts typing: Shows library-based fuzzy matches (debounced)
  * 
- * Accepts suggestions via Tab key.
+ * Returns suggestion state and an acceptSuggestion function.
+ * The component is responsible for handling keyboard events.
  * 
  * Library matching is debounced to ensure smooth performance with large
  * libraries (2000+ songs). Default debounce delay is 100ms.
@@ -103,27 +104,18 @@ export function useAutoSuggest(filename, currentValue, options = {}) {
     setIsFilenameAccepted(false);
   }, [filename]);
 
-  // Handler to accept the current suggestion
-  const acceptSuggestion = useCallback(() => {
-    if (showSuggestion && suggestion) {
-      if (source === SuggestionSource.FILENAME) {
-        setIsFilenameAccepted(true);
-      }
-      return suggestion;
-    }
-    return null;
-  }, [showSuggestion, suggestion, source]);
+  // Whether a suggestion can be accepted
+  const canAccept = showSuggestion && suggestion;
 
-  // Handler for Tab key press
-  const handleKeyDown = useCallback((e, onAccept) => {
-    if (e.key === 'Tab' && showSuggestion && suggestion) {
-      e.preventDefault();
-      if (source === SuggestionSource.FILENAME) {
-        setIsFilenameAccepted(true);
-      }
-      onAccept(suggestion);
+  // Accept the current suggestion and return its value
+  const acceptSuggestion = useCallback(() => {
+    if (!canAccept) return null;
+    
+    if (source === SuggestionSource.FILENAME) {
+      setIsFilenameAccepted(true);
     }
-  }, [showSuggestion, suggestion, source]);
+    return suggestion;
+  }, [canAccept, suggestion, source]);
 
   // Compute the inline completion text (the part after what user typed)
   const completionText = useMemo(() => {
@@ -141,8 +133,7 @@ export function useAutoSuggest(filename, currentValue, options = {}) {
     suggestion: showSuggestion ? suggestion : null,
     source,
     completionText,
+    canAccept,
     acceptSuggestion,
-    handleKeyDown,
-    isFilenameAccepted,
   };
 }

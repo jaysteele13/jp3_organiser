@@ -12,7 +12,7 @@
  * - Typing: Shows library-based fuzzy match suggestions (Tab to accept)
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAutoSuggest, SuggestionSource } from '../../../../hooks';
 import { extractLibraryEntries } from '../../../../utils';
 import styles from './MetadataForm.module.css';
@@ -34,7 +34,7 @@ function SuggestibleInput({
   maxLength,
   enableSuggestions = true
 }) {
-  const { suggestion, source, completionText, handleKeyDown } = useAutoSuggest(
+  const { suggestion, source, completionText, canAccept, acceptSuggestion } = useAutoSuggest(
     filename, 
     value,
     {
@@ -43,14 +43,17 @@ function SuggestibleInput({
       enableLibrary: enableSuggestions && libraryEntries?.length > 0,
     }
   );
-  
-  const handleAccept = (suggestedValue) => {
-    onChange({ target: { name, value: suggestedValue } });
-  };
 
-  const onKeyDown = (e) => {
-    handleKeyDown(e, handleAccept);
-  };
+  // Handle keyboard events - component owns this responsibility
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Tab' && canAccept) {
+      e.preventDefault();
+      const acceptedValue = acceptSuggestion();
+      if (acceptedValue) {
+        onChange({ target: { name, value: acceptedValue } });
+      }
+    }
+  }, [canAccept, acceptSuggestion, onChange, name]);
 
   // Determine what to show based on suggestion source
   const isFilenameSuggestion = source === SuggestionSource.FILENAME;
@@ -76,7 +79,7 @@ function SuggestibleInput({
         name={name}
         value={value}
         onChange={onChange}
-        onKeyDown={onKeyDown}
+        onKeyDown={handleKeyDown}
         className={inputClassNames}
         placeholder={displayPlaceholder}
         maxLength={maxLength}
