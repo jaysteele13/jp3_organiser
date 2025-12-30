@@ -70,9 +70,7 @@ export function useReviewNavigation(files, {
   // Show all non-error files - users can navigate freely between confirmed and unconfirmed
   const displayFiles = useMemo(() => {
     const safeFiles = files || [];
-    const filtered = safeFiles.filter(f => f.metadataStatus !== 'error');
-    console.log('[useReviewNavigation] files:', safeFiles.length, 'displayFiles:', filtered.length, 'statuses:', safeFiles.map(f => f.metadataStatus));
-    return filtered;
+    return safeFiles.filter(f => f.metadataStatus !== 'error');
   }, [files]);
 
   // Current file being reviewed

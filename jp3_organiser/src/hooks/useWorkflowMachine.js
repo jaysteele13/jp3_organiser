@@ -68,8 +68,6 @@ export function useWorkflowMachine({ workflowState, updateWorkflowState, resetWo
    * Invalid transitions are logged and ignored.
    */
   const dispatch = useCallback((action, payload = {}) => {
-    console.log('[WorkflowMachine] dispatch called - action:', action, 'currentStage:', currentStage);
-    
     const currentTransitions = transitions[currentStage];
     
     if (!currentTransitions || !currentTransitions[action]) {
@@ -116,7 +114,10 @@ export function useWorkflowMachine({ workflowState, updateWorkflowState, resetWo
     startReview: () => dispatch(WorkflowAction.START_REVIEW),
     exitReview: () => dispatch(WorkflowAction.EXIT_REVIEW),
     completeReview: () => dispatch(WorkflowAction.COMPLETE_REVIEW),
-    backToReview: (reviewIndex = 0) => dispatch(WorkflowAction.BACK_TO_REVIEW, { reviewIndex }),
+    // Guard against event objects being passed when used as onClick handler
+    backToReview: (reviewIndex) => dispatch(WorkflowAction.BACK_TO_REVIEW, { 
+      reviewIndex: typeof reviewIndex === 'number' ? reviewIndex : 0 
+    }),
     saveComplete: () => dispatch(WorkflowAction.SAVE_COMPLETE),
     reset: () => dispatch(WorkflowAction.RESET),
   }), [dispatch]);

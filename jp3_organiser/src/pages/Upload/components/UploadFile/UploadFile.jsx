@@ -29,9 +29,6 @@ export default function UploadFile({ libraryPath }) {
   const [successMessage, setSuccessMessage] = useState(null);
   const [saveError, setSaveError] = useState(null);
 
-  // DEBUG: Log state on every render
-  console.log('[UploadFile] Render - stage:', cache.workflowState.stage, 'trackedFiles:', cache.trackedFiles.length, 'confirmedFiles:', cache.confirmedFiles.length);
-
   // Get workflow state from cache
   const { reviewIndex, isEditMode } = cache.workflowState;
 
@@ -174,10 +171,7 @@ export default function UploadFile({ libraryPath }) {
 
             <button
               className={styles.backButton}
-              onClick={() => {
-                console.log('[UploadFile] Back to Review clicked - trackedFiles:', cache.trackedFiles.length);
-                workflow.backToReview();
-              }}
+              onClick={workflow.backToReview}
               disabled={isSaving}
             >
               Back to Review
