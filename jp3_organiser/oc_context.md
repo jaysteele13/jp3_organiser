@@ -37,7 +37,11 @@ jp3_organiser/
 │   │   ├── useKeyboardShortcut.js  # Keyboard shortcut handler
 │   │   ├── useLibraryConfig.js     # Library path configuration
 │   │   ├── useLibrary.js           # Library data fetching
-│   │   └── useUploadCache.jsx      # Persistent upload state context
+│   │   ├── useLibraryContext.jsx   # Library data context for autosuggest
+│   │   ├── useUploadCache.jsx      # Persistent upload state context
+│   │   ├── useWorkflowMachine.js   # Upload workflow state machine
+│   │   ├── useDebounce.js          # Debounced value hook
+│   │   └── useAutoSuggest.js       # Fuzzy-match autosuggest hook
 │   ├── pages/                # Route-level page components
 │   │   ├── About/            # About page with info cards
 │   │   ├── Upload/           # File upload and metadata workflow
@@ -92,6 +96,9 @@ jp3_organiser/
 10. **Song Editing** - Edit metadata for existing songs
 11. **Library Compaction** - Remove deleted entries and orphaned data
 12. **Upload Caching** - Persist upload state across navigation
+13. **Workflow State Machine** - Explicit state transitions for upload flow (PROCESS → REVIEW → READY_TO_SAVE)
+14. **Smart Review Navigation** - Automatically navigate to first unconfirmed file when entering review
+15. **Swipe Animations** - Slide animations when navigating between files in review mode
 
 ### Planned
 - Playlist creation and management
@@ -284,9 +291,14 @@ Models are in `src-tauri/src/models/`:
 |------|---------|
 | `useLibraryConfig()` | Manage library path (get/set from Rust backend), auto-initialize JP3 structure |
 | `useLibrary(libraryPath)` | Fetch and return library data with loading/error states |
+| `useLibraryContext()` | Context hook to access library data without prop drilling (used in MetadataForm for autosuggest) |
 | `useKeyboardShortcut(key, callback)` | Register keyboard shortcuts with modifier support |
 | `useUploadCache()` | Context hook for persistent upload state across navigation |
+| `useWorkflowMachine()` | State machine for upload workflow stages (PROCESS → REVIEW → READY_TO_SAVE) |
+| `useDebounce(value, delay)` | Debounce a value for delayed updates (used in search inputs) |
+| `useAutoSuggest(inputValue, items, key)` | Fuzzy-match suggestions from a list based on input (artist/album autosuggest) |
 | `UploadCacheProvider` | Context provider wrapping app for upload state persistence |
+| `LibraryProvider` | Context provider for library data (wraps UploadFile in Upload.jsx) |
 
 ## Routing
 
@@ -298,6 +310,41 @@ Uses React Router for navigation:
 | `/upload` | Upload | File upload workflow |
 | `/view` | View | Library browser |
 | `/about` | About | App information |
+
+## Upload Page Components
+
+The Upload page (`src/pages/Upload/`) has the most complex component structure:
+
+| Component | Purpose |
+|-----------|---------|
+| `Upload.jsx` | Page wrapper, handles DirectoryConfig state |
+| `UploadFile.jsx` | Main upload workflow, uses workflow state machine |
+| `ProcessFile.jsx` | File selection via native picker, triggers metadata extraction |
+| `ReviewScreen.jsx` | Step through files one-by-one with audio preview |
+| `MetadataForm.jsx` | Edit form for song metadata with autosuggest |
+
+### ReviewScreen Subcomponents (`src/pages/Upload/components/ReviewScreen/`)
+
+| Component | Purpose |
+|-----------|---------|
+| `SongCard.jsx` | Display current file metadata in card format |
+| `AudioPlayer.jsx` | Audio preview with play/pause/progress |
+| `NavigationControls.jsx` | Previous/Next buttons with progress indicator |
+| `ConfirmButton.jsx` | Confirm current file button |
+| `hooks/useReviewNavigation.js` | Navigation state + slide direction for animations |
+| `hooks/useAudioPlayer.js` | Audio playback state and controls |
+| `hooks/useReviewActions.js` | Confirm/remove/edit actions |
+
+### UploadFile Subcomponents (`src/pages/Upload/components/UploadFile/`)
+
+| Component | Purpose |
+|-----------|---------|
+| `ActionButtons.jsx` | Start Review / Save to Library buttons |
+| `FileListItem.jsx` | Single file row with status indicator |
+| `FileListSection.jsx` | File list with headers |
+| `ReadyToSaveSection.jsx` | Summary view before saving |
+| `hooks/useFileSelection.js` | Native file picker integration |
+| `hooks/useMetadataProcessing.js` | Incremental metadata extraction |
 
 ## Available Tauri Plugins
 
@@ -367,6 +414,36 @@ cargo test
 - State survives navigation between pages
 - Cleared on successful library save or user action
 
+### Upload Workflow State Machine
+The upload workflow uses an explicit state machine (`useWorkflowMachine`) to manage stages:
+
+```
+┌─────────┐  START_REVIEW   ┌────────┐  COMPLETE_REVIEW   ┌───────────────┐
+│ PROCESS │ ───────────────→│ REVIEW │ ─────────────────→ │ READY_TO_SAVE │
+└─────────┘                 └────────┘                    └───────────────┘
+     ↑                          ↑  │                            │
+     │      EXIT_REVIEW         │  │     BACK_TO_REVIEW         │
+     └──────────────────────────┘  └────────────────────────────┘
+```
+
+**States:**
+- `PROCESS` - User selects files, metadata is extracted
+- `REVIEW` - User confirms/edits each file one-by-one
+- `READY_TO_SAVE` - All files confirmed, ready to save to library
+
+**Smart Navigation:** When entering review mode, the app finds the first unconfirmed file instead of starting at index 0.
+
+**Swipe Animation:** Navigation between files in review mode uses slide animations (0.25s ease-out) for visual feedback.
+
+### Context Providers Hierarchy
+```
+App.jsx
+└── UploadCacheProvider (upload state persists across navigation)
+    └── Upload.jsx
+        └── LibraryProvider (library data for autosuggest)
+            └── UploadFile → ReviewScreen → MetadataForm
+```
+
 ## Future Considerations
 
 - State management (Context API or Zustand) as app grows
@@ -378,7 +455,3 @@ cargo test
 ### SongView.jsx has duplicate formatDuration
 - `formatDuration` function is duplicated in SongView instead of using `utils/formatters.js`
 - Should consolidate to single utility function
-
-### useLibrary hook not exported from hooks/index.js
-- Hook is imported directly in View.jsx
-- Should be added to barrel export for consistency
