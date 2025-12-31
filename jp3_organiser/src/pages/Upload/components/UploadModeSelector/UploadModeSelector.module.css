@@ -45,38 +45,20 @@
 }
 
 /* Color variants for each mode */
-.songsCard:hover {
-  border-color: var(--secondary);
-  background-color: rgba(153, 182, 73, 0.1);
+
+
+.modeCard:hover {
+  border-color: var(--primary);
+  background-color: var(--primary);
 }
 
-.albumCard:hover {
-  border-color: var(--tertiary);
-  background-color: rgba(73, 182, 156, 0.1);
-}
 
-.artistCard:hover {
-  border-color: var(--quaternary);
-  background-color: rgba(102, 73, 182, 0.1);
-}
 
 /* Mode icon */
 .modeIcon {
   font-size: 2rem;
   line-height: 1;
   color: rgba(255, 255, 255, 0.8);
-}
-
-.songsCard:hover .modeIcon {
-  color: var(--secondary);
-}
-
-.albumCard:hover .modeIcon {
-  color: var(--tertiary);
-}
-
-.artistCard:hover .modeIcon {
-  color: var(--quaternary);
 }
 
 /* Mode label */

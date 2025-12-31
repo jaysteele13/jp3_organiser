@@ -26,7 +26,7 @@ export default function UploadModeSelector({
       <div className={styles.modeGrid}>
         {/* Add Songs - default behavior */}
         <button 
-          className={`${styles.modeCard} ${styles.songsCard}`}
+          className={`${styles.modeCard}`}
           onClick={onSelectSongs}
         >
           <span className={styles.modeIcon}>♪</span>
@@ -38,7 +38,7 @@ export default function UploadModeSelector({
 
         {/* Add Album */}
         <button 
-          className={`${styles.modeCard} ${styles.albumCard}`}
+          className={`${styles.modeCard}`}
           onClick={onSelectAlbum}
         >
           <span className={styles.modeIcon}>○</span>
@@ -50,7 +50,7 @@ export default function UploadModeSelector({
 
         {/* Add Artist */}
         <button 
-          className={`${styles.modeCard} ${styles.artistCard}`}
+          className={`${styles.modeCard}`}
           onClick={onSelectArtist}
         >
           <span className={styles.modeIcon}>♫</span>
