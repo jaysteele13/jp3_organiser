@@ -38,6 +38,7 @@ export default function UploadFile({ libraryPath }) {
   const [saveError, setSaveError] = useState(null);
   const [showContextForm, setShowContextForm] = useState(false);
   const [pendingMode, setPendingMode] = useState(null);
+  const [modeSelected, setModeSelected] = useState(false);
 
   // Get workflow state from cache
   const { reviewIndex, isEditMode } = cache.workflowState;
@@ -49,9 +50,10 @@ export default function UploadFile({ libraryPath }) {
     resetWorkflowState: cache.resetWorkflowState,
   });
 
-  // Determine if we should show mode selector (no files loaded and in process stage)
+  // Determine if we should show mode selector
+  // Show when: in process stage, no files, mode not yet selected, and not showing context form
   const hasFiles = cache.trackedFiles.length > 0;
-  const showModeSelector = workflow.isProcessing && !hasFiles && !showContextForm;
+  const showModeSelector = workflow.isProcessing && !hasFiles && !modeSelected && !showContextForm;
 
   // Get reviewable files (non-error files, same filter as useReviewNavigation)
   const reviewableFiles = useMemo(() => {
@@ -70,7 +72,7 @@ export default function UploadFile({ libraryPath }) {
   const handleSelectSongsMode = useCallback(() => {
     cache.setUploadMode(UPLOAD_MODE.SONGS);
     cache.setUploadContext({ album: null, artist: null, year: null });
-    // ProcessFile will handle file selection
+    setModeSelected(true);
   }, [cache]);
 
   // Handle "Add Album" mode - show context form
@@ -91,7 +93,7 @@ export default function UploadFile({ libraryPath }) {
     cache.setUploadContext(context);
     setShowContextForm(false);
     setPendingMode(null);
-    // ProcessFile will handle file selection
+    setModeSelected(true);
   }, [cache, pendingMode]);
 
   // Handle context form cancel
@@ -189,6 +191,7 @@ export default function UploadFile({ libraryPath }) {
     cache.clearAll();
     setSuccessMessage(null);
     setSaveError(null);
+    setModeSelected(false);
   }, [cache]);
 
   // Render based on current stage
@@ -224,7 +227,10 @@ export default function UploadFile({ libraryPath }) {
 
       {/* Process stage - file selection and processing (after mode selected) */}
       {workflow.isProcessing && !showModeSelector && (
-        <ProcessFile onStartReview={handleStartReview} />
+        <ProcessFile 
+          onStartReview={handleStartReview} 
+          onClear={() => setModeSelected(false)}
+        />
       )}
 
       {/* Review stage - confirming metadata */}

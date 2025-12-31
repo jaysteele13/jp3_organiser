@@ -12,8 +12,8 @@
  * - Error: Failed to process
  * 
  * @param {Object} props
- * @param {function} props.onProcessingComplete - Called when processing finishes
  * @param {function} props.onStartReview - Called when user wants to start review
+ * @param {function} props.onClear - Called when user clears files (returns to mode selection)
  */
 
 import React, { useMemo } from 'react';
@@ -72,7 +72,7 @@ function FileSection({ title, files, className }) {
   );
 }
 
-export default function ProcessFile({ onStartReview }) {
+export default function ProcessFile({ onStartReview, onClear }) {
   const cache = useUploadCache();
   const {
     trackedFiles,
@@ -142,6 +142,10 @@ export default function ProcessFile({ onStartReview }) {
       cancelProcessing();
     }
     clearFiles();
+    // Notify parent to return to mode selection
+    if (onClear) {
+      onClear();
+    }
   };
 
   // Handle start review
