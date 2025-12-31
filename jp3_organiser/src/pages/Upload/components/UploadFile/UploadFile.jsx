@@ -26,7 +26,9 @@ import ContextForm from '../ContextForm';
 import { 
   useUploadCache, 
   useWorkflowMachine,
+  useToast,
 } from '../../../../hooks';
+import { Toast } from '../../../../components';
 import { saveToLibrary, MetadataStatus } from '../../../../services';
 import { UPLOAD_MODE } from '../../../../utils';
 import styles from './UploadFile.module.css';
@@ -34,10 +36,12 @@ import styles from './UploadFile.module.css';
 export default function UploadFile({ libraryPath }) {
   const cache = useUploadCache();
   const [isSaving, setIsSaving] = useState(false);
-  const [successMessage, setSuccessMessage] = useState(null);
   const [saveError, setSaveError] = useState(null);
   const [showContextForm, setShowContextForm] = useState(false);
   const [pendingMode, setPendingMode] = useState(null);
+  
+  // Toast notification for success messages (5 second auto-dismiss)
+  const toast = useToast(5000);
 
   // Get modeSelected from cache (persists across navigation)
   const { modeSelected } = cache;
@@ -167,7 +171,6 @@ export default function UploadFile({ libraryPath }) {
     try {
       setIsSaving(true);
       setSaveError(null);
-      setSuccessMessage(null);
 
       const files = filesToSave.map(f => ({
         sourcePath: f.filePath,
@@ -176,10 +179,15 @@ export default function UploadFile({ libraryPath }) {
 
       const result = await saveToLibrary(libraryPath, files);
 
-      setSuccessMessage(
-        `Added ${result.filesSaved} file(s) to library. ` +
-        `${result.artistsAdded} artist(s), ${result.albumsAdded} album(s), ${result.songsAdded} song(s).`
-      );
+      // Build success message including duplicates info if any
+      let message = `Added ${result.filesSaved} file(s) to library. ` +
+        `${result.artistsAdded} artist(s), ${result.albumsAdded} album(s), ${result.songsAdded} song(s).`;
+      
+      if (result.duplicatesSkipped > 0) {
+        message += ` ${result.duplicatesSkipped} duplicate(s) skipped.`;
+      }
+
+      toast.showToast(message, 'success');
 
       // Clear saved files from cache and reset workflow
       cache.removeConfirmedFiles();
@@ -189,18 +197,26 @@ export default function UploadFile({ libraryPath }) {
     } finally {
       setIsSaving(false);
     }
-  }, [libraryPath, cache, workflow]);
+  }, [libraryPath, cache, workflow, toast]);
 
   // Reset everything
   const handleReset = useCallback(() => {
     cache.clearAll();
-    setSuccessMessage(null);
+    toast.hideToast();
     setSaveError(null);
-  }, [cache]);
+  }, [cache, toast]);
 
   // Render based on current stage
   return (
     <div className={styles.wrapper}>
+      {/* Toast notification for success messages */}
+      <Toast
+        message={toast.message}
+        variant={toast.variant}
+        visible={toast.visible}
+        onDismiss={toast.hideToast}
+      />
+
       {/* Change mode button - outside container, only when mode selected but no files */}
       {showChangeModeButton && (
         <button 
@@ -212,11 +228,6 @@ export default function UploadFile({ libraryPath }) {
       )}
 
       <div className={styles.uploadContainer}>
-      {/* Success message */}
-      {successMessage && (
-        <div className={styles.successMessage}>{successMessage}</div>
-      )}
-
       {/* Save error */}
       {saveError && (
         <div className={styles.error}>{saveError}</div>
