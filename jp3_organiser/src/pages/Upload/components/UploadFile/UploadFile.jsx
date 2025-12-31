@@ -2,9 +2,14 @@
  * UploadFile Component
  * 
  * Orchestrates the complete audio file upload workflow using a state machine:
- * 1. PROCESS: User selects files -> ProcessFile handles selection and processing
+ * 1. PROCESS: User selects mode, optionally enters context, then selects files
  * 2. REVIEW: User reviews and confirms metadata for each file
  * 3. READY_TO_SAVE: All files confirmed, user can save to library
+ * 
+ * Upload modes:
+ * - Add Songs: Auto-detect everything via AcousticID
+ * - Add Album: User specifies album + artist upfront
+ * - Add Artist: User specifies artist upfront
  * 
  * Workflow state is persisted in cache so navigation doesn't lose progress.
  * Uses useWorkflowMachine for explicit, predictable state transitions.
@@ -16,11 +21,14 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import ProcessFile from '../ProcessFile';
 import ReviewScreen from '../ReviewScreen';
+import UploadModeSelector from '../UploadModeSelector';
+import ContextForm from '../ContextForm';
 import { 
   useUploadCache, 
   useWorkflowMachine,
 } from '../../../../hooks';
 import { saveToLibrary, MetadataStatus } from '../../../../services';
+import { UPLOAD_MODE } from '../../../../utils';
 import styles from './UploadFile.module.css';
 
 export default function UploadFile({ libraryPath }) {
@@ -28,6 +36,8 @@ export default function UploadFile({ libraryPath }) {
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
   const [saveError, setSaveError] = useState(null);
+  const [showContextForm, setShowContextForm] = useState(false);
+  const [pendingMode, setPendingMode] = useState(null);
 
   // Get workflow state from cache
   const { reviewIndex, isEditMode } = cache.workflowState;
@@ -39,6 +49,10 @@ export default function UploadFile({ libraryPath }) {
     resetWorkflowState: cache.resetWorkflowState,
   });
 
+  // Determine if we should show mode selector (no files loaded and in process stage)
+  const hasFiles = cache.trackedFiles.length > 0;
+  const showModeSelector = workflow.isProcessing && !hasFiles && !showContextForm;
+
   // Get reviewable files (non-error files, same filter as useReviewNavigation)
   const reviewableFiles = useMemo(() => {
     return cache.trackedFiles.filter(f => f.metadataStatus !== MetadataStatus.ERROR);
@@ -49,6 +63,42 @@ export default function UploadFile({ libraryPath }) {
     const index = reviewableFiles.findIndex(f => !f.isConfirmed);
     return index >= 0 ? index : 0;
   }, [reviewableFiles]);
+
+  // === Mode Selection Handlers ===
+
+  // Handle "Add Songs" mode - proceed directly to file selection
+  const handleSelectSongsMode = useCallback(() => {
+    cache.setUploadMode(UPLOAD_MODE.SONGS);
+    cache.setUploadContext({ album: null, artist: null, year: null });
+    // ProcessFile will handle file selection
+  }, [cache]);
+
+  // Handle "Add Album" mode - show context form
+  const handleSelectAlbumMode = useCallback(() => {
+    setPendingMode(UPLOAD_MODE.ALBUM);
+    setShowContextForm(true);
+  }, []);
+
+  // Handle "Add Artist" mode - show context form
+  const handleSelectArtistMode = useCallback(() => {
+    setPendingMode(UPLOAD_MODE.ARTIST);
+    setShowContextForm(true);
+  }, []);
+
+  // Handle context form submission
+  const handleContextSubmit = useCallback((context) => {
+    cache.setUploadMode(pendingMode);
+    cache.setUploadContext(context);
+    setShowContextForm(false);
+    setPendingMode(null);
+    // ProcessFile will handle file selection
+  }, [cache, pendingMode]);
+
+  // Handle context form cancel
+  const handleContextCancel = useCallback(() => {
+    setShowContextForm(false);
+    setPendingMode(null);
+  }, []);
 
   // Start review at first unconfirmed file
   const handleStartReview = useCallback(() => {
@@ -154,8 +204,26 @@ export default function UploadFile({ libraryPath }) {
         <div className={styles.error}>{saveError}</div>
       )}
 
-      {/* Process stage - file selection and processing */}
-      {workflow.isProcessing && (
+      {/* Context form modal for Album/Artist modes */}
+      {showContextForm && pendingMode && (
+        <ContextForm
+          mode={pendingMode}
+          onSubmit={handleContextSubmit}
+          onCancel={handleContextCancel}
+        />
+      )}
+
+      {/* Mode selector - shown when no files and in process stage */}
+      {showModeSelector && (
+        <UploadModeSelector
+          onSelectSongs={handleSelectSongsMode}
+          onSelectAlbum={handleSelectAlbumMode}
+          onSelectArtist={handleSelectArtistMode}
+        />
+      )}
+
+      {/* Process stage - file selection and processing (after mode selected) */}
+      {workflow.isProcessing && !showModeSelector && (
         <ProcessFile onStartReview={handleStartReview} />
       )}
 

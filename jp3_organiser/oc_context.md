@@ -99,6 +99,7 @@ jp3_organiser/
 13. **Workflow State Machine** - Explicit state transitions for upload flow (PROCESS → REVIEW → READY_TO_SAVE)
 14. **Smart Review Navigation** - Automatically navigate to first unconfirmed file when entering review
 15. **Swipe Animations** - Slide animations when navigating between files in review mode
+16. **Upload Mode Selection** - Choose between Add Songs, Add Album, or Add Artist modes
 
 ### Planned
 - Playlist creation and management
@@ -285,6 +286,16 @@ Models are in `src-tauri/src/models/`:
 - `getLibraryStats(basePath)` - Get stats including compaction recommendation
 - `compactLibrary(basePath)` - Remove deleted entries
 
+## Enums
+
+### TABS (`src/utils/enums.js`)
+- `SONGS`, `ALBUMS`, `ARTISTS`, `PLAYLISTS` - View page tab identifiers
+
+### UPLOAD_MODE (`src/utils/enums.js`)
+- `SONGS` - Auto-detect everything via AcousticID
+- `ALBUM` - User provides album + artist, AcousticID provides title/track
+- `ARTIST` - User provides artist, AcousticID provides album/title/track
+
 ## Custom Hooks
 
 | Hook | Purpose |
@@ -319,9 +330,23 @@ The Upload page (`src/pages/Upload/`) has the most complex component structure:
 |-----------|---------|
 | `Upload.jsx` | Page wrapper, handles DirectoryConfig state |
 | `UploadFile.jsx` | Main upload workflow, uses workflow state machine |
+| `UploadModeSelector.jsx` | Mode selection: Add Songs, Add Album, Add Artist |
+| `ContextForm.jsx` | Modal form for entering album/artist context |
 | `ProcessFile.jsx` | File selection via native picker, triggers metadata extraction |
 | `ReviewScreen.jsx` | Step through files one-by-one with audio preview |
 | `MetadataForm.jsx` | Edit form for song metadata with autosuggest |
+
+### Upload Modes
+
+The upload workflow supports three modes to improve metadata accuracy:
+
+| Mode | User Provides | AcousticID Provides | Use Case |
+|------|---------------|---------------------|----------|
+| **Add Songs** | Nothing | Everything | General upload, unknown files |
+| **Add Album** | Album + Artist + Year(opt) | Title, Track # | Uploading a known album |
+| **Add Artist** | Artist | Album, Title, Track # | Uploading songs by known artist |
+
+**Rationale:** AcousticID sometimes returns incorrect album metadata (e.g., compilations instead of original album). Album/Artist modes let users override unreliable API results while still leveraging AcousticID for song identification.
 
 ### ReviewScreen Subcomponents (`src/pages/Upload/components/ReviewScreen/`)
 

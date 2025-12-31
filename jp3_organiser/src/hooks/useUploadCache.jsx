@@ -14,6 +14,7 @@
 
 import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { MetadataStatus } from '../services';
+import { UPLOAD_MODE } from '../utils';
 
 /**
  * Metadata source types for tracking how metadata was obtained.
@@ -65,6 +66,14 @@ export function UploadCacheProvider({ children }) {
   // Core state that persists across navigation
   const [trackedFiles, setTrackedFiles] = useState([]);
   const [error, setError] = useState(null);
+  
+  // Upload mode and context (album/artist pre-set by user)
+  const [uploadMode, setUploadMode] = useState(UPLOAD_MODE.SONGS);
+  const [uploadContext, setUploadContext] = useState({
+    album: null,
+    artist: null,
+    year: null,
+  });
   
   // Workflow state that persists across navigation
   const [workflowState, setWorkflowState] = useState({
@@ -143,11 +152,18 @@ export function UploadCacheProvider({ children }) {
   const clearAll = useCallback(() => {
     setTrackedFiles([]);
     setError(null);
+    setUploadMode(UPLOAD_MODE.SONGS);
+    setUploadContext({ album: null, artist: null, year: null });
     setWorkflowState({
       stage: UploadStage.PROCESS,
       reviewIndex: 0,
       isEditMode: false,
     });
+  }, []);
+
+  // Clear just the upload context (mode remains)
+  const clearUploadContext = useCallback(() => {
+    setUploadContext({ album: null, artist: null, year: null });
   }, []);
 
   // Update metadata for a file and mark as complete
@@ -235,6 +251,8 @@ export function UploadCacheProvider({ children }) {
     trackedFiles,
     error,
     workflowState,
+    uploadMode,
+    uploadContext,
     
     // Computed
     stats,
@@ -260,10 +278,15 @@ export function UploadCacheProvider({ children }) {
     resetWorkflowState,
     setError,
     clearError: () => setError(null),
+    setUploadMode,
+    setUploadContext,
+    clearUploadContext,
   }), [
     trackedFiles,
     error,
     workflowState,
+    uploadMode,
+    uploadContext,
     stats,
     incompleteFiles,
     pendingConfirmation,
@@ -283,6 +306,7 @@ export function UploadCacheProvider({ children }) {
     removeConfirmedFiles,
     updateWorkflowState,
     resetWorkflowState,
+    clearUploadContext,
   ]);
 
   return (

@@ -20,6 +20,8 @@ import React, { useMemo } from 'react';
 import { useFileProcessor } from './hooks';
 import { FileStats, StatusBadge } from '../UploadFile/components';
 import { MetadataStatus } from '../../../../services';
+import { useUploadCache } from '../../../../hooks';
+import { UPLOAD_MODE } from '../../../../utils';
 import styles from './ProcessFile.module.css';
 
 /**
@@ -71,6 +73,7 @@ function FileSection({ title, files, className }) {
 }
 
 export default function ProcessFile({ onStartReview }) {
+  const cache = useUploadCache();
   const {
     trackedFiles,
     isProcessing,
@@ -82,6 +85,29 @@ export default function ProcessFile({ onStartReview }) {
     cancelProcessing,
     clearFiles,
   } = useFileProcessor();
+
+  // Get upload mode and context from cache
+  const { uploadMode, uploadContext } = cache;
+
+  // Format context for display
+  const contextLabel = useMemo(() => {
+    if (uploadMode === UPLOAD_MODE.ALBUM && uploadContext.album) {
+      return `${uploadContext.album} by ${uploadContext.artist}${uploadContext.year ? ` (${uploadContext.year})` : ''}`;
+    }
+    if (uploadMode === UPLOAD_MODE.ARTIST && uploadContext.artist) {
+      return uploadContext.artist;
+    }
+    return null;
+  }, [uploadMode, uploadContext]);
+
+  // Mode label for display
+  const modeLabel = useMemo(() => {
+    switch (uploadMode) {
+      case UPLOAD_MODE.ALBUM: return 'Album Mode';
+      case UPLOAD_MODE.ARTIST: return 'Artist Mode';
+      default: return null;
+    }
+  }, [uploadMode]);
 
   // Group files by display status
   const groupedFiles = useMemo(() => {
@@ -133,6 +159,16 @@ export default function ProcessFile({ onStartReview }) {
 
   return (
     <div className={styles.container}>
+      {/* Mode/Context badge - shown when in Album or Artist mode */}
+      {modeLabel && (
+        <div className={styles.contextBadge}>
+          <span className={styles.modeLabel}>{modeLabel}</span>
+          {contextLabel && (
+            <span className={styles.contextLabel}>{contextLabel}</span>
+          )}
+        </div>
+      )}
+
       {/* Header - changes based on state */}
       <div className={styles.header}>
         <h3 className={styles.title}>
