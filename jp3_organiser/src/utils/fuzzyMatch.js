@@ -141,3 +141,55 @@ export function extractLibraryEntries(library) {
     titles: [...new Set(titles)].sort(),
   };
 }
+
+/**
+ * Extract albums with full metadata (artist, year) for smart autofill
+ * @param {Object} library - Parsed library object
+ * @returns {Object[]} Array of album objects with { name, artistName, artistId, year }
+ */
+export function extractAlbumsWithMetadata(library) {
+  if (!library || !library.albums) {
+    return [];
+  }
+  
+  return library.albums.map(album => ({
+    name: album.name,
+    artistName: album.artistName || '',
+    artistId: album.artistId,
+    year: album.year || null,
+  }));
+}
+
+/**
+ * Find albums matching a query, returning full album objects
+ * @param {string} query - The user's input
+ * @param {Object[]} albums - Array of album objects from extractAlbumsWithMetadata
+ * @param {Object} options - Matching options
+ * @param {number} options.limit - Maximum results to return (default: 5)
+ * @returns {Object[]} Sorted array of matching album objects
+ */
+export function findAlbumMatches(query, albums, options = {}) {
+  const { limit = 5 } = options;
+  
+  if (!query || query.trim().length === 0 || !Array.isArray(albums)) {
+    return [];
+  }
+  
+  const trimmedQuery = query.trim();
+  
+  // Score and filter albums by name
+  const scored = albums
+    .map(album => ({
+      album,
+      score: calculateMatchScore(album.name, trimmedQuery),
+    }))
+    .filter(item => item.score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      return a.album.name.localeCompare(b.album.name);
+    });
+  
+  return scored.slice(0, limit).map(item => item.album);
+}
