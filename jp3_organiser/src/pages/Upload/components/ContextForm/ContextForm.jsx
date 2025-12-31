@@ -172,23 +172,41 @@ export default function ContextForm({ mode, onSubmit, onCancel }) {
       <div className={styles.form}>
         {/* Album field - only in album mode */}
         {isAlbumMode && (
-          <div className={styles.field}>
-            <label htmlFor="context-album" className={styles.label}>
-              Album Name <span className={styles.required}>*</span>
-            </label>
-            <SuggestibleInput
-              id="context-album"
-              name="album"
-              value={formData.album}
-              onChange={handleChange}
-              libraryEntries={libraryData.albums}
-              placeholder="e.g. Jazz"
-              error={errors.album}
-              required
-            />
-            {errors.album && (
-              <span className={styles.errorText}>{errors.album}</span>
-            )}
+          <div className={styles.row}>
+            <div className={styles.field}>
+              <label htmlFor="context-album" className={styles.label}>
+                Album Name <span className={styles.required}>*</span>
+              </label>
+              <SuggestibleInput
+                id="context-album"
+                name="album"
+                value={formData.album}
+                onChange={handleChange}
+                libraryEntries={libraryData.albums}
+                placeholder=""
+                error={errors.album}
+                required />
+              {errors.album && (
+                <span className={styles.errorText}>{errors.album}</span>
+              )}
+            </div>
+            <div className={styles.field}>
+                <label htmlFor="context-year" className={styles.label}>
+                  Year
+                </label>
+                <input
+                  type="text"
+                  id="context-year"
+                  name="year"
+                  value={formData.year}
+                  onChange={handleChange}
+                  className={`${styles.input} ${errors.year ? styles.inputError : ''}`}
+                  placeholder=""
+                  maxLength={4} />
+                {errors.year && (
+                  <span className={styles.errorText}>{errors.year}</span>
+                )}
+              </div>
           </div>
         )}
 
@@ -203,7 +221,7 @@ export default function ContextForm({ mode, onSubmit, onCancel }) {
             value={formData.artist}
             onChange={handleChange}
             libraryEntries={libraryData.artists}
-            placeholder="e.g. Queen"
+            placeholder=""
             error={errors.artist}
             required
           />
@@ -212,25 +230,6 @@ export default function ContextForm({ mode, onSubmit, onCancel }) {
           )}
         </div>
 
-        {/* Year field - optional, both modes */}
-        <div className={styles.field}>
-          <label htmlFor="context-year" className={styles.label}>
-            Year <span className={styles.optional}>(optional)</span>
-          </label>
-          <input
-            type="text"
-            id="context-year"
-            name="year"
-            value={formData.year}
-            onChange={handleChange}
-            className={`${styles.input} ${errors.year ? styles.inputError : ''}`}
-            placeholder="e.g. 1978"
-            maxLength={4}
-          />
-          {errors.year && (
-            <span className={styles.errorText}>{errors.year}</span>
-          )}
-        </div>
 
         <p className={styles.hint}>
           {isAlbumMode 

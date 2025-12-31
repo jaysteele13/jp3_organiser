@@ -210,6 +210,7 @@ export default function UploadFile({ libraryPath }) {
       {/* Context form modal for Album/Artist modes */}
       {showContextForm && pendingMode && (
         <ContextForm
+        // in order to set ContextForm we pass the mode of what the form should be which can be either album or artist
           mode={pendingMode}
           onSubmit={handleContextSubmit}
           onCancel={handleContextCancel}
