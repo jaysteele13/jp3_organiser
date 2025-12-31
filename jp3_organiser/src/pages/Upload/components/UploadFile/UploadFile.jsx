@@ -54,6 +54,9 @@ export default function UploadFile({ libraryPath }) {
   // Show when: in process stage, no files, mode not yet selected, and not showing context form
   const hasFiles = cache.trackedFiles.length > 0;
   const showModeSelector = workflow.isProcessing && !hasFiles && !modeSelected && !showContextForm;
+  
+  // Show change mode button when: mode selected, no files yet, in process stage
+  const showChangeModeButton = workflow.isProcessing && !hasFiles && modeSelected && !showContextForm;
 
   // Get reviewable files (non-error files, same filter as useReviewNavigation)
   const reviewableFiles = useMemo(() => {
@@ -196,7 +199,18 @@ export default function UploadFile({ libraryPath }) {
 
   // Render based on current stage
   return (
-    <div className={styles.uploadContainer}>
+    <div className={styles.wrapper}>
+      {/* Change mode button - outside container, only when mode selected but no files */}
+      {showChangeModeButton && (
+        <button 
+          className={styles.changeModeButton} 
+          onClick={() => setModeSelected(false)}
+        >
+          ← Change Upload Mode
+        </button>
+      )}
+
+      <div className={styles.uploadContainer}>
       {/* Success message */}
       {successMessage && (
         <div className={styles.successMessage}>{successMessage}</div>
@@ -230,7 +244,6 @@ export default function UploadFile({ libraryPath }) {
       {workflow.isProcessing && !showModeSelector && (
         <ProcessFile 
           onStartReview={handleStartReview} 
-          onClear={() => setModeSelected(false)}
         />
       )}
 
@@ -303,6 +316,7 @@ export default function UploadFile({ libraryPath }) {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

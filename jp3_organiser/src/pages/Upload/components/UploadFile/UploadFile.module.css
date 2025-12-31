@@ -1,7 +1,36 @@
 /* UploadFile component styles */
 
-.uploadContainer {
+/* Wrapper to ensure proper stacking of button and container */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   margin-top: 1rem;
+}
+
+/* Change mode button - above the container, left aligned */
+.changeModeButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background-color: var(--quaternary);
+  border: none;
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.changeModeButton:hover {
+  background-color: var(--quaternary-hover);
+}
+
+.uploadContainer {
+  width: 100%;
   background-color: var(--tertiary);
   border-radius: 8px;
   padding: 1.5rem;
