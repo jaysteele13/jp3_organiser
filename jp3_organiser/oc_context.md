@@ -438,6 +438,12 @@ cargo test
 - `UploadCacheProvider` wraps app for persistent upload state
 - State survives navigation between pages
 - Cleared on successful library save or user action
+- **Persisted state includes:**
+  - `trackedFiles` - Processed audio files with metadata
+  - `uploadMode` - Selected mode (SONGS, ALBUM, ARTIST)
+  - `uploadContext` - Album/artist context for Album/Artist modes
+  - `modeSelected` - Whether user has selected a mode
+  - `workflowState` - Current stage, review index, edit mode
 
 ### Upload Workflow State Machine
 The upload workflow uses an explicit state machine (`useWorkflowMachine`) to manage stages:

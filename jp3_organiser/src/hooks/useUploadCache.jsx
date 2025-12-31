@@ -74,6 +74,8 @@ export function UploadCacheProvider({ children }) {
     artist: null,
     year: null,
   });
+  // Whether user has selected a mode (persists across navigation)
+  const [modeSelected, setModeSelected] = useState(false);
   
   // Workflow state that persists across navigation
   const [workflowState, setWorkflowState] = useState({
@@ -154,6 +156,7 @@ export function UploadCacheProvider({ children }) {
     setError(null);
     setUploadMode(UPLOAD_MODE.SONGS);
     setUploadContext({ album: null, artist: null, year: null });
+    setModeSelected(false);
     setWorkflowState({
       stage: UploadStage.PROCESS,
       reviewIndex: 0,
@@ -253,6 +256,7 @@ export function UploadCacheProvider({ children }) {
     workflowState,
     uploadMode,
     uploadContext,
+    modeSelected,
     
     // Computed
     stats,
@@ -281,12 +285,14 @@ export function UploadCacheProvider({ children }) {
     setUploadMode,
     setUploadContext,
     clearUploadContext,
+    setModeSelected,
   }), [
     trackedFiles,
     error,
     workflowState,
     uploadMode,
     uploadContext,
+    modeSelected,
     stats,
     incompleteFiles,
     pendingConfirmation,

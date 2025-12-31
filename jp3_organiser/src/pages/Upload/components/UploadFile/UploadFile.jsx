@@ -38,7 +38,9 @@ export default function UploadFile({ libraryPath }) {
   const [saveError, setSaveError] = useState(null);
   const [showContextForm, setShowContextForm] = useState(false);
   const [pendingMode, setPendingMode] = useState(null);
-  const [modeSelected, setModeSelected] = useState(false);
+
+  // Get modeSelected from cache (persists across navigation)
+  const { modeSelected } = cache;
 
   // Get workflow state from cache
   const { reviewIndex, isEditMode } = cache.workflowState;
@@ -75,7 +77,7 @@ export default function UploadFile({ libraryPath }) {
   const handleSelectSongsMode = useCallback(() => {
     cache.setUploadMode(UPLOAD_MODE.SONGS);
     cache.setUploadContext({ album: null, artist: null, year: null });
-    setModeSelected(true);
+    cache.setModeSelected(true);
   }, [cache]);
 
   // Handle "Add Album" mode - show context form
@@ -96,7 +98,7 @@ export default function UploadFile({ libraryPath }) {
     cache.setUploadContext(context);
     setShowContextForm(false);
     setPendingMode(null);
-    setModeSelected(true);
+    cache.setModeSelected(true);
   }, [cache, pendingMode]);
 
   // Handle context form cancel
@@ -194,7 +196,6 @@ export default function UploadFile({ libraryPath }) {
     cache.clearAll();
     setSuccessMessage(null);
     setSaveError(null);
-    setModeSelected(false);
   }, [cache]);
 
   // Render based on current stage
@@ -204,7 +205,7 @@ export default function UploadFile({ libraryPath }) {
       {showChangeModeButton && (
         <button 
           className={styles.changeModeButton} 
-          onClick={() => setModeSelected(false)}
+          onClick={() => cache.setModeSelected(false)}
         >
           ← Change Upload Mode
         </button>
