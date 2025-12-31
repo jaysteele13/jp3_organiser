@@ -15,6 +15,7 @@ import { useState, useCallback, useRef } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { processAudioFilesIncremental, MetadataStatus } from '../../../../../services';
 import { useUploadCache } from '../../../../../hooks';
+import { UPLOAD_MODE } from '../../../../../utils';
 
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'flac', 'm4a', 'ogg', 'opus'];
 
@@ -79,6 +80,60 @@ function enhanceFile(file) {
   };
 }
 
+/**
+ * Apply upload context overrides to a processed file.
+ * Overrides AcousticID results with user-provided context based on upload mode.
+ * 
+ * @param {Object} file - Processed file (already enhanced)
+ * @param {string} uploadMode - Current upload mode (SONGS, ALBUM, ARTIST)
+ * @param {Object} uploadContext - User-provided context { album, artist, year }
+ * @returns {Object} File with context applied
+ */
+function applyUploadContext(file, uploadMode, uploadContext) {
+  // SONGS mode: no overrides, use AcousticID as-is
+  if (uploadMode === UPLOAD_MODE.SONGS) {
+    return file;
+  }
+
+  // Don't apply context to error files
+  if (file.metadataStatus === MetadataStatus.ERROR) {
+    return file;
+  }
+
+  const updatedMetadata = { ...file.metadata };
+
+  // ALBUM mode: override album + artist (+ year if provided)
+  if (uploadMode === UPLOAD_MODE.ALBUM) {
+    if (uploadContext.album) {
+      updatedMetadata.album = uploadContext.album;
+    }
+    if (uploadContext.artist) {
+      updatedMetadata.artist = uploadContext.artist;
+    }
+    if (uploadContext.year) {
+      updatedMetadata.year = uploadContext.year;
+    }
+  }
+
+  // ARTIST mode: override artist only
+  if (uploadMode === UPLOAD_MODE.ARTIST) {
+    if (uploadContext.artist) {
+      updatedMetadata.artist = uploadContext.artist;
+    }
+    // Note: year could be applied here too if desired
+  }
+
+  // Recalculate metadata status after applying context
+  const isComplete = updatedMetadata.title && updatedMetadata.artist && updatedMetadata.album;
+  const newStatus = isComplete ? MetadataStatus.COMPLETE : MetadataStatus.INCOMPLETE;
+
+  return {
+    ...file,
+    metadata: updatedMetadata,
+    metadataStatus: newStatus,
+  };
+}
+
 export function useFileProcessor() {
   const cache = useUploadCache();
   
@@ -119,7 +174,9 @@ export function useFileProcessor() {
       // Process files one at a time, appending each as it completes
       await processAudioFilesIncremental(paths, {
         onFileProcessed: (file, currentIndex, totalFiles) => {
-          const enhancedFile = enhanceFile(file);
+          let enhancedFile = enhanceFile(file);
+          // Apply upload context overrides (album/artist from user)
+          enhancedFile = applyUploadContext(enhancedFile, cache.uploadMode, cache.uploadContext);
           cache.addFile(enhancedFile);
           setProcessingProgress({ current: currentIndex + 1, total: totalFiles });
         },

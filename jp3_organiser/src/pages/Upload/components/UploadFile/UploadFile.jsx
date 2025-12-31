@@ -2,9 +2,14 @@
  * UploadFile Component
  * 
  * Orchestrates the complete audio file upload workflow using a state machine:
- * 1. PROCESS: User selects files -> ProcessFile handles selection and processing
+ * 1. PROCESS: User selects mode, optionally enters context, then selects files
  * 2. REVIEW: User reviews and confirms metadata for each file
  * 3. READY_TO_SAVE: All files confirmed, user can save to library
+ * 
+ * Upload modes:
+ * - Add Songs: Auto-detect everything via AcousticID
+ * - Add Album: User specifies album + artist upfront
+ * - Add Artist: User specifies artist upfront
  * 
  * Workflow state is persisted in cache so navigation doesn't lose progress.
  * Uses useWorkflowMachine for explicit, predictable state transitions.
@@ -16,18 +21,30 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import ProcessFile from '../ProcessFile';
 import ReviewScreen from '../ReviewScreen';
+import UploadModeSelector from '../UploadModeSelector';
+import ContextForm from '../ContextForm';
 import { 
   useUploadCache, 
   useWorkflowMachine,
+  useToast,
 } from '../../../../hooks';
+import { Toast } from '../../../../components';
 import { saveToLibrary, MetadataStatus } from '../../../../services';
+import { UPLOAD_MODE } from '../../../../utils';
 import styles from './UploadFile.module.css';
 
 export default function UploadFile({ libraryPath }) {
   const cache = useUploadCache();
   const [isSaving, setIsSaving] = useState(false);
-  const [successMessage, setSuccessMessage] = useState(null);
   const [saveError, setSaveError] = useState(null);
+  const [showContextForm, setShowContextForm] = useState(false);
+  const [pendingMode, setPendingMode] = useState(null);
+  
+  // Toast notification for success messages (5 second auto-dismiss)
+  const toast = useToast(5000);
+
+  // Get modeSelected from cache (persists across navigation)
+  const { modeSelected } = cache;
 
   // Get workflow state from cache
   const { reviewIndex, isEditMode } = cache.workflowState;
@@ -39,6 +56,14 @@ export default function UploadFile({ libraryPath }) {
     resetWorkflowState: cache.resetWorkflowState,
   });
 
+  // Determine if we should show mode selector
+  // Show when: in process stage, no files, mode not yet selected, and not showing context form
+  const hasFiles = cache.trackedFiles.length > 0;
+  const showModeSelector = workflow.isProcessing && !hasFiles && !modeSelected && !showContextForm;
+  
+  // Show change mode button when: mode selected, no files yet, in process stage
+  const showChangeModeButton = workflow.isProcessing && !hasFiles && modeSelected && !showContextForm;
+
   // Get reviewable files (non-error files, same filter as useReviewNavigation)
   const reviewableFiles = useMemo(() => {
     return cache.trackedFiles.filter(f => f.metadataStatus !== MetadataStatus.ERROR);
@@ -49,6 +74,42 @@ export default function UploadFile({ libraryPath }) {
     const index = reviewableFiles.findIndex(f => !f.isConfirmed);
     return index >= 0 ? index : 0;
   }, [reviewableFiles]);
+
+  // === Mode Selection Handlers ===
+
+  // Handle "Add Songs" mode - proceed directly to file selection
+  const handleSelectSongsMode = useCallback(() => {
+    cache.setUploadMode(UPLOAD_MODE.SONGS);
+    cache.setUploadContext({ album: null, artist: null, year: null });
+    cache.setModeSelected(true);
+  }, [cache]);
+
+  // Handle "Add Album" mode - show context form
+  const handleSelectAlbumMode = useCallback(() => {
+    setPendingMode(UPLOAD_MODE.ALBUM);
+    setShowContextForm(true);
+  }, []);
+
+  // Handle "Add Artist" mode - show context form
+  const handleSelectArtistMode = useCallback(() => {
+    setPendingMode(UPLOAD_MODE.ARTIST);
+    setShowContextForm(true);
+  }, []);
+
+  // Handle context form submission
+  const handleContextSubmit = useCallback((context) => {
+    cache.setUploadMode(pendingMode);
+    cache.setUploadContext(context);
+    setShowContextForm(false);
+    setPendingMode(null);
+    cache.setModeSelected(true);
+  }, [cache, pendingMode]);
+
+  // Handle context form cancel
+  const handleContextCancel = useCallback(() => {
+    setShowContextForm(false);
+    setPendingMode(null);
+  }, []);
 
   // Start review at first unconfirmed file
   const handleStartReview = useCallback(() => {
@@ -110,7 +171,6 @@ export default function UploadFile({ libraryPath }) {
     try {
       setIsSaving(true);
       setSaveError(null);
-      setSuccessMessage(null);
 
       const files = filesToSave.map(f => ({
         sourcePath: f.filePath,
@@ -119,10 +179,15 @@ export default function UploadFile({ libraryPath }) {
 
       const result = await saveToLibrary(libraryPath, files);
 
-      setSuccessMessage(
-        `Added ${result.filesSaved} file(s) to library. ` +
-        `${result.artistsAdded} artist(s), ${result.albumsAdded} album(s), ${result.songsAdded} song(s).`
-      );
+      // Build success message including duplicates info if any
+      let message = `Added ${result.filesSaved} file(s) to library. ` +
+        `${result.artistsAdded} artist(s), ${result.albumsAdded} album(s), ${result.songsAdded} song(s).`;
+      
+      if (result.duplicatesSkipped > 0) {
+        message += ` ${result.duplicatesSkipped} duplicate(s) skipped.`;
+      }
+
+      toast.showToast(message, 'success');
 
       // Clear saved files from cache and reset workflow
       cache.removeConfirmedFiles();
@@ -132,31 +197,66 @@ export default function UploadFile({ libraryPath }) {
     } finally {
       setIsSaving(false);
     }
-  }, [libraryPath, cache, workflow]);
+  }, [libraryPath, cache, workflow, toast]);
 
   // Reset everything
   const handleReset = useCallback(() => {
     cache.clearAll();
-    setSuccessMessage(null);
+    toast.hideToast();
     setSaveError(null);
-  }, [cache]);
+  }, [cache, toast]);
 
   // Render based on current stage
   return (
-    <div className={styles.uploadContainer}>
-      {/* Success message */}
-      {successMessage && (
-        <div className={styles.successMessage}>{successMessage}</div>
+    <div className={styles.wrapper}>
+      {/* Toast notification for success messages */}
+      <Toast
+        message={toast.message}
+        variant={toast.variant}
+        visible={toast.visible}
+        onDismiss={toast.hideToast}
+      />
+
+      {/* Change mode button - outside container, only when mode selected but no files */}
+      {showChangeModeButton && (
+        <button 
+          className={styles.changeModeButton} 
+          onClick={() => cache.setModeSelected(false)}
+        >
+          ← Change Upload Mode
+        </button>
       )}
 
+      <div className={styles.uploadContainer}>
       {/* Save error */}
       {saveError && (
         <div className={styles.error}>{saveError}</div>
       )}
 
-      {/* Process stage - file selection and processing */}
-      {workflow.isProcessing && (
-        <ProcessFile onStartReview={handleStartReview} />
+      {/* Context form modal for Album/Artist modes */}
+      {showContextForm && pendingMode && (
+        <ContextForm
+        // in order to set ContextForm we pass the mode of what the form should be which can be either album or artist
+          mode={pendingMode}
+          onSubmit={handleContextSubmit}
+          onCancel={handleContextCancel}
+        />
+      )}
+
+      {/* Mode selector - shown when no files and in process stage */}
+      {showModeSelector && (
+        <UploadModeSelector
+          onSelectSongs={handleSelectSongsMode}
+          onSelectAlbum={handleSelectAlbumMode}
+          onSelectArtist={handleSelectArtistMode}
+        />
+      )}
+
+      {/* Process stage - file selection and processing (after mode selected) */}
+      {workflow.isProcessing && !showModeSelector && (
+        <ProcessFile 
+          onStartReview={handleStartReview} 
+        />
       )}
 
       {/* Review stage - confirming metadata */}
@@ -228,6 +328,7 @@ export default function UploadFile({ libraryPath }) {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }
