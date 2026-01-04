@@ -13,31 +13,21 @@ export default function AudioPlayer({
   filePath,
   duration,
   isPlaying,
-  playbackPosition,
   currentTime,
   error,
-  onPlayFromStart,
-  onPlayFromMiddle,
+  isLoading,
+  onPlay,
   onPause,
+  onStop,
+  onTogglePlayPause,
 }) {
-  const handlePlayStart = () => {
-    if (isPlaying && playbackPosition === 'start') {
+  const handlePlay = () => {
+    if (isPlaying) {
       onPause();
-    } else {
-      onPlayFromStart(filePath);
+    } else if (filePath) {
+      onPlay(filePath);
     }
   };
-
-  const handlePlayMiddle = () => {
-    if (isPlaying && playbackPosition === 'middle') {
-      onPause();
-    } else {
-      onPlayFromMiddle(filePath);
-    }
-  };
-
-  const isPlayingStart = isPlaying && playbackPosition === 'start';
-  const isPlayingMiddle = isPlaying && playbackPosition === 'middle';
 
   return (
     <div className={styles.audioPlayer}>
@@ -45,24 +35,27 @@ export default function AudioPlayer({
       
       <div className={styles.playerControls}>
         <button 
-          className={`${styles.playButton} ${isPlayingStart ? styles.playButtonActive : ''}`}
-          onClick={handlePlayStart}
-          title="Play from start"
+          className={`${styles.playButton} ${isPlaying ? styles.playButtonActive : ''}`}
+          onClick={handlePlay}
+          title={isPlaying ? "Pause" : "Play"}
+          disabled={isLoading}
         >
-          {isPlayingStart ? 'Pause' : 'Play Start'}
+          {isLoading ? 'Loading...' : (isPlaying ? 'Pause' : 'Play')}
         </button>
         
-        <button 
-          className={`${styles.playButton} ${isPlayingMiddle ? styles.playButtonActive : ''}`}
-          onClick={handlePlayMiddle}
-          title="Play from middle"
-        >
-          {isPlayingMiddle ? 'Pause' : 'Play Middle'}
-        </button>
+        {isPlaying && (
+          <button 
+            className={styles.stopButton}
+            onClick={onStop}
+            title="Stop and reset"
+          >
+            Stop
+          </button>
+        )}
       </div>
 
       {/* Playback info */}
-      {isPlaying && (
+      {(isPlaying || currentTime > 0) && (
         <div className={styles.playbackInfo}>
           <span className={styles.playbackTime}>
             {formatDuration(currentTime)} / {formatDuration(duration)}

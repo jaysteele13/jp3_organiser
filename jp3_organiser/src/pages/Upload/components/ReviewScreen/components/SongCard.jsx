@@ -14,13 +14,13 @@ import styles from '../ReviewScreen.module.css';
 export default function SongCard({ 
   file,
   isPlaying,
-  playbackPosition,
+  isLoading,
   currentTime,
   duration,
   audioError,
-  onPlayFromStart,
-  onPlayFromMiddle,
+  onPlay,
   onPause,
+  onStop,
 }) {
   if (!file) return null;
 
@@ -42,12 +42,12 @@ export default function SongCard({
         filePath={file.filePath}
         duration={duration || file.metadata?.durationSecs}
         isPlaying={isPlaying}
-        playbackPosition={playbackPosition}
+        isLoading={isLoading}
         currentTime={currentTime}
         error={audioError}
-        onPlayFromStart={onPlayFromStart}
-        onPlayFromMiddle={onPlayFromMiddle}
+        onPlay={onPlay}
         onPause={onPause}
+        onStop={onStop}
       />
     </div>
   );

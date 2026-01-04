@@ -148,13 +148,12 @@ export default function ReviewScreen({
               isConfirmed={navigation.currentFile.isConfirmed}
               isPlaying={audio.isPlayingFile(navigation.currentFile.filePath)}
               isLoading={audio.isLoading}
-              playbackPosition={audio.playbackPosition}
               currentTime={audio.currentTime}
               duration={audio.duration}
               audioError={audio.error}
-              onPlayFromStart={audio.playFromStart}
-              onPlayFromMiddle={audio.playFromMiddle}
+              onPlay={audio.play}
               onPause={audio.pause}
+              onStop={audio.stop}
             />
           </div>
         )}

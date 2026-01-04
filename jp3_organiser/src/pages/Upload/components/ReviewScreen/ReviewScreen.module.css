@@ -278,6 +278,21 @@
   background-color: var(--primary-hover);
 }
 
+.stopButton {
+  padding: 0.5rem 1rem;
+  background-color: var(--tertiary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.stopButton:hover {
+  background-color: var(--tertiary-hover);
+}
+
 .playbackInfo {
   margin-top: 0.75rem;
   text-align: center;
