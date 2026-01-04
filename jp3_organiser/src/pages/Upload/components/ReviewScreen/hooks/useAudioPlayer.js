@@ -28,6 +28,7 @@ function getMimeType(filePath) {
 export function useAudioPlayer() {
   const audioRef = useRef(null);
   const currentBlobUrlRef = useRef(null);
+  const isChangingSourceRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentFilePath, setCurrentFilePath] = useState(null);
@@ -71,6 +72,13 @@ export function useAudioPlayer() {
     const handleError = () => {
       const err = audio.error;
       console.error('Audio error in init:', err);
+      
+      // Don't show error if we're intentionally changing source
+      if (isChangingSourceRef.current) {
+        console.log('Ignoring error during source change');
+        return;
+      }
+      
       const errorMsg = err ? `Audio error: ${err.message || 'Code: ' + err.code}` : 'Unknown audio error';
       setError(errorMsg);
       setIsPlaying(false);
@@ -201,12 +209,15 @@ export function useAudioPlayer() {
       }
       
       // Stop current playback completely
+      isChangingSourceRef.current = true; // Mark that we're changing source
       audio.pause();
       audio.src = '';
       audio.currentTime = 0;
       
       // Small delay to ensure audio is fully reset
       await new Promise(resolve => setTimeout(resolve, 100));
+      
+      isChangingSourceRef.current = false; // Done changing source
       
       // Load new file as blob
       const blobUrl = await loadAudioAsBlob(filePath);
