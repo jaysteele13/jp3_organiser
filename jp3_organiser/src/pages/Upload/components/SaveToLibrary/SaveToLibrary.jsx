@@ -16,10 +16,18 @@
 import React, { useState, useCallback } from 'react';
 import { saveToLibrary, MetadataStatus } from '../../../../services';
 import styles from './SaveToLibrary.module.css';
+import { 
+  useUploadCacheSelector,
+} from '../../../../hooks';
 
-export default function SaveToLibrary({ libraryPath, confirmedFiles, workflow, cache, toast, onSaveComplete }) {
+export default function SaveToLibrary({ libraryPath, confirmedFiles, workflow, toast, onSaveComplete }) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+
+  const removeConfirmedFiles = useUploadCacheSelector(state => state.removeConfirmedFiles);
+  const confirmedFilesCache = useUploadCacheSelector(state => state.confirmedFiles);
+  const cacheClearAll = useUploadCacheSelector(state => state.clearAll);
+
 
   const handleSaveToLibrary = useCallback(async () => {
     if (!libraryPath) {
@@ -56,7 +64,7 @@ export default function SaveToLibrary({ libraryPath, confirmedFiles, workflow, c
 
       toast.showToast(message, 'success');
 
-      cache.removeConfirmedFiles();
+      removeConfirmedFiles();
       workflow.saveComplete();
       
       if (onSaveComplete) {
@@ -67,7 +75,7 @@ export default function SaveToLibrary({ libraryPath, confirmedFiles, workflow, c
     } finally {
       setIsSaving(false);
     }
-  }, [libraryPath, confirmedFiles, cache, workflow, toast, onSaveComplete]);
+  }, [libraryPath, confirmedFiles, removeConfirmedFiles, workflow, toast, onSaveComplete]);
 
   const handleBackToReview = useCallback(() => {
     const startIndex = confirmedFiles.findIndex(f => !f.isConfirmed);
@@ -75,10 +83,10 @@ export default function SaveToLibrary({ libraryPath, confirmedFiles, workflow, c
   }, [workflow, confirmedFiles]);
 
   const handleReset = useCallback(() => {
-    cache.clearAll();
+    cacheClearAll();
     toast.hideToast();
     setSaveError(null);
-  }, [cache, toast]);
+  }, [cacheClearAll, toast]);
 
   
 
@@ -87,7 +95,7 @@ export default function SaveToLibrary({ libraryPath, confirmedFiles, workflow, c
           <div className={styles.completeHeader}>
             <h3 className={styles.completeTitle}>Ready to Add to Library</h3>
             <p className={styles.completeMessage}>
-              {cache.confirmedFiles.length} file(s) confirmed and ready to be added.
+              {confirmedFilesCache.length} file(s) confirmed and ready to be added.
             </p>
           </div>
 
@@ -97,7 +105,7 @@ export default function SaveToLibrary({ libraryPath, confirmedFiles, workflow, c
               onClick={handleSaveToLibrary}
               disabled={isSaving}
             >
-              {isSaving ? 'Saving...' : `Add ${cache.confirmedFiles.length} File(s) to Library`}
+              {isSaving ? 'Saving...' : `Add ${confirmedFilesCache.length} File(s) to Library`}
             </button>
 
             <button
@@ -121,7 +129,7 @@ export default function SaveToLibrary({ libraryPath, confirmedFiles, workflow, c
           <div className={styles.confirmedList}>
             <h4 className={styles.confirmedListTitle}>Confirmed Files:</h4>
             <ul className={styles.fileList}>
-              {cache.confirmedFiles.map(file => (
+              {confirmedFilesCache.map(file => (
                 <li key={file.trackingId} className={styles.fileItem}>
                   <span className={styles.fileName}>
                     {file.metadata?.title || file.fileName}

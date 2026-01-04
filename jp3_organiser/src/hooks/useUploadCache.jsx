@@ -10,6 +10,7 @@
  * Usage:
  * 1. Wrap app with <UploadCacheProvider>
  * 2. Use useUploadCache() hook to access cached state
+ * 3. Use useUploadCacheSelector(selector) for selective subscriptions (performance)
  */
 
 import { createContext, useContext, useState, useCallback, useMemo } from 'react';
@@ -340,4 +341,25 @@ export function useUploadCache() {
   }
   
   return context;
+}
+
+/**
+ * Selector hook for optimized subscriptions to upload cache.
+ * Only re-renders when the selected state changes.
+ * 
+ * Usage:
+ *   const stats = useUploadCacheSelector(state => state.stats);
+ *   const confirmedFiles = useUploadCacheSelector(state => state.confirmedFiles);
+ * 
+ * @param {function} selector - Function to select specific state
+ * @returns {*} Selected state value
+ */
+export function useUploadCacheSelector(selector) {
+  const context = useContext(UploadCacheContext);
+  
+  if (!context) {
+    throw new Error('useUploadCacheSelector must be used within an UploadCacheProvider');
+  }
+  
+  return useMemo(() => selector(context), [context, selector]);
 }
