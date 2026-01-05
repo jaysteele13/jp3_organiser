@@ -3,50 +3,55 @@
  * 
  * Audio playback controls for previewing songs.
  * Features a seekable progress bar - click anywhere to jump to that position.
+ * 
+ * @param {Object} props
+ * @param {string} props.filePath - Path to the audio file
+ * @param {number} props.fallbackDuration - Fallback duration from file metadata (used before audio loads)
+ * @param {Object} props.audio - Audio controller object from useAudioPlayer hook
  */
 
 import React, { useCallback } from 'react';
 import { formatDuration } from '../../../../../utils';
 import styles from '../ReviewScreen.module.css';
 
-export default function AudioPlayer({ 
-  filePath,
-  duration,
-  isPlaying,
-  currentTime,
-  error,
-  isLoading,
-  onPlay,
-  onPause,
-  onStop,
-  onSeek,
-}) {
-  const handlePlay = () => {
+export default function AudioPlayer({ filePath, fallbackDuration, audio }) {
+  const { 
+    isPlaying, 
+    isLoading, 
+    currentTime, 
+    duration, 
+    error,
+    play, 
+    pause, 
+    stop, 
+    seek 
+  } = audio;
+
+  // Use audio duration if available, otherwise fall back to file metadata
+  const displayDuration = duration || fallbackDuration;
+
+  const handlePlayPause = () => {
     if (isPlaying) {
-      onPause();
+      pause();
     } else if (filePath) {
-      onPlay(filePath);
+      play(filePath);
     }
   };
 
-  // Handle click on progress bar to seek
   const handleProgressClick = useCallback((event) => {
-    if (!duration || !onSeek) return;
+    if (!displayDuration) return;
     
     const progressBar = event.currentTarget;
     const rect = progressBar.getBoundingClientRect();
     const clickX = event.clientX - rect.left;
     const percentage = clickX / rect.width;
-    const seekTime = percentage * duration;
+    const seekTime = percentage * displayDuration;
     
-    onSeek(seekTime);
-  }, [duration, onSeek]);
+    seek(seekTime);
+  }, [displayDuration, seek]);
 
-  // Calculate progress percentage
-  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
-  
-  // Show progress bar when audio has been loaded (duration > 0) or is playing
-  const showProgressBar = duration > 0 || isPlaying || currentTime > 0;
+  const progressPercent = displayDuration > 0 ? (currentTime / displayDuration) * 100 : 0;
+  const showProgressBar = displayDuration > 0 || isPlaying || currentTime > 0;
 
   return (
     <div className={styles.audioPlayer}>
@@ -55,7 +60,7 @@ export default function AudioPlayer({
       <div className={styles.playerControls}>
         <button 
           className={`${styles.playButton} ${isPlaying ? styles.playButtonActive : ''}`}
-          onClick={handlePlay}
+          onClick={handlePlayPause}
           title={isPlaying ? "Pause" : "Play"}
           disabled={isLoading}
         >
@@ -65,7 +70,7 @@ export default function AudioPlayer({
         {isPlaying && (
           <button 
             className={styles.stopButton}
-            onClick={onStop}
+            onClick={stop}
             title="Stop and reset"
           >
             Stop
@@ -73,7 +78,6 @@ export default function AudioPlayer({
         )}
       </div>
 
-      {/* Seekable progress bar */}
       {showProgressBar && (
         <div className={styles.progressContainer}>
           <span className={styles.progressTime}>{formatDuration(currentTime)}</span>
@@ -91,11 +95,10 @@ export default function AudioPlayer({
               style={{ left: `${progressPercent}%` }}
             />
           </div>
-          <span className={styles.progressTime}>{formatDuration(duration)}</span>
+          <span className={styles.progressTime}>{formatDuration(displayDuration)}</span>
         </div>
       )}
 
-      {/* Error message */}
       {error && (
         <div className={styles.playerError}>{error}</div>
       )}

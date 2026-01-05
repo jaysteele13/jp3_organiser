@@ -146,16 +146,7 @@ export default function ReviewScreen({
           >
             <SongCard
               file={navigation.currentFile}
-              isConfirmed={navigation.currentFile.isConfirmed}
-              isPlaying={audio.isPlayingFile(navigation.currentFile.filePath)}
-              isLoading={audio.isLoading}
-              currentTime={audio.currentTime}
-              duration={audio.duration}
-              audioError={audio.error}
-              onPlay={audio.play}
-              onPause={audio.pause}
-              onStop={audio.stop}
-              onSeek={audio.seek}
+              audio={audio}
             />
           </div>
         )}
