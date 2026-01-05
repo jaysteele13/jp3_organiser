@@ -8,10 +8,10 @@
  * mimicking how the ESP32 would parse the binary format.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useLibraryConfig } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
-import { deleteSongs } from '../../services/libraryService';
+import { deleteSongs, listPlaylists } from '../../services/libraryService';
 import { LoadingState, ErrorState, EmptyState } from '../../components';
 import styles from './View.module.css';
 
@@ -29,20 +29,51 @@ export default function View() {
   const [activeTab, setActiveTab] = useState(TABS.SONGS);
   const { library, isLoading, error, handleRefresh } = useLibrary(libraryPath);
 
+  // Playlists state (fetched separately from library.bin)
+  const [playlists, setPlaylists] = useState([]);
+  const [playlistsLoading, setPlaylistsLoading] = useState(false);
+
   // Delete modal state
   const [songsToDelete, setSongsToDelete] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Fetch playlists
+  const fetchPlaylists = useCallback(async () => {
+    if (!libraryPath) return;
+    setPlaylistsLoading(true);
+    try {
+      const data = await listPlaylists(libraryPath);
+      setPlaylists(data);
+    } catch (err) {
+      console.error('Failed to load playlists:', err);
+      setPlaylists([]);
+    } finally {
+      setPlaylistsLoading(false);
+    }
+  }, [libraryPath]);
+
+  // Load playlists when library path changes
+  useEffect(() => {
+    fetchPlaylists();
+  }, [fetchPlaylists]);
+
+  // Combined refresh function
+  const handleFullRefresh = useCallback(() => {
+    handleRefresh();
+    fetchPlaylists();
+  }, [handleRefresh, fetchPlaylists]);
+
   // Stats for header
   const stats = useMemo(() => {
-    if (!library) return { songs: 0, albums: 0, artists: 0 };
+    if (!library) return { songs: 0, albums: 0, artists: 0, playlists: 0 };
     return {
       songs: library.songs.length,
       albums: library.albums.length,
       artists: library.artists.length,
+      playlists: playlists.length,
     };
-  }, [library]);
+  }, [library, playlists]);
 
   // Handle delete request from SongView
   const handleDeleteRequest = (song) => {
@@ -60,7 +91,7 @@ export default function View() {
       await deleteSongs(libraryPath, songIds);
       setShowDeleteModal(false);
       setSongsToDelete([]);
-      handleRefresh();
+      handleFullRefresh();
     } catch (err) {
       console.error('Failed to delete songs:', err);
     } finally {
@@ -92,8 +123,8 @@ export default function View() {
     <div className={styles.container}>
       <ViewHeader 
         libraryPath={libraryPath}
-        handleRefresh={handleRefresh}
-        isLoading={isLoading}
+        handleRefresh={handleFullRefresh}
+        isLoading={isLoading || playlistsLoading}
       />
 
       <ErrorState error={error}/>
@@ -108,7 +139,9 @@ export default function View() {
           <div className={styles.content}>
             <TabContent 
               activeTab={activeTab} 
-              library={library} 
+              library={library}
+              playlists={playlists}
+              libraryPath={libraryPath}
               onDeleteSong={handleDeleteRequest}
             />
           </div>

@@ -7,6 +7,7 @@ export default function StatsBar({stats}) {
                     <span className={styles.stat}>{stats.songs} songs</span>
                     <span className={styles.stat}>{stats.albums} albums</span>
                     <span className={styles.stat}>{stats.artists} artists</span>
+                    <span className={styles.stat}>{stats.playlists} playlists</span>
         </div>
         
     )

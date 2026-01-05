@@ -1,12 +1,162 @@
-import styles from './PlaylistView.module.css'
+/**
+ * PlaylistView Component
+ * 
+ * Displays playlists in a card grid format.
+ * Each card shows playlist name and song count.
+ * Cards are expandable to show the list of songs.
+ * 
+ * @param {Object} props
+ * @param {Array} props.playlists - Array of playlist summaries from listPlaylists
+ * @param {Object} props.library - Library data for resolving song details
+ * @param {string} props.libraryPath - Library path for loading full playlist data
+ */
 
-export default function PlaylistView() {
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { loadPlaylist } from '../../../../../services/libraryService';
+import styles from './PlaylistView.module.css';
 
-    return (
-         <div className={styles.emptyState}>
-            <h3>Playlists</h3>
-            <p>Playlist support coming soon.</p>
+/**
+ * Build a lookup map from song ID to song details
+ */
+function buildSongLookup(library) {
+  const lookup = new Map();
+  if (library?.songs) {
+    library.songs.forEach(song => {
+      lookup.set(song.id, song);
+    });
+  }
+  return lookup;
+}
+
+/**
+ * Format duration from seconds to MM:SS
+ */
+function formatDuration(seconds) {
+  if (!seconds) return '--:--';
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+/**
+ * PlaylistCard Component
+ * 
+ * Individual playlist card with expandable song list.
+ * Fetches full playlist data (including songIds) when expanded.
+ */
+function PlaylistCard({ playlist, songLookup, libraryPath }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [songIds, setSongIds] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const toggleExpand = useCallback(() => {
+    setIsExpanded(prev => !prev);
+  }, []);
+
+  // Fetch full playlist data when expanded
+  useEffect(() => {
+    if (isExpanded && songIds === null && libraryPath) {
+      setIsLoading(true);
+      loadPlaylist(libraryPath, playlist.id)
+        .then(fullPlaylist => {
+          setSongIds(fullPlaylist.songIds || []);
+        })
+        .catch(err => {
+          console.error('Failed to load playlist:', err);
+          setSongIds([]);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }
+  }, [isExpanded, songIds, libraryPath, playlist.id]);
+
+  return (
+    <div className={styles.card}>
+      <button 
+        className={styles.cardHeader}
+        onClick={toggleExpand}
+        aria-expanded={isExpanded}
+      >
+        <div className={styles.cardInfo}>
+          <span className={styles.cardIcon}>☰</span>
+          <div className={styles.cardText}>
+            <span className={styles.cardTitle}>{playlist.name}</span>
+            <span className={styles.cardMeta}>
+              {playlist.songCount} song{playlist.songCount !== 1 ? 's' : ''}
+            </span>
+          </div>
         </div>
-        
-    )
+        <span className={`${styles.expandIcon} ${isExpanded ? styles.expanded : ''}`}>
+          ▼
+        </span>
+      </button>
+      
+      {isExpanded && (
+        <div className={styles.songList}>
+          {isLoading ? (
+            <p className={styles.loadingText}>Loading songs...</p>
+          ) : songIds && songIds.length > 0 ? (
+            <ul className={styles.songs}>
+              {songIds.map((songId, index) => {
+                const song = songLookup.get(songId);
+                if (!song) {
+                  return (
+                    <li key={songId} className={styles.songItem}>
+                      <span className={styles.songIndex}>{index + 1}</span>
+                      <span className={styles.songTitle}>Unknown Song (ID: {songId})</span>
+                    </li>
+                  );
+                }
+                return (
+                  <li key={songId} className={styles.songItem}>
+                    <span className={styles.songIndex}>{index + 1}</span>
+                    <div className={styles.songDetails}>
+                      <span className={styles.songTitle}>{song.title}</span>
+                      <span className={styles.songArtist}>{song.artistName}</span>
+                    </div>
+                    <span className={styles.songDuration}>
+                      {formatDuration(song.durationSec)}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : songIds && songIds.length === 0 ? (
+            <p className={styles.noSongs}>This playlist is empty.</p>
+          ) : (
+            <p className={styles.noSongs}>
+              Unable to load song details.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function PlaylistView({ playlists, library, libraryPath }) {
+  const songLookup = useMemo(() => buildSongLookup(library), [library]);
+
+  if (!playlists || playlists.length === 0) {
+    return (
+      <div className={styles.emptyState}>
+        <h3>No Playlists</h3>
+        <p>Create a playlist using the "Add Playlist" option in Upload.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.container}>
+      {playlists.map(playlist => (
+        <PlaylistCard 
+          key={playlist.id} 
+          playlist={playlist} 
+          songLookup={songLookup}
+          libraryPath={libraryPath}
+        />
+      ))}
+    </div>
+  );
 }
