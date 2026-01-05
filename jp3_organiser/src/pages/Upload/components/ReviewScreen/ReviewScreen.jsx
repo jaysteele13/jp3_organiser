@@ -153,21 +153,7 @@ export default function ReviewScreen({
 
         {/* Navigation controls */}
         {!navigation.isEditMode && (
-          <NavigationControls
-            currentPosition={navigation.currentPosition}
-            totalFiles={navigation.totalFiles}
-            confirmedCount={navigation.confirmedCount}
-            canGoPrevious={navigation.canGoPrevious}
-            canGoNext={navigation.canGoNext}
-            isConfirmed={navigation.currentFile.isConfirmed}
-            validationError={navigation.validationError}
-            onPrevious={navigation.goPrevious}
-            onNext={navigation.goNext}
-            onConfirm={navigation.confirmCurrent}
-            onUnconfirm={navigation.unconfirmCurrent}
-            onRemove={navigation.removeCurrent}
-            onEdit={navigation.enterEditMode}
-          />
+          <NavigationControls navigation={navigation} />
         )}
       </div>
     </div>
