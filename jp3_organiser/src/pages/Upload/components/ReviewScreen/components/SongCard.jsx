@@ -21,6 +21,7 @@ export default function SongCard({
   onPlay,
   onPause,
   onStop,
+  onSeek,
 }) {
   if (!file) return null;
 
@@ -48,6 +49,7 @@ export default function SongCard({
         onPlay={onPlay}
         onPause={onPause}
         onStop={onStop}
+        onSeek={onSeek}
       />
     </div>
   );

@@ -155,6 +155,7 @@ export default function ReviewScreen({
               onPlay={audio.play}
               onPause={audio.pause}
               onStop={audio.stop}
+              onSeek={audio.seek}
             />
           </div>
         )}

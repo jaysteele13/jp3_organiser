@@ -331,6 +331,17 @@ export function useAudioPlayer() {
     setError(null);
   }, []);
 
+  // Seek to specific time (in seconds)
+  const seek = useCallback((time) => {
+    if (audioRef.current && audioRef.current.src) {
+      const audio = audioRef.current;
+      // Clamp time to valid range
+      const clampedTime = Math.max(0, Math.min(time, audio.duration || 0));
+      audio.currentTime = clampedTime;
+      setCurrentTime(clampedTime);
+    }
+  }, []);
+
   // Toggle play/pause
   const togglePlayPause = useCallback((filePath) => {
     if (isPlaying) {
@@ -360,6 +371,7 @@ export function useAudioPlayer() {
     stop,
     togglePlayPause,
     clearError,
+    seek,
     
     // Helper
     isPlayingFile,
