@@ -12,7 +12,7 @@ const tabComponents = {
   [TABS.PLAYLISTS]: PlaylistView,
 };
 
-export default React.memo(function TabContent({ activeTab, library, playlists, libraryPath, onDeleteSong }) {
+export default React.memo(function TabContent({ activeTab, library, libraryPath, onDeleteSong }) {
   const Component = tabComponents[activeTab];
   
   if (!Component) {
@@ -20,7 +20,7 @@ export default React.memo(function TabContent({ activeTab, library, playlists, l
   }
 
   if (activeTab === TABS.PLAYLISTS) {
-    return <Component playlists={playlists} library={library} libraryPath={libraryPath} />;
+    return <Component library={library} libraryPath={libraryPath} />;
   }
 
   // Pass onDeleteSong only to SongView

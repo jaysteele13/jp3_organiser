@@ -6,8 +6,7 @@
  * Cards are expandable to show the list of songs.
  * 
  * @param {Object} props
- * @param {Array} props.playlists - Array of playlist summaries from listPlaylists
- * @param {Object} props.library - Library data for resolving song details
+ * @param {Object} props.library - Library data containing songs and playlists
  * @param {string} props.libraryPath - Library path for loading full playlist data
  */
 
@@ -135,10 +134,11 @@ function PlaylistCard({ playlist, songLookup, libraryPath }) {
   );
 }
 
-export default function PlaylistView({ playlists, library, libraryPath }) {
+export default function PlaylistView({ library, libraryPath }) {
+  const playlists = library?.playlists || [];
   const songLookup = useMemo(() => buildSongLookup(library), [library]);
 
-  if (!playlists || playlists.length === 0) {
+  if (playlists.length === 0) {
     return (
       <div className={styles.emptyState}>
         <h3>No Playlists</h3>

@@ -352,7 +352,7 @@ Models are in `src-tauri/src/models/`:
 | Hook | Purpose |
 |------|---------|
 | `useLibraryConfig()` | Manage library path (get/set from Rust backend), auto-initialize JP3 structure |
-| `useLibrary(libraryPath)` | Fetch and return library data with loading/error states |
+| `useLibrary(libraryPath)` | Fetch library data + playlists with loading/error states. Returns `library` object containing songs, albums, artists, and playlists. |
 | `useLibraryContext()` | Context hook to access library data without prop drilling (used in MetadataForm for autosuggest) |
 | `useKeyboardShortcut(key, callback)` | Register keyboard shortcuts with modifier support |
 | `useUploadCache()` | Context hook for persistent upload state across navigation |
@@ -451,7 +451,7 @@ The View page (`src/pages/View/`) displays the library content:
 | `Songs/SongView.jsx` | Songs list view with duration and actions |
 | `Albums/AlbumView.jsx` | Albums list view grouped by artist |
 | `Artists/ArtistView.jsx` | Artists list view |
-| `Playlists/PlaylistView.jsx` | Playlists view (placeholder for future) |
+| `Playlists/PlaylistView.jsx` | Playlists view with expandable cards showing songs |
 
 ## Available Tauri Plugins
 
