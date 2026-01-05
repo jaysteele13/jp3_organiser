@@ -9,9 +9,9 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
 use crate::models::{
-    AlbumEntry, ArtistEntry, AudioMetadata, LibraryHeader, LibraryInfo, ParsedAlbum,
+    song_flags, AlbumEntry, ArtistEntry, AudioMetadata, LibraryHeader, LibraryInfo, ParsedAlbum,
     ParsedArtist, ParsedLibrary, ParsedSong, SaveToLibraryResult, SongEntry, StringTable,
-    HEADER_SIZE, song_flags,
+    HEADER_SIZE,
 };
 
 // JP3 directory structure constants
@@ -50,8 +50,7 @@ pub fn initialize_library(base_path: String) -> Result<String, String> {
     let playlists_path = jp3_path.join(PLAYLISTS_DIR);
 
     // Create main jp3 directory and subdirectories
-    fs::create_dir_all(&jp3_path)
-        .map_err(|e| format!("Failed to create jp3 directory: {}", e))?;
+    fs::create_dir_all(&jp3_path).map_err(|e| format!("Failed to create jp3 directory: {}", e))?;
     fs::create_dir_all(&music_path)
         .map_err(|e| format!("Failed to create music directory: {}", e))?;
     fs::create_dir_all(&metadata_path)
@@ -138,7 +137,9 @@ struct ExistingLibraryData {
 }
 
 /// Load existing library data from library.bin for merging with new songs.
-fn load_existing_library_data(library_bin_path: &Path) -> Result<Option<ExistingLibraryData>, String> {
+fn load_existing_library_data(
+    library_bin_path: &Path,
+) -> Result<Option<ExistingLibraryData>, String> {
     if !library_bin_path.exists() {
         return Ok(None);
     }
@@ -156,8 +157,7 @@ fn load_existing_library_data(library_bin_path: &Path) -> Result<Option<Existing
     }
 
     // Parse header
-    let header = LibraryHeader::from_bytes(&data)
-        .ok_or("Invalid library.bin header")?;
+    let header = LibraryHeader::from_bytes(&data).ok_or("Invalid library.bin header")?;
 
     // If no songs exist, return None (fresh library)
     if header.song_count == 0 {
@@ -181,7 +181,8 @@ fn load_existing_library_data(library_bin_path: &Path) -> Result<Option<Existing
     let mut artists: Vec<ArtistEntry> = Vec::with_capacity(raw_artists.len());
     let mut artist_map: HashMap<String, u32> = HashMap::new();
     for (id, raw) in raw_artists.iter().enumerate() {
-        let name = strings.get(raw.name_string_id as usize)
+        let name = strings
+            .get(raw.name_string_id as usize)
             .cloned()
             .unwrap_or_default();
         artist_map.insert(name, id as u32);
@@ -199,7 +200,8 @@ fn load_existing_library_data(library_bin_path: &Path) -> Result<Option<Existing
     let mut albums: Vec<AlbumEntry> = Vec::with_capacity(raw_albums.len());
     let mut album_map: HashMap<String, u32> = HashMap::new();
     for (id, raw) in raw_albums.iter().enumerate() {
-        let album_name = strings.get(raw.name_string_id as usize)
+        let album_name = strings
+            .get(raw.name_string_id as usize)
             .cloned()
             .unwrap_or_default();
         let album_key = format!("{}:{}", raw.artist_id, album_name);
@@ -218,21 +220,24 @@ fn load_existing_library_data(library_bin_path: &Path) -> Result<Option<Existing
         header.song_count as usize,
     )?;
     let mut song_set: HashSet<(u32, u32, u32)> = HashSet::new();
-    let songs: Vec<SongEntry> = raw_songs.iter().map(|raw| {
-        // Only add active (non-deleted) songs to the duplicate set
-        if raw.flags & song_flags::DELETED == 0 {
-            song_set.insert((raw.title_string_id, raw.artist_id, raw.album_id));
-        }
-        SongEntry {
-            title_string_id: raw.title_string_id,
-            artist_id: raw.artist_id,
-            album_id: raw.album_id,
-            path_string_id: raw.path_string_id,
-            track_number: raw.track_number,
-            duration_sec: raw.duration_sec,
-            flags: raw.flags,
-        }
-    }).collect();
+    let songs: Vec<SongEntry> = raw_songs
+        .iter()
+        .map(|raw| {
+            // Only add active (non-deleted) songs to the duplicate set
+            if raw.flags & song_flags::DELETED == 0 {
+                song_set.insert((raw.title_string_id, raw.artist_id, raw.album_id));
+            }
+            SongEntry {
+                title_string_id: raw.title_string_id,
+                artist_id: raw.artist_id,
+                album_id: raw.album_id,
+                path_string_id: raw.path_string_id,
+                track_number: raw.track_number,
+                duration_sec: raw.duration_sec,
+                flags: raw.flags,
+            }
+        })
+        .collect();
 
     Ok(Some(ExistingLibraryData {
         string_table,
@@ -266,34 +271,43 @@ pub fn save_to_library(
     let library_bin_path = metadata_path.join(LIBRARY_BIN);
 
     if !jp3_path.exists() {
-        return Err("Library not initialized. Please select a library directory first.".to_string());
+        return Err(
+            "Library not initialized. Please select a library directory first.".to_string(),
+        );
     }
 
     // Load existing library data or start fresh
     let existing = load_existing_library_data(&library_bin_path)?;
-    
-    let (mut string_table, mut artists, mut albums, mut songs, mut artist_map, mut album_map, mut song_set) = 
-        match existing {
-            Some(data) => (
-                data.string_table,
-                data.artists,
-                data.albums,
-                data.songs,
-                data.artist_map,
-                data.album_map,
-                data.song_set,
-            ),
-            None => (
-                StringTable::new(),
-                Vec::new(),
-                Vec::new(),
-                Vec::new(),
-                HashMap::new(),
-                HashMap::new(),
-                HashSet::new(),
-            ),
-        };
-    
+
+    let (
+        mut string_table,
+        mut artists,
+        mut albums,
+        mut songs,
+        mut artist_map,
+        mut album_map,
+        mut song_set,
+    ) = match existing {
+        Some(data) => (
+            data.string_table,
+            data.artists,
+            data.albums,
+            data.songs,
+            data.artist_map,
+            data.album_map,
+            data.song_set,
+        ),
+        None => (
+            StringTable::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            HashMap::new(),
+            HashMap::new(),
+            HashSet::new(),
+        ),
+    };
+
     let existing_song_count = songs.len() as u32;
     let existing_artist_count = artists.len() as u32;
     let existing_album_count = albums.len() as u32;
@@ -352,7 +366,9 @@ pub fn save_to_library(
             if song_set.contains(&song_key) {
                 log::info!(
                     "Skipping duplicate song: '{}' by '{}' on '{}'",
-                    title, artist_name, album_name
+                    title,
+                    artist_name,
+                    album_name
                 );
                 duplicates_skipped += 1;
                 continue;
@@ -387,11 +403,11 @@ pub fn save_to_library(
         // Add song entry
         let title_string_id = string_table.add(title);
         let path_string_id = string_table.add(&relative_path);
-        
+
         // Add to song_set to prevent duplicates within the same batch
         let song_key = (title_string_id, artist_id, album_id);
         song_set.insert(song_key);
-        
+
         songs.push(SongEntry::new(
             title_string_id,
             artist_id,
@@ -477,12 +493,12 @@ pub fn delete_songs(
     {
         let mut read_file = fs::File::open(&library_bin_path)
             .map_err(|e| format!("Failed to open library.bin for reading: {}", e))?;
-        read_file.read_to_end(&mut data)
+        read_file
+            .read_to_end(&mut data)
             .map_err(|e| format!("Failed to read library.bin: {}", e))?;
     }
 
-    let header = LibraryHeader::from_bytes(&data)
-        .ok_or("Invalid library.bin header")?;
+    let header = LibraryHeader::from_bytes(&data).ok_or("Invalid library.bin header")?;
 
     // Parse string table to resolve paths
     let strings = parse_string_table(
@@ -509,12 +525,14 @@ pub fn delete_songs(
         }
 
         // Calculate song entry offset
-        let song_offset = header.song_table_offset as usize + (song_id as usize * SongEntry::SIZE as usize);
+        let song_offset =
+            header.song_table_offset as usize + (song_id as usize * SongEntry::SIZE as usize);
 
         // Read the path_string_id (bytes 12-16 of the song entry)
         let path_string_id = u32::from_le_bytes(
-            data[song_offset + 12..song_offset + 16].try_into()
-                .map_err(|_| format!("Failed to read path_string_id for song {}", song_id))?
+            data[song_offset + 12..song_offset + 16]
+                .try_into()
+                .map_err(|_| format!("Failed to read path_string_id for song {}", song_id))?,
         );
 
         // Get the audio file path from string table
@@ -531,7 +549,7 @@ pub fn delete_songs(
         let flags_offset = song_offset as u64 + 20;
         file.seek(SeekFrom::Start(flags_offset))
             .map_err(|e| format!("Failed to seek to song {}: {}", song_id, e))?;
-        
+
         file.write_all(&[song_flags::DELETED])
             .map_err(|e| format!("Failed to mark song {} as deleted: {}", song_id, e))?;
 
@@ -554,7 +572,7 @@ pub fn delete_songs(
 /// This approach minimizes write cycles by:
 /// 1. Marking the old song entry as deleted (1 byte write)
 /// 2. Appending new strings/entries to the end of the file
-/// 
+///
 /// Note: This does require a full file rewrite since we need to update offsets.
 /// For truly minimal writes, use delete_songs + save_to_library separately.
 #[tauri::command]
@@ -565,7 +583,7 @@ pub fn edit_song_metadata(
 ) -> Result<crate::models::EditSongResult, String> {
     // First, soft delete the old song
     let delete_result = delete_songs(base_path.clone(), vec![song_id])?;
-    
+
     if delete_result.songs_deleted == 0 {
         return Err(format!("Song {} not found", song_id));
     }
@@ -583,8 +601,7 @@ pub fn edit_song_metadata(
     file.read_to_end(&mut data)
         .map_err(|e| format!("Failed to read library.bin: {}", e))?;
 
-    let header = LibraryHeader::from_bytes(&data)
-        .ok_or("Invalid library.bin header")?;
+    let header = LibraryHeader::from_bytes(&data).ok_or("Invalid library.bin header")?;
 
     // Parse string table to get the old path
     let strings = parse_string_table(
@@ -594,12 +611,15 @@ pub fn edit_song_metadata(
     )?;
 
     // Get the old song entry to preserve its path
-    let song_offset = header.song_table_offset as usize + (song_id as usize * SongEntry::SIZE as usize);
+    let song_offset =
+        header.song_table_offset as usize + (song_id as usize * SongEntry::SIZE as usize);
     let old_path_string_id = u32::from_le_bytes(
-        data[song_offset + 12..song_offset + 16].try_into()
-            .map_err(|_| "Failed to read path_string_id")?
+        data[song_offset + 12..song_offset + 16]
+            .try_into()
+            .map_err(|_| "Failed to read path_string_id")?,
     );
-    let old_path = strings.get(old_path_string_id as usize)
+    let old_path = strings
+        .get(old_path_string_id as usize)
         .cloned()
         .ok_or("Failed to get old song path")?;
 
@@ -662,13 +682,7 @@ pub fn edit_song_metadata(
     ));
 
     // Rebuild and write library.bin
-    write_library_bin(
-        &library_bin_path,
-        &string_table,
-        &artists,
-        &albums,
-        &songs,
-    )?;
+    write_library_bin(&library_bin_path, &string_table, &artists, &albums, &songs)?;
 
     Ok(crate::models::EditSongResult {
         new_song_id,
@@ -701,8 +715,7 @@ pub fn get_library_stats(base_path: String) -> Result<crate::models::LibraryStat
     file.read_to_end(&mut data)
         .map_err(|e| format!("Failed to read library.bin: {}", e))?;
 
-    let header = LibraryHeader::from_bytes(&data)
-        .ok_or("Invalid library.bin header")?;
+    let header = LibraryHeader::from_bytes(&data).ok_or("Invalid library.bin header")?;
 
     // Count strings
     let strings = parse_string_table(
@@ -718,7 +731,10 @@ pub fn get_library_stats(base_path: String) -> Result<crate::models::LibraryStat
         header.song_count as usize,
     )?;
 
-    let deleted_songs = raw_songs.iter().filter(|s| s.flags & song_flags::DELETED != 0).count() as u32;
+    let deleted_songs = raw_songs
+        .iter()
+        .filter(|s| s.flags & song_flags::DELETED != 0)
+        .count() as u32;
     let active_songs = header.song_count - deleted_songs;
 
     let deleted_percentage = if header.song_count > 0 {
@@ -772,8 +788,7 @@ pub fn compact_library(base_path: String) -> Result<crate::models::CompactResult
     file.read_to_end(&mut data)
         .map_err(|e| format!("Failed to read library.bin: {}", e))?;
 
-    let header = LibraryHeader::from_bytes(&data)
-        .ok_or("Invalid library.bin header")?;
+    let header = LibraryHeader::from_bytes(&data).ok_or("Invalid library.bin header")?;
 
     // Parse all data
     let old_strings = parse_string_table(
@@ -801,10 +816,14 @@ pub fn compact_library(base_path: String) -> Result<crate::models::CompactResult
     )?;
 
     // Count what we're removing
-    let songs_removed = old_songs.iter().filter(|s| s.flags & song_flags::DELETED != 0).count() as u32;
+    let songs_removed = old_songs
+        .iter()
+        .filter(|s| s.flags & song_flags::DELETED != 0)
+        .count() as u32;
 
     // Filter to only active songs
-    let active_songs: Vec<_> = old_songs.iter()
+    let active_songs: Vec<_> = old_songs
+        .iter()
         .filter(|s| s.flags & song_flags::DELETED == 0)
         .collect();
 
@@ -826,7 +845,8 @@ pub fn compact_library(base_path: String) -> Result<crate::models::CompactResult
     for (old_id, artist) in old_artists.iter().enumerate() {
         if used_artist_ids.contains(&(old_id as u32)) {
             let new_id = new_artists.len() as u32;
-            let name = old_strings.get(artist.name_string_id as usize)
+            let name = old_strings
+                .get(artist.name_string_id as usize)
                 .cloned()
                 .unwrap_or_default();
             let name_string_id = new_string_table.add(&name);
@@ -839,7 +859,8 @@ pub fn compact_library(base_path: String) -> Result<crate::models::CompactResult
     for (old_id, album) in old_albums.iter().enumerate() {
         if used_album_ids.contains(&(old_id as u32)) {
             let new_id = new_albums.len() as u32;
-            let name = old_strings.get(album.name_string_id as usize)
+            let name = old_strings
+                .get(album.name_string_id as usize)
                 .cloned()
                 .unwrap_or_default();
             let name_string_id = new_string_table.add(&name);
@@ -855,10 +876,12 @@ pub fn compact_library(base_path: String) -> Result<crate::models::CompactResult
 
     // Rebuild songs with remapped IDs
     for song in active_songs {
-        let title = old_strings.get(song.title_string_id as usize)
+        let title = old_strings
+            .get(song.title_string_id as usize)
             .cloned()
             .unwrap_or_default();
-        let path = old_strings.get(song.path_string_id as usize)
+        let path = old_strings
+            .get(song.path_string_id as usize)
             .cloned()
             .unwrap_or_default();
 
@@ -948,8 +971,8 @@ fn write_library_bin(
         song_table_offset,
     };
 
-    let mut file = fs::File::create(path)
-        .map_err(|e| format!("Failed to create library.bin: {}", e))?;
+    let mut file =
+        fs::File::create(path).map_err(|e| format!("Failed to create library.bin: {}", e))?;
     file.write_all(&header.to_bytes())
         .map_err(|e| format!("Failed to write header: {}", e))?;
     file.write_all(&string_table_bytes)
@@ -973,8 +996,8 @@ fn get_current_bucket(music_path: &Path) -> Result<(u32, usize), String> {
     }
 
     let mut max_bucket = 0u32;
-    let entries = fs::read_dir(music_path)
-        .map_err(|e| format!("Failed to read music directory: {}", e))?;
+    let entries =
+        fs::read_dir(music_path).map_err(|e| format!("Failed to read music directory: {}", e))?;
 
     for entry in entries.flatten() {
         if entry.path().is_dir() {
@@ -1022,8 +1045,7 @@ pub fn load_library(base_path: String) -> Result<ParsedLibrary, String> {
         .map_err(|e| format!("Failed to read library.bin: {}", e))?;
 
     // Parse header
-    let header = LibraryHeader::from_bytes(&data)
-        .ok_or("Invalid library.bin header")?;
+    let header = LibraryHeader::from_bytes(&data).ok_or("Invalid library.bin header")?;
 
     // Parse string table
     let strings = parse_string_table(
@@ -1122,10 +1144,26 @@ pub fn load_library(base_path: String) -> Result<ParsedLibrary, String> {
         })
         .collect();
 
+    // Collect IDs of artists and albums that have at least one active song
+    let active_artist_ids: HashSet<u32> = songs.iter().map(|s| s.artist_id).collect();
+    let active_album_ids: HashSet<u32> = songs.iter().map(|s| s.album_id).collect();
+
+    // Filter artists to only those with active songs
+    let filtered_artists: Vec<ParsedArtist> = artists
+        .into_iter()
+        .filter(|a| active_artist_ids.contains(&a.id))
+        .collect();
+
+    // Filter albums to only those with active songs
+    let filtered_albums: Vec<ParsedAlbum> = albums
+        .into_iter()
+        .filter(|a| active_album_ids.contains(&a.id))
+        .collect();
+
     Ok(ParsedLibrary {
         version: header.version,
-        artists,
-        albums,
+        artists: filtered_artists,
+        albums: filtered_albums,
         songs,
     })
 }
