@@ -326,6 +326,11 @@ export function useAudioPlayer() {
     }
   }, []);
 
+  // Clear error state (useful when navigating to a different file)
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
   // Toggle play/pause
   const togglePlayPause = useCallback((filePath) => {
     if (isPlaying) {
@@ -354,6 +359,7 @@ export function useAudioPlayer() {
     pause,
     stop,
     togglePlayPause,
+    clearError,
     
     // Helper
     isPlayingFile,

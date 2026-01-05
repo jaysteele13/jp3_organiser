@@ -63,9 +63,10 @@ export default function ReviewScreen({
   // Register Shift+Enter keyboard shortcut for confirm
   useKeyboardShortcut('Enter', navigation.confirmCurrent, { shift: true });
 
-  // Stop audio when file changes
+  // Stop audio and clear errors when file changes
   useEffect(() => {
     audio.stop();
+    audio.clearError();
   }, [navigation.currentFile?.trackingId]);
 
   // Handle Done button click
