@@ -76,24 +76,15 @@ function PlaylistCard({ playlist, songLookup, libraryPath, onManage }) {
   return (
     <div className={styles.card}>
       <div className={styles.cardHeader}>
-        <button 
-          className={styles.cardToggle}
-          onClick={toggleExpand}
-          aria-expanded={isExpanded}
-        >
-          <div className={styles.cardInfo}>
-            <span className={styles.cardIcon}>☰</span>
-            <div className={styles.cardText}>
-              <span className={styles.cardTitle}>{playlist.name}</span>
-              <span className={styles.cardMeta}>
-                {playlist.songCount} song{playlist.songCount !== 1 ? 's' : ''}
-              </span>
-            </div>
+        <div className={styles.cardInfo} onClick={toggleExpand}>
+          <span className={styles.cardIcon}>☰</span>
+          <div className={styles.cardText}>
+            <span className={styles.cardTitle}>{playlist.name}</span>
+            <span className={styles.cardMeta}>
+              {playlist.songCount} song{playlist.songCount !== 1 ? 's' : ''}
+            </span>
           </div>
-          <span className={`${styles.expandIcon} ${isExpanded ? styles.expanded : ''}`}>
-            ▼
-          </span>
-        </button>
+        </div>
         <button 
           className={styles.manageBtn}
           onClick={handleManageClick}
@@ -126,9 +117,7 @@ function PlaylistCard({ playlist, songLookup, libraryPath, onManage }) {
                       <span className={styles.songTitle}>{song.title}</span>
                       <span className={styles.songArtist}>{song.artistName}</span>
                     </div>
-                    <span className={styles.songDuration}>
-                      {formatDuration(song.durationSec)}
-                    </span>
+                    
                   </li>
                 );
               })}

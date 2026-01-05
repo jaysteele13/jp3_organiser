@@ -14,7 +14,6 @@ import { useLibraryConfig } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
 import { LoadingState, ErrorState, EmptyState } from '../../components';
 import { TABS } from '../../utils/enums';
-import { formatDuration } from '../../utils/formatters';
 import usePlaylistEdit from './usePlaylistEdit';
 import styles from './PlaylistEdit.module.css';
 
@@ -40,7 +39,6 @@ function CurrentSongRow({ song, index, onRemove, isDisabled }) {
       <td className={styles.cellIndex}>{index + 1}</td>
       <td className={styles.cellTitle}>{song?.title || 'Unknown'}</td>
       <td className={styles.cellArtist}>{song?.artistName || 'Unknown'}</td>
-      <td className={styles.cellDuration}>{formatDuration(song?.durationSec)}</td>
       <td className={styles.cellAction}>
         <button
           className={styles.removeBtn}
@@ -82,7 +80,6 @@ function PickerSongRow({ song, isSelected, isInPlaylist, onToggle }) {
       <td className={styles.cellTitle}>{song.title}</td>
       <td className={styles.cellArtist}>{song.artistName}</td>
       <td className={styles.cellAlbum}>{song.albumName}</td>
-      <td className={styles.cellDuration}>{formatDuration(song.durationSec)}</td>
       <td className={styles.cellStatus}>
         {isInPlaylist && <span className={styles.inPlaylistBadge}>Added</span>}
       </td>
@@ -212,7 +209,6 @@ export default function PlaylistEdit() {
                     <th className={styles.thIndex}>#</th>
                     <th>Title</th>
                     <th>Artist</th>
-                    <th className={styles.thDuration}>Duration</th>
                     <th className={styles.thAction}></th>
                   </tr>
                 </thead>
@@ -281,7 +277,6 @@ export default function PlaylistEdit() {
                     <th>Title</th>
                     <th>Artist</th>
                     <th>Album</th>
-                    <th className={styles.thDuration}>Duration</th>
                     <th className={styles.thStatus}></th>
                   </tr>
                 </thead>

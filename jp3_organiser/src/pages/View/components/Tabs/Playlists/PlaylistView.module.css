@@ -39,38 +39,17 @@
 /* Card header (clickable) */
 .cardHeader {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 0.5rem;
+  padding: 0.75rem 1rem;
 }
 
-/* Toggle button (expand/collapse) */
-.cardToggle {
-  flex: 1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  background: none;
-  border: none;
-  color: #000;
-  cursor: pointer;
-  text-align: left;
-  font-family: inherit;
-  transition: background-color 0.15s ease;
-}
-
-.cardToggle:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-/* Manage button */
+/* Manage button (right side) */
 .manageBtn {
   background-color: rgba(0, 0, 0, 0.15);
   border: none;
   color: #000;
   padding: 0.5rem 0.9rem;
-  margin-right: 0.75rem;
   border-radius: 6px;
   font-size: 0.85rem;
   font-weight: 500;
@@ -87,6 +66,13 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex: 1;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.cardInfo:hover .cardTitle {
+  text-decoration: underline;
 }
 
 .cardIcon {
@@ -110,17 +96,6 @@
   font-size: 0.8rem;
   opacity: 0.6;
   color: #000;
-}
-
-/* Expand icon */
-.expandIcon {
-  font-size: 0.75rem;
-  opacity: 0.5;
-  transition: transform 0.2s ease;
-}
-
-.expandIcon.expanded {
-  transform: rotate(180deg);
 }
 
 /* Song list (expanded) */

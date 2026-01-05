@@ -238,14 +238,6 @@
   accent-color: var(--secondary);
 }
 
-.thDuration,
-.cellDuration {
-  width: 80px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  color: #888;
-}
-
 .thAction,
 .cellAction {
   width: 50px;
