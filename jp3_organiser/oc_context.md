@@ -374,6 +374,7 @@ Uses React Router for navigation:
 | `/` | Redirects to `/upload` | Default route |
 | `/upload` | Upload | File upload workflow |
 | `/view` | View | Library browser |
+| `/playlist/:id` | PlaylistEdit | Full-page playlist editor |
 | `/about` | About | App information |
 
 ## Upload Page Components
@@ -451,15 +452,23 @@ The View page (`src/pages/View/`) displays the library content:
 | `Songs/SongView.jsx` | Songs list view with duration and actions |
 | `Albums/AlbumView.jsx` | Albums list view grouped by artist |
 | `Artists/ArtistView.jsx` | Artists list view |
-| `Playlists/PlaylistView.jsx` | Playlists view with expandable cards and Manage button |
-| `Playlists/PlaylistEditor/` | Modal for adding/removing songs from a playlist |
+| `Playlists/PlaylistView.jsx` | Playlists view with expandable cards and Manage button (navigates to PlaylistEdit) |
 
-### PlaylistEditor Components (`src/pages/View/components/Tabs/Playlists/PlaylistEditor/`)
+## PlaylistEdit Page
+
+The PlaylistEdit page (`src/pages/PlaylistEdit/`) provides a full-screen editor for managing playlist contents:
 
 | Component/Hook | Purpose |
 |----------------|---------|
-| `PlaylistEditor.jsx` | Modal with current songs list and song picker for adding |
-| `usePlaylistEditor.js` | Hook managing editor state, open/close, add/remove operations |
+| `PlaylistEdit.jsx` | Two-column layout with current songs and song picker |
+| `usePlaylistEdit.js` | Hook managing playlist state, add/remove song operations |
+
+**Features:**
+- Two-column layout: current playlist songs (left) and library song picker (right)
+- Search/filter library songs by title, artist, or album
+- Batch selection with checkboxes for adding multiple songs
+- Remove songs with one click
+- Back button to return to View page
 
 ## Available Tauri Plugins
 
@@ -570,9 +579,3 @@ App.jsx
 - State management (Context API or Zustand) as app grows
 - Don't use TypeScript - this is a ReactJS project
 - Testing setup (Vitest for React, Rust tests for backend)
-
-## Known Technical Debt
-
-### SongView.jsx has duplicate formatDuration
-- `formatDuration` function is duplicated in SongView instead of using `utils/formatters.js`
-- Should consolidate to single utility function

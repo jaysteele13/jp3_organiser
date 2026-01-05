@@ -4,17 +4,17 @@
  * Displays playlists in a card grid format.
  * Each card shows playlist name and song count.
  * Cards are expandable to show the list of songs.
- * Includes a "Manage" button to open the PlaylistEditor modal.
+ * "Manage" button navigates to the PlaylistEdit page.
  * 
  * @param {Object} props
  * @param {Object} props.library - Library data containing songs and playlists
  * @param {string} props.libraryPath - Library path for loading full playlist data
- * @param {function} props.onRefresh - Callback to refresh library data after changes
  */
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { loadPlaylist } from '../../../../../services/libraryService';
-import PlaylistEditor, { usePlaylistEditor } from './PlaylistEditor';
+import { formatDuration } from '../../../../../utils/formatters';
 import styles from './PlaylistView.module.css';
 
 /**
@@ -28,16 +28,6 @@ function buildSongLookup(library) {
     });
   }
   return lookup;
-}
-
-/**
- * Format duration from seconds to MM:SS
- */
-function formatDuration(seconds) {
-  if (!seconds) return '--:--';
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 /**
@@ -57,8 +47,8 @@ function PlaylistCard({ playlist, songLookup, libraryPath, onManage }) {
 
   const handleManageClick = useCallback((e) => {
     e.stopPropagation();
-    onManage(playlist);
-  }, [playlist, onManage]);
+    onManage(playlist.id);
+  }, [playlist.id, onManage]);
 
   // Fetch full playlist data when expanded
   useEffect(() => {
@@ -156,16 +146,14 @@ function PlaylistCard({ playlist, songLookup, libraryPath, onManage }) {
   );
 }
 
-export default function PlaylistView({ library, libraryPath, onRefresh }) {
+export default function PlaylistView({ library, libraryPath }) {
+  const navigate = useNavigate();
   const playlists = library?.playlists || [];
-  const allSongs = library?.songs || [];
   const songLookup = useMemo(() => buildSongLookup(library), [library]);
 
-  // Playlist editor hook
-  const editor = usePlaylistEditor({
-    libraryPath,
-    onUpdate: onRefresh,
-  });
+  const handleManage = useCallback((playlistId) => {
+    navigate(`/playlist/${playlistId}`);
+  }, [navigate]);
 
   if (playlists.length === 0) {
     return (
@@ -184,18 +172,9 @@ export default function PlaylistView({ library, libraryPath, onRefresh }) {
           playlist={playlist} 
           songLookup={songLookup}
           libraryPath={libraryPath}
-          onManage={editor.openEditor}
+          onManage={handleManage}
         />
       ))}
-
-      {/* Playlist Editor Modal */}
-      {editor.isOpen && (
-        <PlaylistEditor
-          editor={editor}
-          songLookup={songLookup}
-          allSongs={allSongs}
-        />
-      )}
     </div>
   );
 }
