@@ -323,6 +323,8 @@ export function useAudioPlayer() {
       audio.pause();
       audio.currentTime = 0;
       setIsPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
     }
   }, []);
 
