@@ -38,7 +38,15 @@
 
 /* Card header (clickable) */
 .cardHeader {
-  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Toggle button (expand/collapse) */
+.cardToggle {
+  flex: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -52,8 +60,27 @@
   transition: background-color 0.15s ease;
 }
 
-.cardHeader:hover {
+.cardToggle:hover {
   background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Manage button */
+.manageBtn {
+  background-color: rgba(0, 0, 0, 0.15);
+  border: none;
+  color: #000;
+  padding: 0.5rem 0.9rem;
+  margin-right: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.manageBtn:hover {
+  background-color: rgba(0, 0, 0, 0.25);
 }
 
 .cardInfo {

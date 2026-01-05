@@ -112,6 +112,7 @@ export default function View() {
               library={library}
               libraryPath={libraryPath}
               onDeleteSong={handleDeleteRequest}
+              onRefresh={handleRefresh}
             />
           </div>
         </>

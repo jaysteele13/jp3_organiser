@@ -110,9 +110,9 @@ jp3_organiser/
 15. **Swipe Animations** - Slide animations when navigating between files in review mode
 16. **Upload Mode Selection** - Choose between Add Songs, Add Album, Add Artist, or Add Playlist modes
 17. **Playlist Creation** - Create playlists with songs (saves songs to library + creates playlist file)
+18. **Playlist Management** - Add/remove songs from existing playlists via PlaylistEditor modal
 
 ### Planned
-- Playlist editing and management (add/remove songs from existing playlists)
 - SD Card export workflow
 
 ## Coding Standards
@@ -451,7 +451,15 @@ The View page (`src/pages/View/`) displays the library content:
 | `Songs/SongView.jsx` | Songs list view with duration and actions |
 | `Albums/AlbumView.jsx` | Albums list view grouped by artist |
 | `Artists/ArtistView.jsx` | Artists list view |
-| `Playlists/PlaylistView.jsx` | Playlists view with expandable cards showing songs |
+| `Playlists/PlaylistView.jsx` | Playlists view with expandable cards and Manage button |
+| `Playlists/PlaylistEditor/` | Modal for adding/removing songs from a playlist |
+
+### PlaylistEditor Components (`src/pages/View/components/Tabs/Playlists/PlaylistEditor/`)
+
+| Component/Hook | Purpose |
+|----------------|---------|
+| `PlaylistEditor.jsx` | Modal with current songs list and song picker for adding |
+| `usePlaylistEditor.js` | Hook managing editor state, open/close, add/remove operations |
 
 ## Available Tauri Plugins
 

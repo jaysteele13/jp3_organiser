@@ -4,14 +4,17 @@
  * Displays playlists in a card grid format.
  * Each card shows playlist name and song count.
  * Cards are expandable to show the list of songs.
+ * Includes a "Manage" button to open the PlaylistEditor modal.
  * 
  * @param {Object} props
  * @param {Object} props.library - Library data containing songs and playlists
  * @param {string} props.libraryPath - Library path for loading full playlist data
+ * @param {function} props.onRefresh - Callback to refresh library data after changes
  */
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { loadPlaylist } from '../../../../../services/libraryService';
+import PlaylistEditor, { usePlaylistEditor } from './PlaylistEditor';
 import styles from './PlaylistView.module.css';
 
 /**
@@ -43,7 +46,7 @@ function formatDuration(seconds) {
  * Individual playlist card with expandable song list.
  * Fetches full playlist data (including songIds) when expanded.
  */
-function PlaylistCard({ playlist, songLookup, libraryPath }) {
+function PlaylistCard({ playlist, songLookup, libraryPath, onManage }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [songIds, setSongIds] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -51,6 +54,11 @@ function PlaylistCard({ playlist, songLookup, libraryPath }) {
   const toggleExpand = useCallback(() => {
     setIsExpanded(prev => !prev);
   }, []);
+
+  const handleManageClick = useCallback((e) => {
+    e.stopPropagation();
+    onManage(playlist);
+  }, [playlist, onManage]);
 
   // Fetch full playlist data when expanded
   useEffect(() => {
@@ -70,26 +78,40 @@ function PlaylistCard({ playlist, songLookup, libraryPath }) {
     }
   }, [isExpanded, songIds, libraryPath, playlist.id]);
 
+  // Reset songIds when playlist changes (e.g., after editing)
+  useEffect(() => {
+    setSongIds(null);
+  }, [playlist.songCount]);
+
   return (
     <div className={styles.card}>
-      <button 
-        className={styles.cardHeader}
-        onClick={toggleExpand}
-        aria-expanded={isExpanded}
-      >
-        <div className={styles.cardInfo}>
-          <span className={styles.cardIcon}>☰</span>
-          <div className={styles.cardText}>
-            <span className={styles.cardTitle}>{playlist.name}</span>
-            <span className={styles.cardMeta}>
-              {playlist.songCount} song{playlist.songCount !== 1 ? 's' : ''}
-            </span>
+      <div className={styles.cardHeader}>
+        <button 
+          className={styles.cardToggle}
+          onClick={toggleExpand}
+          aria-expanded={isExpanded}
+        >
+          <div className={styles.cardInfo}>
+            <span className={styles.cardIcon}>☰</span>
+            <div className={styles.cardText}>
+              <span className={styles.cardTitle}>{playlist.name}</span>
+              <span className={styles.cardMeta}>
+                {playlist.songCount} song{playlist.songCount !== 1 ? 's' : ''}
+              </span>
+            </div>
           </div>
-        </div>
-        <span className={`${styles.expandIcon} ${isExpanded ? styles.expanded : ''}`}>
-          ▼
-        </span>
-      </button>
+          <span className={`${styles.expandIcon} ${isExpanded ? styles.expanded : ''}`}>
+            ▼
+          </span>
+        </button>
+        <button 
+          className={styles.manageBtn}
+          onClick={handleManageClick}
+          title="Manage playlist"
+        >
+          Manage
+        </button>
+      </div>
       
       {isExpanded && (
         <div className={styles.songList}>
@@ -134,9 +156,16 @@ function PlaylistCard({ playlist, songLookup, libraryPath }) {
   );
 }
 
-export default function PlaylistView({ library, libraryPath }) {
+export default function PlaylistView({ library, libraryPath, onRefresh }) {
   const playlists = library?.playlists || [];
+  const allSongs = library?.songs || [];
   const songLookup = useMemo(() => buildSongLookup(library), [library]);
+
+  // Playlist editor hook
+  const editor = usePlaylistEditor({
+    libraryPath,
+    onUpdate: onRefresh,
+  });
 
   if (playlists.length === 0) {
     return (
@@ -155,8 +184,18 @@ export default function PlaylistView({ library, libraryPath }) {
           playlist={playlist} 
           songLookup={songLookup}
           libraryPath={libraryPath}
+          onManage={editor.openEditor}
         />
       ))}
+
+      {/* Playlist Editor Modal */}
+      {editor.isOpen && (
+        <PlaylistEditor
+          editor={editor}
+          songLookup={songLookup}
+          allSongs={allSongs}
+        />
+      )}
     </div>
   );
 }
