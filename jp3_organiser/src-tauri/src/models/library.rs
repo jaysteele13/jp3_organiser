@@ -275,7 +275,7 @@ impl SongEntry {
 }
 
 /// String table for deduplicating strings.
-/// 
+///
 /// Binary format: Each string is stored as:
 /// - 2 bytes: length (u16)
 /// - N bytes: UTF-8 string data (NOT null-terminated)

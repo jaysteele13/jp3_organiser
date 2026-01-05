@@ -1,0 +1,371 @@
+/* PlaylistEdit Page Styles */
+
+.container {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.backBtn {
+  background: none;
+  border: 1px solid #666;
+  color: #ccc;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.15s ease;
+}
+
+.backBtn:hover {
+  border-color: #888;
+  color: #fff;
+}
+
+.headerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.subtitle {
+  font-size: 0.9rem;
+  color: #888;
+}
+
+/* Main content - two columns */
+.content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Sections */
+.section {
+  background-color: #1a1a1a;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-shrink: 0;
+}
+
+.sectionTitle {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.sectionHeader .sectionTitle {
+  margin-bottom: 0;
+}
+
+/* Selection actions */
+.selectionActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.selectionCount {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.clearBtn {
+  background: none;
+  border: 1px solid #666;
+  color: #aaa;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.clearBtn:hover {
+  border-color: #888;
+  color: #fff;
+}
+
+.addBtn {
+  background-color: var(--secondary);
+  border: none;
+  color: #fff;
+  padding: 0.45rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.addBtn:hover:not(:disabled) {
+  background-color: var(--secondary-hover);
+}
+
+.addBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Search input */
+.searchInput {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background-color: #2a2a2a;
+  color: #fff;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--quaternary);
+}
+
+.searchInput::placeholder {
+  color: #666;
+}
+
+/* Table container */
+.tableContainer {
+  flex: 1;
+  overflow-y: auto;
+  background-color: #2a2a2a;
+  border-radius: 8px;
+}
+
+/* Table */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table thead {
+  background-color: rgba(0, 0, 0, 0.3);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.table th {
+  text-align: left;
+  padding: 0.75rem 0.75rem;
+  font-weight: 600;
+  color: #aaa;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #ddd;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Column widths */
+.thIndex,
+.cellIndex {
+  width: 40px;
+  text-align: center;
+}
+
+.cellIndex {
+  color: #666;
+}
+
+.thCheckbox,
+.cellCheckbox {
+  width: 40px;
+  text-align: center;
+}
+
+.cellCheckbox input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--secondary);
+}
+
+.thAction,
+.cellAction {
+  width: 50px;
+  text-align: center;
+}
+
+.thStatus,
+.cellStatus {
+  width: 70px;
+  text-align: center;
+}
+
+.cellTitle {
+  font-weight: 500;
+  color: #fff;
+}
+
+.cellArtist,
+.cellAlbum {
+  color: #aaa;
+}
+
+/* Song row hover */
+.songRow:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* Picker row states */
+.pickerRow {
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+.pickerRow:hover:not(.pickerRowDisabled) {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.pickerRowSelected {
+  background-color: rgba(153, 182, 73, 0.15);
+}
+
+.pickerRowSelected:hover {
+  background-color: rgba(153, 182, 73, 0.2);
+}
+
+.pickerRowDisabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Remove button */
+.removeBtn {
+  background: none;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0;
+  transition: all 0.15s ease;
+}
+
+.removeBtn:hover:not(:disabled) {
+  background-color: var(--primary);
+  color: #fff;
+}
+
+.removeBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* In playlist badge */
+.inPlaylistBadge {
+  font-size: 0.7rem;
+  color: var(--tertiary);
+  background-color: rgba(73, 182, 156, 0.15);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* Empty section */
+.emptySection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+}
+
+.emptySection p {
+  margin: 0.25rem 0;
+}
+
+/* Responsive - stack columns on smaller screens */
+@media (max-width: 1024px) {
+  .content {
+    grid-template-columns: 1fr;
+  }
+
+  .section {
+    max-height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .title {
+    font-size: 1.25rem;
+  }
+
+  .cellAlbum,
+  .table th:nth-child(4) {
+    display: none;
+  }
+}

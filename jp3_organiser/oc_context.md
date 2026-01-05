@@ -28,11 +28,13 @@ jp3_organiser/
 ├── src/                      # React frontend
 │   ├── assets/               # Static assets (fonts, images, test files)
 │   ├── components/           # Shared/reusable components
-│   │   ├── Header/           # App header with title/description
-│   │   ├── Navbar/           # Collapsible sidebar navigation
-│   │   ├── LoadingState/     # Reusable loading spinner
+│   │   ├── ConfirmModal/     # Reusable confirmation dialog with variants
+│   │   ├── EmptyState/       # Reusable empty state message
 │   │   ├── ErrorState/       # Reusable error display
-│   │   └── EmptyState/       # Reusable empty state message
+│   │   ├── Header/           # App header with title/description
+│   │   ├── LoadingState/     # Reusable loading spinner
+│   │   ├── Navbar/           # Collapsible sidebar navigation
+│   │   └── Toast/            # Dismissible notification popup
 │   ├── hooks/                # Custom React hooks
 │   │   ├── useKeyboardShortcut.js  # Keyboard shortcut handler
 │   │   ├── useLibraryConfig.js     # Library path configuration
@@ -41,11 +43,14 @@ jp3_organiser/
 │   │   ├── useUploadCache.jsx      # Persistent upload state context
 │   │   ├── useWorkflowMachine.js   # Upload workflow state machine
 │   │   ├── useDebounce.js          # Debounced value hook
-│   │   └── useAutoSuggest.js       # Fuzzy-match autosuggest hook
+│   │   ├── useAutoSuggest.js       # Fuzzy-match autosuggest hook
+│   │   ├── useToast.js             # Toast notification state management
+│   │   ├── useUploadModeSelector.js # Upload mode selection logic
+│   │   └── useUploadStageLogic.js  # Display state & review navigation
 │   ├── pages/                # Route-level page components
 │   │   ├── About/            # About page with info cards
 │   │   ├── Upload/           # File upload and metadata workflow
-│   │   │   └── components/   # DirectoryConfig, MetadataForm, UploadFile
+│   │   │   └── components/   # UploadModeSelector, ContextForm, ProcessFile, ReviewScreen, MetadataForm, SaveToLibrary
 │   │   └── View/             # Library viewer with tabs
 │   │       └── components/   # StatsBar, ViewHeader, Tabs, DeleteConfirmModal
 │   ├── services/             # API services, Tauri command wrappers
@@ -54,8 +59,10 @@ jp3_organiser/
 │   ├── styles/               # Global styles
 │   │   └── global.css        # Color palette, fonts, base styles
 │   ├── utils/                # Utility/helper functions
-│   │   ├── enums.js          # Shared enums (TABS)
-│   │   └── formatters.js     # File size, duration formatters
+│   │   ├── enums.js          # Shared enums (TABS, UPLOAD_MODE)
+│   │   ├── formatters.js     # File size, duration formatters
+│   │   ├── fuzzyMatch.js     # Fuzzy matching for autosuggest
+│   │   └── filenameSuggester.js # Filename to title transformation
 │   ├── App.jsx               # Root component with routing
 │   ├── App.module.css        # App-scoped styles
 │   └── main.jsx              # Entry point
@@ -64,10 +71,12 @@ jp3_organiser/
 │   │   ├── commands/         # Tauri command handlers
 │   │   │   ├── audio.rs      # Audio processing commands
 │   │   │   ├── config.rs     # Configuration commands
-│   │   │   └── library.rs    # Library management commands
+│   │   │   ├── library.rs    # Library management commands
+│   │   │   └── playlist.rs   # Playlist management commands
 │   │   ├── models/           # Data structures
 │   │   │   ├── audio.rs      # TrackedAudioFile, AudioMetadata
-│   │   │   └── library.rs    # Library binary format, parsed types
+│   │   │   ├── library.rs    # Library binary format, parsed types
+│   │   │   └── playlist.rs   # Playlist binary format, parsed types
 │   │   ├── services/         # Business logic services
 │   │   │   ├── fingerprint_service.rs  # Audio fingerprinting + AcoustID
 │   │   │   └── metadata_ranking_service.rs  # Metadata ranking algorithm
@@ -99,10 +108,11 @@ jp3_organiser/
 13. **Workflow State Machine** - Explicit state transitions for upload flow (PROCESS → REVIEW → READY_TO_SAVE)
 14. **Smart Review Navigation** - Automatically navigate to first unconfirmed file when entering review
 15. **Swipe Animations** - Slide animations when navigating between files in review mode
-16. **Upload Mode Selection** - Choose between Add Songs, Add Album, or Add Artist modes
+16. **Upload Mode Selection** - Choose between Add Songs, Add Album, Add Artist, or Add Playlist modes
+17. **Playlist Creation** - Create playlists with songs (saves songs to library + creates playlist file)
+18. **Playlist Management** - Add/remove songs from existing playlists via PlaylistEditor modal
 
 ### Planned
-- Playlist creation and management
 - SD Card export workflow
 
 ## Coding Standards
@@ -171,6 +181,7 @@ Commands are organized into modules under `src-tauri/src/commands/`:
 | `audio.rs` | `process_audio_files`, `process_single_audio_file`, `get_audio_metadata`, `get_audio_metadata_from_acoustic_id` |
 | `config.rs` | `get_library_path`, `set_library_path`, `clear_library_path` |
 | `library.rs` | `initialize_library`, `get_library_info`, `save_to_library`, `load_library`, `delete_songs`, `edit_song_metadata`, `get_library_stats`, `compact_library` |
+| `playlist.rs` | `create_playlist`, `load_playlist`, `list_playlists`, `delete_playlist`, `save_to_playlist`, `add_songs_to_playlist`, `remove_songs_from_playlist` |
 
 ```rust
 // Backend (commands/audio.rs)
@@ -233,6 +244,26 @@ Models are in `src-tauri/src/models/`:
 | `AlbumEntry` | 16 bytes | nameStringId, artistId, year, reserved |
 | `SongEntry` | 24 bytes | titleStringId, artistId, albumId, pathStringId, trackNumber, durationSec, flags |
 
+#### Playlist Models (`playlist.rs`)
+
+**Binary Format (bin-per-playlist, in `jp3/playlists/{id}.bin`):**
+
+| Structure | Size | Fields |
+|-----------|------|--------|
+| `PlaylistHeader` | 12 bytes | magic ("PLY1"), version, songCount, nameLength |
+| Name | variable | playlist name as UTF-8 bytes |
+| Song IDs | variable | array of u32 song IDs (little-endian) |
+
+**Parsed Types:**
+
+| Model | Fields |
+|-------|--------|
+| `ParsedPlaylist` | id, name, songCount, songIds |
+| `PlaylistSummary` | id, name, songCount |
+| `CreatePlaylistResult` | playlistId, songsAdded |
+| `SaveToPlaylistResult` | filesSaved, artistsAdded, albumsAdded, songsAdded, duplicatesSkipped, playlistId, playlistName |
+| `DeletePlaylistResult` | deleted |
+
 **Parsed Types (Frontend display):**
 
 | Model | Fields |
@@ -285,6 +316,13 @@ Models are in `src-tauri/src/models/`:
 - `deleteSongs(basePath, songIds)` - Soft-delete songs
 - `getLibraryStats(basePath)` - Get stats including compaction recommendation
 - `compactLibrary(basePath)` - Remove deleted entries
+- `createPlaylist(basePath, name, songIds)` - Create playlist with existing songs
+- `loadPlaylist(basePath, playlistId)` - Load single playlist by ID
+- `listPlaylists(basePath)` - List all playlist summaries
+- `deletePlaylist(basePath, playlistId)` - Delete playlist file
+- `saveToPlaylist(basePath, playlistName, files)` - Save songs to library AND create playlist
+- `addSongsToPlaylist(basePath, playlistId, songIds)` - Add songs to existing playlist
+- `removeSongsFromPlaylist(basePath, playlistId, songIds)` - Remove songs from playlist
 
 ## Enums
 
@@ -295,19 +333,35 @@ Models are in `src-tauri/src/models/`:
 - `SONGS` - Auto-detect everything via AcousticID
 - `ALBUM` - User provides album + artist, AcousticID provides title/track
 - `ARTIST` - User provides artist, AcousticID provides album/title/track
+- `PLAYLIST` - User provides playlist name, songs saved to library AND added to new playlist
+
+### MetadataSource (`src/hooks/useUploadCache.jsx`)
+- `UNKNOWN`, `ID3`, `FINGERPRINT`, `MANUAL` - Source of metadata for a field
+
+### UploadStage (`src/hooks/useUploadCache.jsx`)
+- `PROCESS`, `REVIEW`, `READY_TO_SAVE` - Current workflow stage
+
+### WorkflowAction (`src/hooks/useWorkflowMachine.js`)
+- `START_REVIEW`, `EXIT_REVIEW`, `COMPLETE_REVIEW`, `BACK_TO_REVIEW`, `SAVE_COMPLETE`, `RESET`
+
+### SuggestionSource (`src/hooks/useAutoSuggest.js`)
+- `FILENAME`, `LIBRARY` - Source of autosuggest suggestion
 
 ## Custom Hooks
 
 | Hook | Purpose |
 |------|---------|
 | `useLibraryConfig()` | Manage library path (get/set from Rust backend), auto-initialize JP3 structure |
-| `useLibrary(libraryPath)` | Fetch and return library data with loading/error states |
+| `useLibrary(libraryPath)` | Fetch library data + playlists with loading/error states. Returns `library` object containing songs, albums, artists, and playlists. |
 | `useLibraryContext()` | Context hook to access library data without prop drilling (used in MetadataForm for autosuggest) |
 | `useKeyboardShortcut(key, callback)` | Register keyboard shortcuts with modifier support |
 | `useUploadCache()` | Context hook for persistent upload state across navigation |
-| `useWorkflowMachine()` | State machine for upload workflow stages (PROCESS → REVIEW → READY_TO_SAVE) |
+| `useWorkflowMachine()` | State machine for upload workflow stages (PROCESS -> REVIEW -> READY_TO_SAVE) |
 | `useDebounce(value, delay)` | Debounce a value for delayed updates (used in search inputs) |
 | `useAutoSuggest(inputValue, items, key)` | Fuzzy-match suggestions from a list based on input (artist/album autosuggest) |
+| `useToast(duration?)` | Toast notification state management with auto-dismiss (default 5s) |
+| `useUploadModeSelector()` | Upload mode selection logic - handles mode transitions and context form |
+| `useUploadStageLogic(cache, workflow, modeSelector)` | Consolidates display state conditions and review navigation utilities |
 | `UploadCacheProvider` | Context provider wrapping app for upload state persistence |
 | `LibraryProvider` | Context provider for library data (wraps UploadFile in Upload.jsx) |
 
@@ -320,6 +374,7 @@ Uses React Router for navigation:
 | `/` | Redirects to `/upload` | Default route |
 | `/upload` | Upload | File upload workflow |
 | `/view` | View | Library browser |
+| `/playlist/:id` | PlaylistEdit | Full-page playlist editor |
 | `/about` | About | App information |
 
 ## Upload Page Components
@@ -330,23 +385,41 @@ The Upload page (`src/pages/Upload/`) has the most complex component structure:
 |-----------|---------|
 | `Upload.jsx` | Page wrapper, handles DirectoryConfig state |
 | `UploadFile.jsx` | Main upload workflow, uses workflow state machine |
-| `UploadModeSelector.jsx` | Mode selection: Add Songs, Add Album, Add Artist |
-| `ContextForm.jsx` | Modal form for entering album/artist context |
+| `UploadModeSelector.jsx` | Mode selection: Add Songs, Add Album, Add Artist, Add Playlist |
+| `ContextForm.jsx` | Modal form for entering album/artist/playlist context |
 | `ProcessFile.jsx` | File selection via native picker, triggers metadata extraction |
 | `ReviewScreen.jsx` | Step through files one-by-one with audio preview |
 | `MetadataForm.jsx` | Edit form for song metadata with autosuggest |
+| `SaveToLibrary.jsx` | Ready-to-save stage with confirmed files summary |
 
 ### Upload Modes
 
-The upload workflow supports three modes to improve metadata accuracy:
+The upload workflow supports four modes to improve metadata accuracy:
 
 | Mode | User Provides | AcousticID Provides | Use Case |
 |------|---------------|---------------------|----------|
 | **Add Songs** | Nothing | Everything | General upload, unknown files |
 | **Add Album** | Album + Artist + Year(opt) | Title, Track # | Uploading a known album |
 | **Add Artist** | Artist | Album, Title, Track # | Uploading songs by known artist |
+| **Add Playlist** | Playlist name | Everything | Create a new playlist with songs |
 
-**Rationale:** AcousticID sometimes returns incorrect album metadata (e.g., compilations instead of original album). Album/Artist modes let users override unreliable API results while still leveraging AcousticID for song identification.
+**Rationale:** AcousticID sometimes returns incorrect album metadata (e.g., compilations instead of original album). Album/Artist modes let users override unreliable API results while still leveraging AcousticID for song identification. Playlist mode adds songs to the library and groups them into a named playlist in one operation.
+
+### UploadFile Subcomponents (`src/pages/Upload/components/UploadFile/`)
+
+| Component | Purpose |
+|-----------|---------|
+| `ActionButtons.jsx` | Start Review / Save to Library buttons |
+| `FileList.jsx` | Scrollable file list with status indicators |
+| `FileStats.jsx` | Summary bar with file counts (complete/incomplete/error) |
+| `StatusBadge.jsx` | Colored status indicator badge |
+| `ReviewPanel.jsx` | Wrapper for reviewing incomplete files |
+
+### ProcessFile Hook (`src/pages/Upload/components/ProcessFile/hooks/`)
+
+| Hook | Purpose |
+|------|---------|
+| `useFileProcessor.js` | File selection and metadata extraction logic |
 
 ### ReviewScreen Subcomponents (`src/pages/Upload/components/ReviewScreen/`)
 
@@ -354,22 +427,48 @@ The upload workflow supports three modes to improve metadata accuracy:
 |-----------|---------|
 | `SongCard.jsx` | Display current file metadata in card format |
 | `AudioPlayer.jsx` | Audio preview with play/pause/progress |
-| `NavigationControls.jsx` | Previous/Next buttons with progress indicator |
-| `ConfirmButton.jsx` | Confirm current file button |
+| `NavigationControls.jsx` | Previous/Next/Confirm/Edit buttons with progress indicator |
+| `MetadataDisplay.jsx` | Metadata fields with source indicator (ID3/AcoustID/Manual) |
 | `hooks/useReviewNavigation.js` | Navigation state + slide direction for animations |
 | `hooks/useAudioPlayer.js` | Audio playback state and controls |
-| `hooks/useReviewActions.js` | Confirm/remove/edit actions |
 
-### UploadFile Subcomponents (`src/pages/Upload/components/UploadFile/`)
+## View Page Components
+
+The View page (`src/pages/View/`) displays the library content:
 
 | Component | Purpose |
 |-----------|---------|
-| `ActionButtons.jsx` | Start Review / Save to Library buttons |
-| `FileListItem.jsx` | Single file row with status indicator |
-| `FileListSection.jsx` | File list with headers |
-| `ReadyToSaveSection.jsx` | Summary view before saving |
-| `hooks/useFileSelection.js` | Native file picker integration |
-| `hooks/useMetadataProcessing.js` | Incremental metadata extraction |
+| `View.jsx` | Page wrapper with library loading and tab state |
+| `ViewHeader.jsx` | Header with library path and action buttons |
+| `StatsBar.jsx` | Stats display with song/artist/album counts |
+| `DeleteConfirmModal.jsx` | Confirmation dialog for song deletion |
+
+### Tabs Components (`src/pages/View/components/Tabs/`)
+
+| Component | Purpose |
+|-----------|---------|
+| `TabSelector.jsx` | Tab button selector (Songs/Albums/Artists/Playlists) |
+| `TabContent.jsx` | Tab content switcher based on active tab |
+| `Songs/SongView.jsx` | Songs list view with duration and actions |
+| `Albums/AlbumView.jsx` | Albums list view grouped by artist |
+| `Artists/ArtistView.jsx` | Artists list view |
+| `Playlists/PlaylistView.jsx` | Playlists view with expandable cards and Manage button (navigates to PlaylistEdit) |
+
+## PlaylistEdit Page
+
+The PlaylistEdit page (`src/pages/PlaylistEdit/`) provides a full-screen editor for managing playlist contents:
+
+| Component/Hook | Purpose |
+|----------------|---------|
+| `PlaylistEdit.jsx` | Two-column layout with current songs and song picker |
+| `usePlaylistEdit.js` | Hook managing playlist state, add/remove song operations |
+
+**Features:**
+- Two-column layout: current playlist songs (left) and library song picker (right)
+- Search/filter library songs by title, artist, or album
+- Batch selection with checkboxes for adding multiple songs
+- Remove songs with one click
+- Back button to return to View page
 
 ## Available Tauri Plugins
 
@@ -440,8 +539,8 @@ cargo test
 - Cleared on successful library save or user action
 - **Persisted state includes:**
   - `trackedFiles` - Processed audio files with metadata
-  - `uploadMode` - Selected mode (SONGS, ALBUM, ARTIST)
-  - `uploadContext` - Album/artist context for Album/Artist modes
+  - `uploadMode` - Selected mode (SONGS, ALBUM, ARTIST, PLAYLIST)
+  - `uploadContext` - Album/artist/playlist context for Album/Artist/Playlist modes
   - `modeSelected` - Whether user has selected a mode
   - `workflowState` - Current stage, review index, edit mode
 
@@ -480,9 +579,3 @@ App.jsx
 - State management (Context API or Zustand) as app grows
 - Don't use TypeScript - this is a ReactJS project
 - Testing setup (Vitest for React, Rust tests for backend)
-
-## Known Technical Debt
-
-### SongView.jsx has duplicate formatDuration
-- `formatDuration` function is duplicated in SongView instead of using `utils/formatters.js`
-- Should consolidate to single utility function

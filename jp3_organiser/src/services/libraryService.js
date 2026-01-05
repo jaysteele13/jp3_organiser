@@ -206,3 +206,120 @@ export async function getLibraryStats(basePath) {
 export async function compactLibrary(basePath) {
   return await invoke('compact_library', { basePath });
 }
+
+// =============================================================================
+// Playlist Functions
+// =============================================================================
+
+/**
+ * Create a new playlist with the given song IDs.
+ * 
+ * Songs must already exist in library.bin.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {string} name - Playlist name
+ * @param {number[]} songIds - Array of song IDs to include
+ * @returns {Promise<CreatePlaylistResult>} Result with playlist ID
+ * 
+ * @typedef {Object} CreatePlaylistResult
+ * @property {number} playlistId - The created playlist's ID
+ * @property {number} songsAdded - Number of songs added
+ */
+export async function createPlaylist(basePath, name, songIds) {
+  return await invoke('create_playlist', { basePath, name, songIds });
+}
+
+/**
+ * Load a single playlist by ID.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {number} playlistId - Playlist ID to load
+ * @returns {Promise<ParsedPlaylist>} Parsed playlist data
+ * 
+ * @typedef {Object} ParsedPlaylist
+ * @property {number} id - Playlist ID
+ * @property {string} name - Playlist name
+ * @property {number} songCount - Number of songs
+ * @property {number[]} songIds - Array of song IDs
+ */
+export async function loadPlaylist(basePath, playlistId) {
+  return await invoke('load_playlist', { basePath, playlistId });
+}
+
+/**
+ * List all playlists (summaries only).
+ * 
+ * @param {string} basePath - The base library directory path
+ * @returns {Promise<PlaylistSummary[]>} Array of playlist summaries
+ * 
+ * @typedef {Object} PlaylistSummary
+ * @property {number} id - Playlist ID
+ * @property {string} name - Playlist name
+ * @property {number} songCount - Number of songs
+ */
+export async function listPlaylists(basePath) {
+  return await invoke('list_playlists', { basePath });
+}
+
+/**
+ * Delete a playlist by ID.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {number} playlistId - Playlist ID to delete
+ * @returns {Promise<DeletePlaylistResult>} Result indicating if deleted
+ * 
+ * @typedef {Object} DeletePlaylistResult
+ * @property {boolean} deleted - Whether the playlist was deleted
+ */
+export async function deletePlaylist(basePath, playlistId) {
+  return await invoke('delete_playlist', { basePath, playlistId });
+}
+
+/**
+ * Save audio files to library AND create a playlist with them.
+ * 
+ * This is the combined operation for "Add Playlist" mode:
+ * 1. First saves all songs to library.bin
+ * 2. Then creates a playlist with the song IDs
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {string} playlistName - Name for the new playlist
+ * @param {FileToSave[]} files - Files to save with their metadata
+ * @returns {Promise<SaveToPlaylistResult>} Result with counts and playlist info
+ * 
+ * @typedef {Object} SaveToPlaylistResult
+ * @property {number} filesSaved - Number of files copied
+ * @property {number} artistsAdded - Number of artists in library
+ * @property {number} albumsAdded - Number of albums in library
+ * @property {number} songsAdded - Number of songs in library
+ * @property {number} duplicatesSkipped - Number of duplicate songs skipped
+ * @property {number} playlistId - The created playlist's ID
+ * @property {string} playlistName - The playlist name
+ */
+export async function saveToPlaylist(basePath, playlistName, files) {
+  return await invoke('save_to_playlist', { basePath, playlistName, files });
+}
+
+/**
+ * Add songs to an existing playlist.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {number} playlistId - Playlist ID to modify
+ * @param {number[]} songIds - Song IDs to add
+ * @returns {Promise<CreatePlaylistResult>} Result with count of songs added
+ */
+export async function addSongsToPlaylist(basePath, playlistId, songIds) {
+  return await invoke('add_songs_to_playlist', { basePath, playlistId, songIds });
+}
+
+/**
+ * Remove songs from an existing playlist.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {number} playlistId - Playlist ID to modify
+ * @param {number[]} songIds - Song IDs to remove
+ * @returns {Promise<CreatePlaylistResult>} Result with count of songs removed
+ */
+export async function removeSongsFromPlaylist(basePath, playlistId, songIds) {
+  return await invoke('remove_songs_from_playlist', { basePath, playlistId, songIds });
+}

@@ -1,3 +1,12 @@
+/* PlaylistView styles */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Empty state */
 .emptyState {
   text-align: center;
   padding: 3rem;
@@ -5,7 +14,6 @@
   border-radius: 8px;
 }
 
-.emptyState h2,
 .emptyState h3 {
   margin: 0 0 0.5rem 0;
   font-weight: 600;
@@ -14,4 +22,165 @@
 .emptyState p {
   margin: 0;
   opacity: 0.7;
+}
+
+/* Playlist card */
+.card {
+  background-color: var(--tertiary);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: box-shadow 0.15s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Card header (clickable) */
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+/* Manage button (right side) */
+.manageBtn {
+  background-color: rgba(0, 0, 0, 0.15);
+  border: none;
+  color: #000;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.manageBtn:hover {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+.cardInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.cardInfo:hover .cardTitle {
+  text-decoration: underline;
+}
+
+.cardIcon {
+  font-size: 1.25rem;
+  opacity: 0.7;
+}
+
+.cardText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.cardTitle {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #000;
+}
+
+.cardMeta {
+  font-size: 0.8rem;
+  opacity: 0.6;
+  color: #000;
+}
+
+/* Song list (expanded) */
+.songList {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 0.75rem 1rem;
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.songs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.songItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.songItem:last-child {
+  border-bottom: none;
+}
+
+.songIndex {
+  width: 1.5rem;
+  font-size: 0.8rem;
+  opacity: 0.5;
+  text-align: right;
+  flex-shrink: 0;
+  color: #000;
+}
+
+.songDetails {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.songTitle {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.songArtist {
+  font-size: 0.8rem;
+  opacity: 0.6;
+  color: #000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.songDuration {
+  font-size: 0.8rem;
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  color: #000;
+}
+
+/* No songs message */
+.noSongs {
+  margin: 0;
+  padding: 0.5rem 0;
+  font-size: 0.85rem;
+  opacity: 0.6;
+  color: #000;
+  font-style: italic;
+}
+
+/* Loading text */
+.loadingText {
+  margin: 0;
+  padding: 0.5rem 0;
+  font-size: 0.85rem;
+  opacity: 0.6;
+  color: #000;
 }

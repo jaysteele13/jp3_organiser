@@ -1,14 +1,7 @@
+import { formatDuration } from '../../../../../utils/formatters';
 import styles from './SongView.module.css'
 
 export default function SongView({ library, onDeleteSong }) {
-  // Format duration from seconds to MM:SS
-  const formatDuration = (seconds) => {
-    if (!seconds) return '--:--';
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const handleDeleteClick = (e, song) => {
     e.stopPropagation();
     if (onDeleteSong) {

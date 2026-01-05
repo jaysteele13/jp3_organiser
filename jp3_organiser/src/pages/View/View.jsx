@@ -8,7 +8,8 @@
  * mimicking how the ESP32 would parse the binary format.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useLibraryConfig } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
 import { deleteSongs } from '../../services/libraryService';
@@ -25,9 +26,21 @@ import TabContent from './components/Tabs/TabContent';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
 
 export default function View() {
+  const location = useLocation();
   const { libraryPath, isLoading: configLoading } = useLibraryConfig();
-  const [activeTab, setActiveTab] = useState(TABS.SONGS);
+  
+  // Use tab from navigation state if provided, otherwise default to SONGS
+  const initialTab = location.state?.tab || TABS.SONGS;
+  const [activeTab, setActiveTab] = useState(initialTab);
+  
   const { library, isLoading, error, handleRefresh } = useLibrary(libraryPath);
+
+  // Sync activeTab when navigation state changes (e.g., returning from PlaylistEdit)
+  useEffect(() => {
+    if (location.state?.tab) {
+      setActiveTab(location.state.tab);
+    }
+  }, [location.state?.tab]);
 
   // Delete modal state
   const [songsToDelete, setSongsToDelete] = useState([]);
@@ -36,11 +49,12 @@ export default function View() {
 
   // Stats for header
   const stats = useMemo(() => {
-    if (!library) return { songs: 0, albums: 0, artists: 0 };
+    if (!library) return { songs: 0, albums: 0, artists: 0, playlists: 0 };
     return {
-      songs: library.songs.length,
-      albums: library.albums.length,
-      artists: library.artists.length,
+      songs: library.songs?.length ?? 0,
+      albums: library.albums?.length ?? 0,
+      artists: library.artists?.length ?? 0,
+      playlists: library.playlists?.length ?? 0,
     };
   }, [library]);
 
@@ -108,7 +122,8 @@ export default function View() {
           <div className={styles.content}>
             <TabContent 
               activeTab={activeTab} 
-              library={library} 
+              library={library}
+              libraryPath={libraryPath}
               onDeleteSong={handleDeleteRequest}
             />
           </div>

@@ -96,6 +96,9 @@ export default function ProcessFile({ onStartReview }) {
     if (uploadMode === UPLOAD_MODE.ARTIST && uploadContext.artist) {
       return uploadContext.artist;
     }
+    if (uploadMode === UPLOAD_MODE.PLAYLIST && uploadContext.playlist) {
+      return uploadContext.playlist;
+    }
     return null;
   }, [uploadMode, uploadContext]);
 
@@ -104,6 +107,7 @@ export default function ProcessFile({ onStartReview }) {
     switch (uploadMode) {
       case UPLOAD_MODE.ALBUM: return 'Album Mode';
       case UPLOAD_MODE.ARTIST: return 'Artist Mode';
+      case UPLOAD_MODE.PLAYLIST: return 'Playlist Mode';
       default: return null;
     }
   }, [uploadMode]);

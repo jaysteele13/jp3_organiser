@@ -2,6 +2,8 @@
 
 mod audio;
 mod library;
+mod playlist;
 
 pub use audio::*;
 pub use library::*;
+pub use playlist::*;
