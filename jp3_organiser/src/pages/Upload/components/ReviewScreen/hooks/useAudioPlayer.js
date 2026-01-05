@@ -1,28 +1,15 @@
 /**
  * useAudioPlayer Hook
  * 
- * Manages audio playback for previewing songs.
- * Supports playing from start or middle of the track.
- * 
- * Uses Tauri's fs plugin to read file bytes and create Blob URLs
- * for reliable audio playback of local files.
+ * Uses Tauri to read files and create blob URLs for reliable local audio playback.
+ * Provides play, pause, stop, seek controls with progress tracking.
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { readFile } from '@tauri-apps/plugin-fs';
 
 /**
- * Playback position options.
- */
-export const PlaybackPosition = {
-  START: 'start',
-  MIDDLE: 'middle',
-};
-
-/**
  * Get MIME type from file extension.
- * @param {string} filePath - File path
- * @returns {string} MIME type
  */
 function getMimeType(filePath) {
   const ext = filePath.split('.').pop()?.toLowerCase();
@@ -41,28 +28,21 @@ function getMimeType(filePath) {
 
 export function useAudioPlayer() {
   const audioRef = useRef(null);
-  const blobUrlRef = useRef(null);
+  const currentBlobUrlRef = useRef(null);
+  const isChangingSourceRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentFilePath, setCurrentFilePath] = useState(null);
-  const [playbackPosition, setPlaybackPosition] = useState(PlaybackPosition.START);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState(null);
 
-  // Cleanup blob URL
-  const cleanupBlobUrl = useCallback(() => {
-    if (blobUrlRef.current) {
-      URL.revokeObjectURL(blobUrlRef.current);
-      blobUrlRef.current = null;
-    }
-  }, []);
-
-  // Create audio element on mount
+  // Initialize audio element
   useEffect(() => {
-    audioRef.current = new Audio();
-    
-    const audio = audioRef.current;
+    const audio = new Audio();
+    audio.preload = 'metadata';
+    audio.controls = false;
+    audioRef.current = audio;
     
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
@@ -71,38 +51,22 @@ export function useAudioPlayer() {
     const handleLoadedMetadata = () => {
       setDuration(audio.duration);
       setError(null);
-      setIsLoading(false);
     };
     
     const handleEnded = () => {
       setIsPlaying(false);
+      setCurrentTime(0);
     };
     
-    const handleError = (e) => {
-      const mediaError = audio?.error;
+    const handleError = () => {
+      // Don't show error if we're intentionally changing source
+      if (isChangingSourceRef.current) return;
       
-      // MediaError codes: 1=ABORTED, 2=NETWORK, 3=DECODE, 4=SRC_NOT_SUPPORTED
-      const errorCodes = {
-        1: 'MEDIA_ERR_ABORTED - Playback aborted',
-        2: 'MEDIA_ERR_NETWORK - Network error',
-        3: 'MEDIA_ERR_DECODE - Error decoding audio',
-        4: 'MEDIA_ERR_SRC_NOT_SUPPORTED - Format not supported',
-      };
-      
-      const errorCode = mediaError?.code;
-      const errorMessage = errorCodes[errorCode] || 'Unknown playback error';
-      
-      console.error('Audio playback error:', {
-        event: e,
-        mediaError,
-        errorCode,
-        errorMessage,
-        audioSrc: audio?.src?.substring(0, 100),
-        networkState: audio?.networkState,
-        readyState: audio?.readyState,
-      });
-      
-      setError(errorMessage);
+      const err = audio.error;
+      const errorMsg = err 
+        ? `Audio error: ${err.message || 'Code: ' + err.code}` 
+        : 'Unknown audio error';
+      setError(errorMsg);
       setIsPlaying(false);
       setIsLoading(false);
     };
@@ -113,129 +77,126 @@ export function useAudioPlayer() {
     audio.addEventListener('error', handleError);
     
     return () => {
+      audio.pause();
+      audio.src = '';
+      if (currentBlobUrlRef.current) {
+        URL.revokeObjectURL(currentBlobUrlRef.current);
+        currentBlobUrlRef.current = null;
+      }
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
-      audio.pause();
-      audio.src = '';
-      cleanupBlobUrl();
     };
-  }, [cleanupBlobUrl]);
+  }, []);
 
-  /**
-   * Load audio file bytes and create a Blob URL.
-   * @param {string} filePath - Absolute path to audio file
-   * @returns {Promise<string>} Blob URL
-   */
-  const loadAudioFile = useCallback(async (filePath) => {
-    console.log('Loading audio file:', filePath);
+  // Load audio file as blob URL
+  const loadAudioAsBlob = useCallback(async (filePath) => {
+    const fileBytes = await readFile(filePath);
+    const mimeType = getMimeType(filePath);
     
-    try {
-      // Read file bytes using Tauri fs plugin
-      const fileBytes = await readFile(filePath);
-      
-      console.log('File read successfully:', {
-        path: filePath,
-        size: fileBytes.byteLength,
-      });
-      
-      // Create Blob with correct MIME type
-      const mimeType = getMimeType(filePath);
-      const blob = new Blob([fileBytes], { type: mimeType });
-      
-      // Cleanup previous blob URL
-      cleanupBlobUrl();
-      
-      // Create new blob URL
-      const blobUrl = URL.createObjectURL(blob);
-      blobUrlRef.current = blobUrl;
-      
-      console.log('Blob URL created:', {
-        mimeType,
-        blobSize: blob.size,
-        url: blobUrl.substring(0, 50),
-      });
-      
-      return blobUrl;
-    } catch (err) {
-      console.error('Failed to read audio file:', {
-        path: filePath,
-        error: err,
-        message: err.message || String(err),
-      });
-      throw new Error(`Failed to read file: ${err.message || err}`);
+    // Cleanup previous blob URL
+    if (currentBlobUrlRef.current) {
+      URL.revokeObjectURL(currentBlobUrlRef.current);
     }
-  }, [cleanupBlobUrl]);
+    
+    const blob = new Blob([fileBytes], { type: mimeType });
+    const blobUrl = URL.createObjectURL(blob);
+    currentBlobUrlRef.current = blobUrl;
+    
+    return blobUrl;
+  }, []);
 
-  // Load and play audio from a file path
-  const play = useCallback(async (filePath, position = PlaybackPosition.START) => {
-    if (!audioRef.current) return;
+  // Play audio from start
+  const play = useCallback(async (filePath) => {
+    if (!audioRef.current || !filePath) return;
     
     const audio = audioRef.current;
-    setError(null);
-    
-    // If same file, just toggle play/pause
-    if (filePath === currentFilePath && position === playbackPosition) {
-      if (isPlaying) {
-        audio.pause();
-        setIsPlaying(false);
-      } else {
-        try {
-          await audio.play();
-          setIsPlaying(true);
-        } catch (err) {
-          console.error('Failed to resume playback:', err);
-          setError('Failed to resume playback');
-        }
-      }
-      return;
-    }
-    
-    // Load new file
-    setIsLoading(true);
     
     try {
-      const blobUrl = await loadAudioFile(filePath);
+      setError(null);
+      setIsLoading(true);
+      setIsPlaying(false);
       
+      // If same file and not ended, just resume
+      if (currentFilePath === filePath && !audio.ended && audio.src) {
+        await audio.play();
+        setIsPlaying(true);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Stop current playback completely
+      isChangingSourceRef.current = true;
+      audio.pause();
+      audio.src = '';
+      audio.currentTime = 0;
+      
+      // Small delay to ensure audio is fully reset
+      await new Promise(resolve => setTimeout(resolve, 100));
+      isChangingSourceRef.current = false;
+      
+      // Load new file as blob
+      const blobUrl = await loadAudioAsBlob(filePath);
       audio.src = blobUrl;
       setCurrentFilePath(filePath);
-      setPlaybackPosition(position);
+      audio.currentTime = 0;
       
-      // Wait for metadata then seek and play
-      audio.addEventListener('loadedmetadata', async () => {
-        // Seek to position
-        if (position === PlaybackPosition.MIDDLE && audio.duration > 0) {
-          audio.currentTime = audio.duration / 2;
-        } else {
-          audio.currentTime = 0;
-        }
+      // Wait for audio to be ready
+      await new Promise((resolve, reject) => {
+        let resolved = false;
         
-        try {
-          await audio.play();
-          setIsPlaying(true);
-        } catch (err) {
-          console.error('Failed to start playback:', err);
-          setError('Failed to start playback');
-        }
-      }, { once: true });
+        const cleanup = () => {
+          audio.removeEventListener('loadedmetadata', onReady);
+          audio.removeEventListener('canplay', onReady);
+          audio.removeEventListener('error', onError);
+        };
+        
+        const onReady = () => {
+          if (!resolved) {
+            resolved = true;
+            cleanup();
+            resolve();
+          }
+        };
+        
+        const onError = () => {
+          if (!resolved) {
+            resolved = true;
+            cleanup();
+            reject(new Error('Audio failed to load'));
+          }
+        };
+        
+        audio.addEventListener('loadedmetadata', onReady);
+        audio.addEventListener('canplay', onReady);
+        audio.addEventListener('error', onError);
+        
+        // Timeout fallback
+        setTimeout(() => {
+          if (!resolved && audio.readyState >= 2) {
+            resolved = true;
+            cleanup();
+            resolve();
+          }
+        }, 3000);
+      });
       
-      audio.load();
+      // Ensure we're starting from beginning
+      audio.currentTime = 0;
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      await audio.play();
+      setIsPlaying(true);
+      setIsLoading(false);
+      
     } catch (err) {
-      setError(err.message);
+      console.error('Playback error:', err);
+      setError(`Playback error: ${err.message}`);
+      setIsPlaying(false);
       setIsLoading(false);
     }
-  }, [currentFilePath, playbackPosition, isPlaying, loadAudioFile]);
-
-  // Play from start
-  const playFromStart = useCallback((filePath) => {
-    play(filePath, PlaybackPosition.START);
-  }, [play]);
-
-  // Play from middle
-  const playFromMiddle = useCallback((filePath) => {
-    play(filePath, PlaybackPosition.MIDDLE);
-  }, [play]);
+  }, [currentFilePath, loadAudioAsBlob]);
 
   // Pause playback
   const pause = useCallback(() => {
@@ -248,11 +209,38 @@ export function useAudioPlayer() {
   // Stop and reset
   const stop = useCallback(() => {
     if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+      const audio = audioRef.current;
+      audio.pause();
+      audio.currentTime = 0;
       setIsPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
     }
   }, []);
+
+  // Clear error state (useful when navigating to a different file)
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  // Seek to specific time (in seconds)
+  const seek = useCallback((time) => {
+    if (audioRef.current && audioRef.current.src) {
+      const audio = audioRef.current;
+      const clampedTime = Math.max(0, Math.min(time, audio.duration || 0));
+      audio.currentTime = clampedTime;
+      setCurrentTime(clampedTime);
+    }
+  }, []);
+
+  // Toggle play/pause
+  const togglePlayPause = useCallback((filePath) => {
+    if (isPlaying) {
+      pause();
+    } else if (filePath) {
+      play(filePath);
+    }
+  }, [isPlaying, pause, play]);
 
   // Check if a specific file is currently playing
   const isPlayingFile = useCallback((filePath) => {
@@ -264,19 +252,19 @@ export function useAudioPlayer() {
     isPlaying,
     isLoading,
     currentFilePath,
-    playbackPosition,
     currentTime,
     duration,
     error,
     
     // Actions
     play,
-    playFromStart,
-    playFromMiddle,
     pause,
     stop,
+    togglePlayPause,
+    clearError,
+    seek,
     
-    // Helpers
+    // Helper
     isPlayingFile,
   };
 }

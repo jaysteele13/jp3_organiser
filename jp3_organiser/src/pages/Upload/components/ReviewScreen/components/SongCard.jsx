@@ -3,6 +3,10 @@
  * 
  * Displays the current song being reviewed with metadata,
  * audio player, and file information.
+ * 
+ * @param {Object} props
+ * @param {Object} props.file - The audio file to display
+ * @param {Object} props.audio - Audio controller object from useAudioPlayer hook
  */
 
 import React from 'react';
@@ -11,17 +15,7 @@ import AudioPlayer from './AudioPlayer';
 import { formatFileSize } from '../../../../../utils';
 import styles from '../ReviewScreen.module.css';
 
-export default function SongCard({ 
-  file,
-  isPlaying,
-  playbackPosition,
-  currentTime,
-  duration,
-  audioError,
-  onPlayFromStart,
-  onPlayFromMiddle,
-  onPause,
-}) {
+export default function SongCard({ file, audio }) {
   if (!file) return null;
 
   return (
@@ -40,14 +34,8 @@ export default function SongCard({
       {/* Audio player */}
       <AudioPlayer
         filePath={file.filePath}
-        duration={duration || file.metadata?.durationSecs}
-        isPlaying={isPlaying}
-        playbackPosition={playbackPosition}
-        currentTime={currentTime}
-        error={audioError}
-        onPlayFromStart={onPlayFromStart}
-        onPlayFromMiddle={onPlayFromMiddle}
-        onPause={onPause}
+        fallbackDuration={file.metadata?.durationSecs}
+        audio={audio}
       />
     </div>
   );

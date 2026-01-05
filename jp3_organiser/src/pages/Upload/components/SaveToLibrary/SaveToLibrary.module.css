@@ -1,0 +1,147 @@
+/* UploadFile component styles */
+
+/* Wrapper to ensure proper stacking of button and container */
+
+
+/* File list */
+.fileList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.fileItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0.85rem;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  gap: 1rem;
+  transition: background-color 0.15s ease;
+}
+
+.fileItem:last-child {
+  margin-bottom: 0;
+}
+
+.fileItemActive {
+  background-color: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* File info (left side) */
+.fileInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.fileName {
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fileMeta {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* Complete stage styles */
+.completeContainer {
+  margin-top: 1rem;
+  background-color: var(--secondary);
+  border-radius: 8px;
+  padding: 1.5rem;
+  color: #fff;
+}
+
+.completeHeader {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.completeTitle {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.completeMessage {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.completeActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.saveButton {
+  flex: 2;
+  padding: 0.85rem 1.5rem;
+  background-color: #fff;
+  color: var(--secondary);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.saveButton:hover {
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.saveButton:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.backButton {
+  flex: 1;
+  padding: 0.85rem 1rem;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+
+.backButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.resetButton {
+  flex: 1;
+  padding: 0.85rem 1rem;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.resetButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.confirmedList {
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.confirmedListTitle {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  opacity: 0.9;
+}

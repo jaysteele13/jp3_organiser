@@ -63,9 +63,10 @@ export default function ReviewScreen({
   // Register Shift+Enter keyboard shortcut for confirm
   useKeyboardShortcut('Enter', navigation.confirmCurrent, { shift: true });
 
-  // Stop audio when file changes
+  // Stop audio and clear errors when file changes
   useEffect(() => {
     audio.stop();
+    audio.clearError();
   }, [navigation.currentFile?.trackingId]);
 
   // Handle Done button click
@@ -145,37 +146,14 @@ export default function ReviewScreen({
           >
             <SongCard
               file={navigation.currentFile}
-              isConfirmed={navigation.currentFile.isConfirmed}
-              isPlaying={audio.isPlayingFile(navigation.currentFile.filePath)}
-              isLoading={audio.isLoading}
-              playbackPosition={audio.playbackPosition}
-              currentTime={audio.currentTime}
-              duration={audio.duration}
-              audioError={audio.error}
-              onPlayFromStart={audio.playFromStart}
-              onPlayFromMiddle={audio.playFromMiddle}
-              onPause={audio.pause}
+              audio={audio}
             />
           </div>
         )}
 
         {/* Navigation controls */}
         {!navigation.isEditMode && (
-          <NavigationControls
-            currentPosition={navigation.currentPosition}
-            totalFiles={navigation.totalFiles}
-            confirmedCount={navigation.confirmedCount}
-            canGoPrevious={navigation.canGoPrevious}
-            canGoNext={navigation.canGoNext}
-            isConfirmed={navigation.currentFile.isConfirmed}
-            validationError={navigation.validationError}
-            onPrevious={navigation.goPrevious}
-            onNext={navigation.goNext}
-            onConfirm={navigation.confirmCurrent}
-            onUnconfirm={navigation.unconfirmCurrent}
-            onRemove={navigation.removeCurrent}
-            onEdit={navigation.enterEditMode}
-          />
+          <NavigationControls navigation={navigation} />
         )}
       </div>
     </div>

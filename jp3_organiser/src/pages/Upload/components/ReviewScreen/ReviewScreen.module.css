@@ -278,6 +278,21 @@
   background-color: var(--primary-hover);
 }
 
+.stopButton {
+  padding: 0.5rem 1rem;
+  background-color: var(--tertiary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.stopButton:hover {
+  background-color: var(--tertiary-hover);
+}
+
 .playbackInfo {
   margin-top: 0.75rem;
   text-align: center;
@@ -296,6 +311,67 @@
   border-radius: 4px;
   font-size: 0.85rem;
   text-align: center;
+}
+
+/* Progress bar container */
+.progressContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.progressTime {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+  min-width: 3.5rem;
+  text-align: center;
+}
+
+.progressBar {
+  flex: 1;
+  height: 8px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  transition: height 0.15s ease;
+}
+
+.progressBar:hover {
+  height: 10px;
+}
+
+.progressBar:hover .progressHandle {
+  opacity: 1;
+  transform: translateX(-40%) scale(.75s);
+}
+
+.progressFill {
+  height: 100%;
+  background-color: var(--tertiary);
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+  pointer-events: none;
+}
+
+.progressBar:hover .progressFill {
+  background-color: var(--tertiary-hover);
+}
+
+.progressHandle {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  background-color: #fff;
+  border-radius: 50%;
+  transform: translateX(-50%) translateY(-50%) scale(0.8);
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 /* Navigation Controls */
