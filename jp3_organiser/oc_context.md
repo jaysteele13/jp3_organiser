@@ -28,11 +28,13 @@ jp3_organiser/
 ├── src/                      # React frontend
 │   ├── assets/               # Static assets (fonts, images, test files)
 │   ├── components/           # Shared/reusable components
-│   │   ├── Header/           # App header with title/description
-│   │   ├── Navbar/           # Collapsible sidebar navigation
-│   │   ├── LoadingState/     # Reusable loading spinner
+│   │   ├── ConfirmModal/     # Reusable confirmation dialog with variants
+│   │   ├── EmptyState/       # Reusable empty state message
 │   │   ├── ErrorState/       # Reusable error display
-│   │   └── EmptyState/       # Reusable empty state message
+│   │   ├── Header/           # App header with title/description
+│   │   ├── LoadingState/     # Reusable loading spinner
+│   │   ├── Navbar/           # Collapsible sidebar navigation
+│   │   └── Toast/            # Dismissible notification popup
 │   ├── hooks/                # Custom React hooks
 │   │   ├── useKeyboardShortcut.js  # Keyboard shortcut handler
 │   │   ├── useLibraryConfig.js     # Library path configuration
@@ -41,11 +43,14 @@ jp3_organiser/
 │   │   ├── useUploadCache.jsx      # Persistent upload state context
 │   │   ├── useWorkflowMachine.js   # Upload workflow state machine
 │   │   ├── useDebounce.js          # Debounced value hook
-│   │   └── useAutoSuggest.js       # Fuzzy-match autosuggest hook
+│   │   ├── useAutoSuggest.js       # Fuzzy-match autosuggest hook
+│   │   ├── useToast.js             # Toast notification state management
+│   │   ├── useUploadModeSelector.js # Upload mode selection logic
+│   │   └── useUploadStageLogic.js  # Display state & review navigation
 │   ├── pages/                # Route-level page components
 │   │   ├── About/            # About page with info cards
 │   │   ├── Upload/           # File upload and metadata workflow
-│   │   │   └── components/   # DirectoryConfig, MetadataForm, UploadFile
+│   │   │   └── components/   # UploadModeSelector, ContextForm, ProcessFile, ReviewScreen, MetadataForm, SaveToLibrary
 │   │   └── View/             # Library viewer with tabs
 │   │       └── components/   # StatsBar, ViewHeader, Tabs, DeleteConfirmModal
 │   ├── services/             # API services, Tauri command wrappers
@@ -54,8 +59,10 @@ jp3_organiser/
 │   ├── styles/               # Global styles
 │   │   └── global.css        # Color palette, fonts, base styles
 │   ├── utils/                # Utility/helper functions
-│   │   ├── enums.js          # Shared enums (TABS)
-│   │   └── formatters.js     # File size, duration formatters
+│   │   ├── enums.js          # Shared enums (TABS, UPLOAD_MODE)
+│   │   ├── formatters.js     # File size, duration formatters
+│   │   ├── fuzzyMatch.js     # Fuzzy matching for autosuggest
+│   │   └── filenameSuggester.js # Filename to title transformation
 │   ├── App.jsx               # Root component with routing
 │   ├── App.module.css        # App-scoped styles
 │   └── main.jsx              # Entry point
@@ -296,6 +303,18 @@ Models are in `src-tauri/src/models/`:
 - `ALBUM` - User provides album + artist, AcousticID provides title/track
 - `ARTIST` - User provides artist, AcousticID provides album/title/track
 
+### MetadataSource (`src/hooks/useUploadCache.jsx`)
+- `UNKNOWN`, `ID3`, `FINGERPRINT`, `MANUAL` - Source of metadata for a field
+
+### UploadStage (`src/hooks/useUploadCache.jsx`)
+- `PROCESS`, `REVIEW`, `READY_TO_SAVE` - Current workflow stage
+
+### WorkflowAction (`src/hooks/useWorkflowMachine.js`)
+- `START_REVIEW`, `EXIT_REVIEW`, `COMPLETE_REVIEW`, `BACK_TO_REVIEW`, `SAVE_COMPLETE`, `RESET`
+
+### SuggestionSource (`src/hooks/useAutoSuggest.js`)
+- `FILENAME`, `LIBRARY` - Source of autosuggest suggestion
+
 ## Custom Hooks
 
 | Hook | Purpose |
@@ -305,9 +324,12 @@ Models are in `src-tauri/src/models/`:
 | `useLibraryContext()` | Context hook to access library data without prop drilling (used in MetadataForm for autosuggest) |
 | `useKeyboardShortcut(key, callback)` | Register keyboard shortcuts with modifier support |
 | `useUploadCache()` | Context hook for persistent upload state across navigation |
-| `useWorkflowMachine()` | State machine for upload workflow stages (PROCESS → REVIEW → READY_TO_SAVE) |
+| `useWorkflowMachine()` | State machine for upload workflow stages (PROCESS -> REVIEW -> READY_TO_SAVE) |
 | `useDebounce(value, delay)` | Debounce a value for delayed updates (used in search inputs) |
 | `useAutoSuggest(inputValue, items, key)` | Fuzzy-match suggestions from a list based on input (artist/album autosuggest) |
+| `useToast(duration?)` | Toast notification state management with auto-dismiss (default 5s) |
+| `useUploadModeSelector()` | Upload mode selection logic - handles mode transitions and context form |
+| `useUploadStageLogic(cache, workflow, modeSelector)` | Consolidates display state conditions and review navigation utilities |
 | `UploadCacheProvider` | Context provider wrapping app for upload state persistence |
 | `LibraryProvider` | Context provider for library data (wraps UploadFile in Upload.jsx) |
 
@@ -335,6 +357,7 @@ The Upload page (`src/pages/Upload/`) has the most complex component structure:
 | `ProcessFile.jsx` | File selection via native picker, triggers metadata extraction |
 | `ReviewScreen.jsx` | Step through files one-by-one with audio preview |
 | `MetadataForm.jsx` | Edit form for song metadata with autosuggest |
+| `SaveToLibrary.jsx` | Ready-to-save stage with confirmed files summary |
 
 ### Upload Modes
 
@@ -348,28 +371,54 @@ The upload workflow supports three modes to improve metadata accuracy:
 
 **Rationale:** AcousticID sometimes returns incorrect album metadata (e.g., compilations instead of original album). Album/Artist modes let users override unreliable API results while still leveraging AcousticID for song identification.
 
+### UploadFile Subcomponents (`src/pages/Upload/components/UploadFile/`)
+
+| Component | Purpose |
+|-----------|---------|
+| `ActionButtons.jsx` | Start Review / Save to Library buttons |
+| `FileList.jsx` | Scrollable file list with status indicators |
+| `FileStats.jsx` | Summary bar with file counts (complete/incomplete/error) |
+| `StatusBadge.jsx` | Colored status indicator badge |
+| `ReviewPanel.jsx` | Wrapper for reviewing incomplete files |
+
+### ProcessFile Hook (`src/pages/Upload/components/ProcessFile/hooks/`)
+
+| Hook | Purpose |
+|------|---------|
+| `useFileProcessor.js` | File selection and metadata extraction logic |
+
 ### ReviewScreen Subcomponents (`src/pages/Upload/components/ReviewScreen/`)
 
 | Component | Purpose |
 |-----------|---------|
 | `SongCard.jsx` | Display current file metadata in card format |
 | `AudioPlayer.jsx` | Audio preview with play/pause/progress |
-| `NavigationControls.jsx` | Previous/Next buttons with progress indicator |
-| `ConfirmButton.jsx` | Confirm current file button |
+| `NavigationControls.jsx` | Previous/Next/Confirm/Edit buttons with progress indicator |
+| `MetadataDisplay.jsx` | Metadata fields with source indicator (ID3/AcoustID/Manual) |
 | `hooks/useReviewNavigation.js` | Navigation state + slide direction for animations |
 | `hooks/useAudioPlayer.js` | Audio playback state and controls |
-| `hooks/useReviewActions.js` | Confirm/remove/edit actions |
 
-### UploadFile Subcomponents (`src/pages/Upload/components/UploadFile/`)
+## View Page Components
+
+The View page (`src/pages/View/`) displays the library content:
 
 | Component | Purpose |
 |-----------|---------|
-| `ActionButtons.jsx` | Start Review / Save to Library buttons |
-| `FileListItem.jsx` | Single file row with status indicator |
-| `FileListSection.jsx` | File list with headers |
-| `ReadyToSaveSection.jsx` | Summary view before saving |
-| `hooks/useFileSelection.js` | Native file picker integration |
-| `hooks/useMetadataProcessing.js` | Incremental metadata extraction |
+| `View.jsx` | Page wrapper with library loading and tab state |
+| `ViewHeader.jsx` | Header with library path and action buttons |
+| `StatsBar.jsx` | Stats display with song/artist/album counts |
+| `DeleteConfirmModal.jsx` | Confirmation dialog for song deletion |
+
+### Tabs Components (`src/pages/View/components/Tabs/`)
+
+| Component | Purpose |
+|-----------|---------|
+| `TabSelector.jsx` | Tab button selector (Songs/Albums/Artists/Playlists) |
+| `TabContent.jsx` | Tab content switcher based on active tab |
+| `Songs/SongView.jsx` | Songs list view with duration and actions |
+| `Albums/AlbumView.jsx` | Albums list view grouped by artist |
+| `Artists/ArtistView.jsx` | Artists list view |
+| `Playlists/PlaylistView.jsx` | Playlists view (placeholder for future) |
 
 ## Available Tauri Plugins
 
