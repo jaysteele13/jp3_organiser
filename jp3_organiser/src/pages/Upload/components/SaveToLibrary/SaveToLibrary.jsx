@@ -6,28 +6,21 @@
  * 
  * @param {Object} props
  * @param {string} props.libraryPath - The configured library directory path
- * @param {Array} props.confirmedFiles - Files that have been confirmed
  * @param {Object} props.workflow - Workflow machine instance
- * @param {Object} props.cache - Upload cache instance
  * @param {Object} props.toast - Toast instance from parent
- * @param {function} props.onSaveComplete - Called after successful save
  */
 
 import React, { useState, useCallback } from 'react';
 import { saveToLibrary, MetadataStatus } from '../../../../services';
+import { useUploadCache } from '../../../../hooks';
 import styles from './SaveToLibrary.module.css';
-import { 
-  useUploadCacheSelector,
-} from '../../../../hooks';
 
-export default function SaveToLibrary({ libraryPath, confirmedFiles, workflow, toast, onSaveComplete }) {
+export default function SaveToLibrary({ libraryPath, workflow, toast }) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
-  const removeConfirmedFiles = useUploadCacheSelector(state => state.removeConfirmedFiles);
-  const confirmedFilesCache = useUploadCacheSelector(state => state.confirmedFiles);
-  const cacheClearAll = useUploadCacheSelector(state => state.clearAll);
-
+  const cache = useUploadCache();
+  const { confirmedFiles, removeConfirmedFiles, clearAll } = cache;
 
   const handleSaveToLibrary = useCallback(async () => {
     if (!libraryPath) {
@@ -63,19 +56,14 @@ export default function SaveToLibrary({ libraryPath, confirmedFiles, workflow, t
       }
 
       toast.showToast(message, 'success');
-
       removeConfirmedFiles();
       workflow.saveComplete();
-      
-      if (onSaveComplete) {
-        onSaveComplete();
-      }
     } catch (err) {
       setSaveError(`Failed to save to library: ${err}`);
     } finally {
       setIsSaving(false);
     }
-  }, [libraryPath, confirmedFiles, removeConfirmedFiles, workflow, toast, onSaveComplete]);
+  }, [libraryPath, confirmedFiles, removeConfirmedFiles, workflow, toast]);
 
   const handleBackToReview = useCallback(() => {
     const startIndex = confirmedFiles.findIndex(f => !f.isConfirmed);
@@ -83,64 +71,66 @@ export default function SaveToLibrary({ libraryPath, confirmedFiles, workflow, t
   }, [workflow, confirmedFiles]);
 
   const handleReset = useCallback(() => {
-    cacheClearAll();
+    clearAll();
     toast.hideToast();
     setSaveError(null);
-  }, [cacheClearAll, toast]);
-
-  
+  }, [clearAll, toast]);
 
   return (
     <div className={styles.completeContainer}>
-          <div className={styles.completeHeader}>
-            <h3 className={styles.completeTitle}>Ready to Add to Library</h3>
-            <p className={styles.completeMessage}>
-              {confirmedFilesCache.length} file(s) confirmed and ready to be added.
-            </p>
-          </div>
+      <div className={styles.completeHeader}>
+        <h3 className={styles.completeTitle}>Ready to Add to Library</h3>
+        <p className={styles.completeMessage}>
+          {confirmedFiles.length} file(s) confirmed and ready to be added.
+        </p>
+      </div>
 
-          <div className={styles.completeActions}>
-            <button
-              className={styles.saveButton}
-              onClick={handleSaveToLibrary}
-              disabled={isSaving}
-            >
-              {isSaving ? 'Saving...' : `Add ${confirmedFilesCache.length} File(s) to Library`}
-            </button>
+      {saveError && (
+        <div className={styles.errorMessage}>{saveError}</div>
+      )}
 
-            <button
-              className={styles.backButton}
-              onClick={handleBackToReview}
-              disabled={isSaving}
-            >
-              Back to Review
-            </button>
+      <div className={styles.completeActions}>
+        <button
+          className={styles.saveButton}
+          onClick={handleSaveToLibrary}
+          disabled={isSaving}
+        >
+          {isSaving ? 'Saving...' : `Add ${confirmedFiles.length} File(s) to Library`}
+        </button>
 
-            <button
-              className={styles.resetButton}
-              onClick={handleReset}
-              disabled={isSaving}
-            >
-              Start Over
-            </button>
-          </div>
+        <button
+          className={styles.backButton}
+          onClick={handleBackToReview}
+          disabled={isSaving}
+        >
+          Back to Review
+        </button>
 
-          {/* Confirmed files list */}
-          <div className={styles.confirmedList}>
-            <h4 className={styles.confirmedListTitle}>Confirmed Files:</h4>
-            <ul className={styles.fileList}>
-              {confirmedFilesCache.map(file => (
-                <li key={file.trackingId} className={styles.fileItem}>
-                  <span className={styles.fileName}>
-                    {file.metadata?.title || file.fileName}
-                  </span>
-                  <span className={styles.fileMeta}>
-                    {file.metadata?.artist} - {file.metadata?.album}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
+        <button
+          className={styles.resetButton}
+          onClick={handleReset}
+          disabled={isSaving}
+        >
+          Start Over
+        </button>
+      </div>
+
+      {/* Confirmed files list */}
+      <div className={styles.confirmedList}>
+        <h4 className={styles.confirmedListTitle}>Confirmed Files:</h4>
+        <ul className={styles.fileList}>
+          {confirmedFiles.map(file => (
+            <li key={file.trackingId} className={styles.fileItem}>
+              <span className={styles.fileName}>
+                {file.metadata?.title || file.fileName}
+              </span>
+              <span className={styles.fileMeta}>
+                {file.metadata?.artist} - {file.metadata?.album}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
   );
 }

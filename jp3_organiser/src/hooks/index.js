@@ -1,7 +1,7 @@
 // Custom React hooks
 export { useKeyboardShortcut } from './useKeyboardShortcut';
 export { useLibraryConfig } from './useLibraryConfig';
-export { useUploadCache, UploadCacheProvider, MetadataSource, UploadStage, useUploadCacheSelector } from './useUploadCache.jsx';
+export { useUploadCache, UploadCacheProvider, MetadataSource, UploadStage } from './useUploadCache.jsx';
 export { useAutoSuggest, SuggestionSource } from './useAutoSuggest';
 export { useLibrary } from './useLibrary';
 export { useLibraryContext, LibraryProvider } from './useLibraryContext.jsx';

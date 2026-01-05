@@ -4,11 +4,9 @@
  * Consolidates display state and review navigation logic.
  * Provides UI conditions and review-related utilities.
  * 
- * @param {Array} trackedFiles - The tracked files array (from cache)
- * @param {Object} workflowState - Workflow state object (contains: stage, reviewIndex, isEditMode)
- * @param {Object} workflow - Workflow machine instance
+ * @param {Object} cache - Upload cache object from useUploadCache
+ * @param {Object} workflow - Workflow machine instance from useWorkflowMachine
  * @param {Object} modeSelector - Mode selector state from useUploadModeSelector
- * @param {function} updateWorkflowState - Original updateWorkflowState method from cache
  * @returns {Object} Display conditions and review utilities
  */
 
@@ -16,7 +14,8 @@ import { useMemo, useCallback } from 'react';
 import { MetadataStatus } from '../services';
 import { UploadStage } from './useUploadCache';
 
-export function useUploadStageLogic(trackedFiles, workflowState, workflow, modeSelector, updateWorkflowState) {
+export function useUploadStageLogic(cache, workflow, modeSelector) {
+  const { trackedFiles, workflowState, updateWorkflowState } = cache;
   const workflowStage = workflowState.stage;
 
   // Get reviewable files (exclude errors)
@@ -73,5 +72,5 @@ export function useUploadStageLogic(trackedFiles, workflowState, workflow, modeS
       findFirstUnconfirmedIndex,
       handleStartReview,
     };
-  }, [workflowStage, trackedFiles, modeSelector.modeSelected, modeSelector.showContextForm, reviewableFiles, handleStartReview]);
+  }, [workflowStage, trackedFiles, modeSelector.modeSelected, modeSelector.showContextForm, reviewableFiles, findFirstUnconfirmedIndex, handleStartReview]);
 }

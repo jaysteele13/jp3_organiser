@@ -26,40 +26,25 @@ import {
   useUploadModeSelector,
   useUploadStageLogic,
   useToast,
-  useUploadCacheSelector,
+  useUploadCache,
 } from '../../../../hooks';
 import { Toast } from '../../../../components';
 import styles from './UploadFile.module.css';
 
-export default function UploadFile({libraryPath}) {
+export default function UploadFile({ libraryPath }) {
   const toast = useToast(8000);
-
+  const cache = useUploadCache();
   const modeSelector = useUploadModeSelector();
-  const confirmedFiles = useUploadCacheSelector(state => state.confirmedFiles);
-  const trackedFiles = useUploadCacheSelector(state => state.trackedFiles);
-  const workflowState = useUploadCacheSelector(state => state.workflowState);
-
-  const cacheUpdateWorkflowState = useUploadCacheSelector(state => state.updateWorkflowState);
-  const cacheResetWorkflowState = useUploadCacheSelector(state => state.resetWorkflowState);
-  const cacheConfirmFile = useUploadCacheSelector(state => state.confirmFile);
-  const cacheUnconfirmFile = useUploadCacheSelector(state => state.unconfirmFile);
-  const cacheRemoveFile = useUploadCacheSelector(state => state.removeFile);
-  const cacheUpdateFileMetadata = useUploadCacheSelector(state => state.updateFileMetadata);
 
   const workflow = useWorkflowMachine({
-    workflowState,
-    updateWorkflowState: cacheUpdateWorkflowState,
-    resetWorkflowState: cacheResetWorkflowState,
+    workflowState: cache.workflowState,
+    updateWorkflowState: cache.updateWorkflowState,
+    resetWorkflowState: cache.resetWorkflowState,
   });
 
-  const stageLogic = useUploadStageLogic(
-    trackedFiles,
-    workflowState,
-    workflow,
-    modeSelector,
-    cacheUpdateWorkflowState
-  );
-  const { reviewIndex, isEditMode } = workflowState; // Ensure this is cahced variable
+  const stageLogic = useUploadStageLogic(cache, workflow, modeSelector);
+
+  const { reviewIndex, isEditMode } = cache.workflowState;
 
   return (
     <div className={styles.wrapper}>
@@ -104,25 +89,24 @@ export default function UploadFile({libraryPath}) {
 
         {workflow.isReviewing && (
           <ReviewScreen
-            files={trackedFiles}
-            initialState={{ currentIndex: reviewIndex, isEditMode: isEditMode }}
-            onStateChange={(state) => cacheUpdateWorkflowState({
+            files={cache.trackedFiles}
+            initialState={{ currentIndex: reviewIndex, isEditMode }}
+            onStateChange={(state) => cache.updateWorkflowState({
               reviewIndex: state.currentIndex, 
               isEditMode: state.isEditMode,
             })}
             onDone={workflow.completeReview}
             onExit={workflow.exitReview}
-            onConfirmFile={(trackingId) => cacheConfirmFile(trackingId)}
-            onUnconfirmFile={(trackingId) => cacheUnconfirmFile(trackingId)}
-            onRemoveFile={(trackingId) => cacheRemoveFile(trackingId)}
-            onEditFile={(trackingId, metadata) => cacheUpdateFileMetadata(trackingId, metadata)}
+            onConfirmFile={cache.confirmFile}
+            onUnconfirmFile={cache.unconfirmFile}
+            onRemoveFile={cache.removeFile}
+            onEditFile={cache.updateFileMetadata}
           />
         )}
 
         {workflow.isReadyToSave && (
           <SaveToLibrary
             libraryPath={libraryPath}
-            confirmedFiles={confirmedFiles}
             workflow={workflow}
             toast={toast}
           />
