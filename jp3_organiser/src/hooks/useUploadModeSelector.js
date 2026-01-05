@@ -3,12 +3,13 @@
  * 
  * Manages upload mode selection logic.
  * Handles the transition from mode selection to file selection,
- * including the context form for Album/Artist modes.
+ * including the context form for Album/Artist/Playlist modes.
  * 
  * Upload modes:
  * - SONGS: Direct to file selection (no context)
  * - ALBUM: Show context form (album + artist + year)
  * - ARTIST: Show context form (artist)
+ * - PLAYLIST: Show context form (playlist name)
  * 
  * @returns {Object} Mode selection state and handlers
  */
@@ -27,7 +28,7 @@ export function useUploadModeSelector() {
   // Handle "Add Songs" mode - proceed directly to file selection
   const handleSelectSongsMode = useCallback(() => {
     cache.setUploadMode(UPLOAD_MODE.SONGS);
-    cache.setUploadContext({ album: null, artist: null, year: null });
+    cache.setUploadContext({ album: null, artist: null, year: null, playlist: null });
     cache.setModeSelected(true);
   }, [cache]);
 
@@ -40,6 +41,12 @@ export function useUploadModeSelector() {
   // Handle "Add Artist" mode - show context form
   const handleSelectArtistMode = useCallback(() => {
     setPendingMode(UPLOAD_MODE.ARTIST);
+    setShowContextForm(true);
+  }, []);
+
+  // Handle "Add Playlist" mode - show context form
+  const handleSelectPlaylistMode = useCallback(() => {
+    setPendingMode(UPLOAD_MODE.PLAYLIST);
     setShowContextForm(true);
   }, []);
 
@@ -73,6 +80,7 @@ export function useUploadModeSelector() {
     handleSelectSongsMode,
     handleSelectAlbumMode,
     handleSelectArtistMode,
+    handleSelectPlaylistMode,
     handleContextSubmit,
     handleContextCancel,
     handleChangeMode,

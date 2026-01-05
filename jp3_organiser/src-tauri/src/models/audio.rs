@@ -97,7 +97,7 @@ impl AudioMetadata {
 }
 
 /// A tracked audio file in the upload pipeline.
-/// 
+///
 /// Each file gets a unique tracking ID for the session,
 /// allowing us to reference specific files during processing.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -137,9 +137,7 @@ impl TrackedAudioFile {
             .and_then(|e| e.to_str())
             .unwrap_or("")
             .to_lowercase();
-        let file_size = std::fs::metadata(&file_path)
-            .map(|m| m.len())
-            .unwrap_or(0);
+        let file_size = std::fs::metadata(&file_path).map(|m| m.len()).unwrap_or(0);
 
         Self {
             tracking_id,
@@ -182,10 +180,6 @@ pub struct AudioFingerprintResult {
     pub fingerprint: String,
     pub duration_seconds: u32,
 }
-
-
-
-
 
 /// Result of processing multiple audio files.
 #[derive(Debug, Clone, Serialize, Deserialize)]

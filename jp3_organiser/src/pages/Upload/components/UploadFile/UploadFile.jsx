@@ -78,6 +78,7 @@ export default function UploadFile({ libraryPath }) {
             onSelectSongs={modeSelector.handleSelectSongsMode}
             onSelectAlbum={modeSelector.handleSelectAlbumMode}
             onSelectArtist={modeSelector.handleSelectArtistMode}
+            onSelectPlaylist={modeSelector.handleSelectPlaylistMode}
           />
         )}
 

@@ -1,8 +1,8 @@
 /**
  * ContextForm Component
  * 
- * Modal form for entering upload context (album/artist) before file selection.
- * Reusable for both Album and Artist modes via the `mode` prop.
+ * Modal form for entering upload context (album/artist/playlist) before file selection.
+ * Reusable for Album, Artist, and Playlist modes via the `mode` prop.
  * 
  * Album mode: Shows Album + Artist + Year (optional) fields
  *   - Album field suggests from library
@@ -11,12 +11,15 @@
  * 
  * Artist mode: Shows Artist field only
  * 
+ * Playlist mode: Shows Playlist Name field only
+ *   - Songs will be saved to library AND added to a new playlist
+ * 
  * Uses ConfirmModal as the base modal and reuses autosuggest patterns
  * from MetadataForm for library-based suggestions.
  * 
  * @param {Object} props
- * @param {string} props.mode - 'album' or 'artist' from UPLOAD_MODE
- * @param {function} props.onSubmit - Called with context { album, artist, year }
+ * @param {string} props.mode - 'album', 'artist', or 'playlist' from UPLOAD_MODE
+ * @param {function} props.onSubmit - Called with context { album, artist, year, playlist }
  * @param {function} props.onCancel - Called when modal is cancelled
  */
 
@@ -190,6 +193,7 @@ export default function ContextForm({ mode, onSubmit, onCancel }) {
     album: '',
     artist: '',
     year: '',
+    playlist: '',
   });
   const [errors, setErrors] = useState({});
   // Track if artist/year were auto-filled from album selection
@@ -227,7 +231,8 @@ export default function ContextForm({ mode, onSubmit, onCancel }) {
   }, [formData.album, albumsWithMetadata]);
 
   const isAlbumMode = mode === UPLOAD_MODE.ALBUM;
-  const title = isAlbumMode ? 'Add Album' : 'Add Artist';
+  const isPlaylistMode = mode === UPLOAD_MODE.PLAYLIST;
+  const title = isAlbumMode ? 'Add Album' : isPlaylistMode ? 'Add Playlist' : 'Add Artist';
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -264,6 +269,10 @@ export default function ContextForm({ mode, onSubmit, onCancel }) {
       if (!formData.artist.trim()) {
         newErrors.artist = 'Artist name is required';
       }
+    } else if (isPlaylistMode) {
+      if (!formData.playlist.trim()) {
+        newErrors.playlist = 'Playlist name is required';
+      }
     } else {
       // Artist mode
       if (!formData.artist.trim()) {
@@ -271,8 +280,8 @@ export default function ContextForm({ mode, onSubmit, onCancel }) {
       }
     }
 
-    // Year is optional but must be valid if provided
-    if (formData.year.trim()) {
+    // Year is optional but must be valid if provided (only for album mode)
+    if (isAlbumMode && formData.year.trim()) {
       const yearNum = parseInt(formData.year.trim(), 10);
       if (isNaN(yearNum) || yearNum < 1000 || yearNum > new Date().getFullYear() + 1) {
         newErrors.year = 'Enter a valid year';
@@ -287,9 +296,10 @@ export default function ContextForm({ mode, onSubmit, onCancel }) {
     if (!validate()) return;
 
     const context = {
-      artist: formData.artist.trim(),
+      artist: formData.artist.trim() || null,
       album: isAlbumMode ? formData.album.trim() : null,
       year: formData.year.trim() ? parseInt(formData.year.trim(), 10) : null,
+      playlist: isPlaylistMode ? formData.playlist.trim() : null,
     };
 
     onSubmit(context);
@@ -304,6 +314,28 @@ export default function ContextForm({ mode, onSubmit, onCancel }) {
       onCancel={onCancel}
     >
       <div className={styles.form}>
+        {/* Playlist field - only in playlist mode */}
+        {isPlaylistMode && (
+          <div className={styles.field}>
+            <label htmlFor="context-playlist" className={styles.label}>
+              Playlist Name <span className={styles.required}>*</span>
+            </label>
+            <input
+              type="text"
+              id="context-playlist"
+              name="playlist"
+              value={formData.playlist}
+              onChange={handleChange}
+              className={`${styles.input} ${errors.playlist ? styles.inputError : ''}`}
+              placeholder=""
+              autoFocus
+            />
+            {errors.playlist && (
+              <span className={styles.errorText}>{errors.playlist}</span>
+            )}
+          </div>
+        )}
+
         {/* Album field - only in album mode */}
         {isAlbumMode && (
           <div className={styles.row}>
@@ -346,28 +378,32 @@ export default function ContextForm({ mode, onSubmit, onCancel }) {
           </div>
         )}
 
-        {/* Artist field - both modes */}
-        <div className={styles.field}>
-          <label htmlFor="context-artist" className={styles.label}>
-            Artist Name <span className={styles.required}>*</span>
-          </label>
-          <SuggestibleInput
-            id="context-artist"
-            name="artist"
-            value={formData.artist}
-            onChange={handleChange}
-            libraryEntries={isAlbumMode ? artistsForCurrentAlbum : libraryData.artists}
-            placeholder=""
-            error={errors.artist}
-          />
-          {errors.artist && (
-            <span className={styles.errorText}>{errors.artist}</span>
-          )}
-        </div>
+        {/* Artist field - album and artist modes only (not playlist) */}
+        {!isPlaylistMode && (
+          <div className={styles.field}>
+            <label htmlFor="context-artist" className={styles.label}>
+              Artist Name <span className={styles.required}>*</span>
+            </label>
+            <SuggestibleInput
+              id="context-artist"
+              name="artist"
+              value={formData.artist}
+              onChange={handleChange}
+              libraryEntries={isAlbumMode ? artistsForCurrentAlbum : libraryData.artists}
+              placeholder=""
+              error={errors.artist}
+            />
+            {errors.artist && (
+              <span className={styles.errorText}>{errors.artist}</span>
+            )}
+          </div>
+        )}
 
         <p className={styles.hint}>
           {isAlbumMode 
             ? 'These values will override AcousticID album and artist results for all selected files.'
+            : isPlaylistMode
+            ? 'Songs will be added to the library and grouped into this playlist.'
             : 'This artist will override AcousticID artist results for all selected files.'
           }
         </p>

@@ -32,7 +32,8 @@
 import React, { useEffect, useCallback } from 'react';
 import { SongCard, NavigationControls } from './components';
 import { useReviewNavigation, useAudioPlayer } from './hooks';
-import { useKeyboardShortcut } from '../../../../hooks';
+import { useKeyboardShortcut, useUploadCache } from '../../../../hooks';
+import { UPLOAD_MODE } from '../../../../utils';
 import MetadataForm from '../MetadataForm';
 import styles from './ReviewScreen.module.css';
 
@@ -47,6 +48,11 @@ export default function ReviewScreen({
   onRemoveFile,
   onEditFile,
 }) {
+  // Get upload context for playlist mode
+  const { uploadMode, uploadContext } = useUploadCache();
+  const isPlaylistMode = uploadMode === UPLOAD_MODE.PLAYLIST;
+  const playlistName = uploadContext?.playlist;
+
   // Navigation hook
   const navigation = useReviewNavigation(files, {
     onConfirm: onConfirmFile,
@@ -100,6 +106,17 @@ export default function ReviewScreen({
 
   return (
     <div className={styles.container}>
+      {/* Playlist banner - only shown in playlist mode */}
+      {isPlaylistMode && playlistName && (
+        <div className={styles.playlistBanner}>
+          <span className={styles.playlistIcon}>☰</span>
+          <div>
+            <div className={styles.playlistLabel}>Creating Playlist</div>
+            <div className={styles.playlistName}>{playlistName}</div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className={styles.header}>
         <h2 className={styles.title}>Review Song Details</h2>

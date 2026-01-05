@@ -9,9 +9,11 @@
 //!   - `audio` - Audio file processing and metadata extraction
 //!   - `config` - Library path persistence
 //!   - `library` - Library initialization and info
+//!   - `playlist` - Playlist management
 //! - `models/` - Data structures
 //!   - `audio` - TrackedAudioFile, MetadataStatus, AudioMetadata
 //!   - `library` - LibraryHeader, LibraryInfo
+//!   - `playlist` - PlaylistHeader, ParsedPlaylist
 //! - `services/` - Business logic services
 //!   - `fingerprint_service` - Audio fingerprinting with fpcalc
 //!   - `metadata_ranking_service` - AcoustID response ranking
@@ -38,6 +40,14 @@ use commands::{
     initialize_library,
     load_library,
     save_to_library,
+    // Playlist commands
+    add_songs_to_playlist,
+    create_playlist,
+    delete_playlist,
+    list_playlists,
+    load_playlist,
+    remove_songs_from_playlist,
+    save_to_playlist,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -72,6 +82,14 @@ pub fn run() {
             edit_song_metadata,
             get_library_stats,
             compact_library,
+            // Playlist commands
+            create_playlist,
+            load_playlist,
+            list_playlists,
+            delete_playlist,
+            save_to_playlist,
+            add_songs_to_playlist,
+            remove_songs_from_playlist,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
