@@ -276,6 +276,19 @@ export async function deletePlaylist(basePath, playlistId) {
 }
 
 /**
+ * Delete a playlist by name.
+ * 
+ * Searches all playlist files to find one with the matching name and deletes it.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {string} playlistName - Playlist name to delete
+ * @returns {Promise<DeletePlaylistResult>} Result indicating if deleted
+ */
+export async function deletePlaylistByName(basePath, playlistName) {
+  return await invoke('delete_playlist_by_name', { basePath, playlistName });
+}
+
+/**
  * Save audio files to library AND create a playlist with them.
  * 
  * This is the combined operation for "Add Playlist" mode:

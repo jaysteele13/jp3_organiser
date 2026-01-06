@@ -8,11 +8,12 @@
  * Route: /playlist/:id
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLibraryConfig } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
-import { LoadingState, ErrorState, EmptyState } from '../../components';
+import { deletePlaylistByName } from '../../services/libraryService';
+import { LoadingState, ErrorState, EmptyState, ConfirmModal } from '../../components';
 import { TABS } from '../../utils/enums';
 import usePlaylistEdit from './usePlaylistEdit';
 import styles from './PlaylistEdit.module.css';
@@ -137,6 +138,33 @@ export default function PlaylistEdit() {
     navigate('/view', { state: { tab: TABS.PLAYLISTS } });
   };
 
+  // Delete state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!playlist || !libraryPath) return;
+
+    setIsDeleting(true);
+    try {
+      await deletePlaylistByName(libraryPath, playlist.name);
+      navigate('/view', { state: { tab: TABS.PLAYLISTS } });
+    } catch (err) {
+      console.error('Failed to delete playlist:', err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    if (isDeleting) return;
+    setShowDeleteModal(false);
+  };
+
   // Loading states
   if (configLoading || libraryLoading || playlistLoading) {
     return <LoadingState message="Loading playlist..." />;
@@ -185,6 +213,13 @@ export default function PlaylistEdit() {
             </span>
           </div>
         </div>
+        <button 
+          className={styles.deleteBtn}
+          onClick={handleDeleteClick}
+          title="Delete playlist"
+        >
+          Delete Playlist
+        </button>
       </header>
 
       {/* Error banner */}
@@ -296,6 +331,19 @@ export default function PlaylistEdit() {
           </div>
         </section>
       </div>
+
+      {/* Delete confirmation modal */}
+      {showDeleteModal && playlist && (
+        <ConfirmModal
+          title="Delete Playlist"
+          message={`Are you sure you want to delete "${playlist.name}"? This will not delete the songs from your library.`}
+          confirmLabel="Delete"
+          variant="danger"
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
+          isLoading={isDeleting}
+        />
+      )}
     </div>
   );
 }

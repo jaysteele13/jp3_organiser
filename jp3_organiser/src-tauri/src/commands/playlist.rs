@@ -217,6 +217,48 @@ pub fn delete_playlist(
     Ok(DeletePlaylistResult { deleted: true })
 }
 
+/// Delete a playlist by name.
+///
+/// Searches through all playlist files to find one matching the given name,
+/// then deletes the corresponding .bin file.
+#[tauri::command]
+pub fn delete_playlist_by_name(
+    base_path: String,
+    playlist_name: String,
+) -> Result<DeletePlaylistResult, String> {
+    let base = Path::new(&base_path);
+    let playlists_path = get_playlists_path(base);
+
+    if !playlists_path.exists() {
+        return Ok(DeletePlaylistResult { deleted: false });
+    }
+
+    // Scan all playlist files to find the one with matching name
+    let entries = fs::read_dir(&playlists_path)
+        .map_err(|e| format!("Failed to read playlists directory: {}", e))?;
+
+    for entry in entries.flatten() {
+        if let Some(filename) = entry.file_name().to_str() {
+            if let Some(id_str) = filename.strip_suffix(".bin") {
+                if let Ok(playlist_id) = id_str.parse::<u32>() {
+                    // Read the playlist to check its name
+                    if let Ok(playlist) = read_playlist_file(&entry.path(), playlist_id) {
+                        if playlist.name == playlist_name {
+                            // Found matching playlist - delete it
+                            fs::remove_file(&entry.path())
+                                .map_err(|e| format!("Failed to delete playlist file: {}", e))?;
+                            return Ok(DeletePlaylistResult { deleted: true });
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // No playlist found with that name
+    Ok(DeletePlaylistResult { deleted: false })
+}
+
 /// Input for saving files to library and creating a playlist.
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
