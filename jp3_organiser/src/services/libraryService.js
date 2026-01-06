@@ -262,20 +262,6 @@ export async function listPlaylists(basePath) {
 }
 
 /**
- * Delete a playlist by ID.
- * 
- * @param {string} basePath - The base library directory path
- * @param {number} playlistId - Playlist ID to delete
- * @returns {Promise<DeletePlaylistResult>} Result indicating if deleted
- * 
- * @typedef {Object} DeletePlaylistResult
- * @property {boolean} deleted - Whether the playlist was deleted
- */
-export async function deletePlaylist(basePath, playlistId) {
-  return await invoke('delete_playlist', { basePath, playlistId });
-}
-
-/**
  * Delete a playlist by name.
  * 
  * Searches all playlist files to find one with the matching name and deletes it.
@@ -283,6 +269,9 @@ export async function deletePlaylist(basePath, playlistId) {
  * @param {string} basePath - The base library directory path
  * @param {string} playlistName - Playlist name to delete
  * @returns {Promise<DeletePlaylistResult>} Result indicating if deleted
+ * 
+ * @typedef {Object} DeletePlaylistResult
+ * @property {boolean} deleted - Whether the playlist was deleted
  */
 export async function deletePlaylistByName(basePath, playlistName) {
   return await invoke('delete_playlist_by_name', { basePath, playlistName });

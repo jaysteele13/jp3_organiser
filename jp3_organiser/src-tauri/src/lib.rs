@@ -43,7 +43,6 @@ use commands::{
     // Playlist commands
     add_songs_to_playlist,
     create_playlist,
-    delete_playlist,
     delete_playlist_by_name,
     list_playlists,
     load_playlist,
@@ -87,7 +86,6 @@ pub fn run() {
             create_playlist,
             load_playlist,
             list_playlists,
-            delete_playlist,
             delete_playlist_by_name,
             save_to_playlist,
             add_songs_to_playlist,

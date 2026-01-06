@@ -22,25 +22,30 @@ fn get_playlists_path(base_path: &Path) -> std::path::PathBuf {
     base_path.join(JP3_DIR).join(PLAYLISTS_DIR)
 }
 
+/// Extract playlist ID from a directory entry filename (e.g., "123.bin" -> Some(123)).
+fn parse_playlist_id(entry: &fs::DirEntry) -> Option<u32> {
+    entry
+        .file_name()
+        .to_str()?
+        .strip_suffix(".bin")?
+        .parse()
+        .ok()
+}
+
 /// Get the next available playlist ID by scanning existing playlist files.
 fn get_next_playlist_id(playlists_path: &Path) -> Result<u32, String> {
     if !playlists_path.exists() {
         return Ok(1);
     }
 
-    let mut max_id = 0u32;
     let entries = fs::read_dir(playlists_path)
         .map_err(|e| format!("Failed to read playlists directory: {}", e))?;
 
-    for entry in entries.flatten() {
-        if let Some(name) = entry.file_name().to_str() {
-            if let Some(id_str) = name.strip_suffix(".bin") {
-                if let Ok(id) = id_str.parse::<u32>() {
-                    max_id = max_id.max(id);
-                }
-            }
-        }
-    }
+    let max_id = entries
+        .flatten()
+        .filter_map(|entry| parse_playlist_id(&entry))
+        .max()
+        .unwrap_or(0);
 
     Ok(max_id + 1)
 }
@@ -170,51 +175,26 @@ pub fn list_playlists(base_path: String) -> Result<Vec<PlaylistSummary>, String>
         return Ok(Vec::new());
     }
 
-    let mut playlists = Vec::new();
     let entries = fs::read_dir(&playlists_path)
         .map_err(|e| format!("Failed to read playlists directory: {}", e))?;
 
-    for entry in entries.flatten() {
-        if let Some(name) = entry.file_name().to_str() {
-            if let Some(id_str) = name.strip_suffix(".bin") {
-                if let Ok(playlist_id) = id_str.parse::<u32>() {
-                    // Read just the header and name for summary
-                    if let Ok(playlist) = read_playlist_file(&entry.path(), playlist_id) {
-                        playlists.push(PlaylistSummary {
-                            id: playlist.id,
-                            name: playlist.name,
-                            song_count: playlist.song_count,
-                        });
-                    }
-                }
-            }
-        }
-    }
+    let mut playlists: Vec<PlaylistSummary> = entries
+        .flatten()
+        .filter_map(|entry| {
+            let playlist_id = parse_playlist_id(&entry)?;
+            let playlist = read_playlist_file(&entry.path(), playlist_id).ok()?;
+            Some(PlaylistSummary {
+                id: playlist.id,
+                name: playlist.name,
+                song_count: playlist.song_count,
+            })
+        })
+        .collect();
 
-    // Sort by ID for consistent ordering
-    playlists.sort_by_key(|p| p.id);
+    // Sort by name for easier lookup
+    playlists.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
 
     Ok(playlists)
-}
-
-/// Delete a playlist by ID.
-#[tauri::command]
-pub fn delete_playlist(
-    base_path: String,
-    playlist_id: u32,
-) -> Result<DeletePlaylistResult, String> {
-    let base = Path::new(&base_path);
-    let playlists_path = get_playlists_path(base);
-    let playlist_file_path = playlists_path.join(format!("{}.bin", playlist_id));
-
-    if !playlist_file_path.exists() {
-        return Ok(DeletePlaylistResult { deleted: false });
-    }
-
-    fs::remove_file(&playlist_file_path)
-        .map_err(|e| format!("Failed to delete playlist file: {}", e))?;
-
-    Ok(DeletePlaylistResult { deleted: true })
 }
 
 /// Delete a playlist by name.
@@ -233,29 +213,24 @@ pub fn delete_playlist_by_name(
         return Ok(DeletePlaylistResult { deleted: false });
     }
 
-    // Scan all playlist files to find the one with matching name
     let entries = fs::read_dir(&playlists_path)
         .map_err(|e| format!("Failed to read playlists directory: {}", e))?;
 
+    // Find and delete the playlist with matching name
     for entry in entries.flatten() {
-        if let Some(filename) = entry.file_name().to_str() {
-            if let Some(id_str) = filename.strip_suffix(".bin") {
-                if let Ok(playlist_id) = id_str.parse::<u32>() {
-                    // Read the playlist to check its name
-                    if let Ok(playlist) = read_playlist_file(&entry.path(), playlist_id) {
-                        if playlist.name == playlist_name {
-                            // Found matching playlist - delete it
-                            fs::remove_file(&entry.path())
-                                .map_err(|e| format!("Failed to delete playlist file: {}", e))?;
-                            return Ok(DeletePlaylistResult { deleted: true });
-                        }
-                    }
-                }
-            }
+        let Some(playlist_id) = parse_playlist_id(&entry) else {
+            continue;
+        };
+        let Ok(playlist) = read_playlist_file(&entry.path(), playlist_id) else {
+            continue;
+        };
+        if playlist.name == playlist_name {
+            fs::remove_file(&entry.path())
+                .map_err(|e| format!("Failed to delete playlist file: {}", e))?;
+            return Ok(DeletePlaylistResult { deleted: true });
         }
     }
 
-    // No playlist found with that name
     Ok(DeletePlaylistResult { deleted: false })
 }
 
