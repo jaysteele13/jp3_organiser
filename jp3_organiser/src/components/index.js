@@ -9,3 +9,4 @@ export { default as PlaylistComboBox } from './PlaylistComboBox';
 // Layout Components
 export { default as Header } from './Header';
 export { default as Navbar } from './Navbar';
+export { default as PlayerBar } from './PlayerBar';

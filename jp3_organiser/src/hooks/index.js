@@ -10,3 +10,4 @@ export { useWorkflowMachine, WorkflowAction } from './useWorkflowMachine';
 export { useToast } from './useToast';
 export { useUploadModeSelector } from './useUploadModeSelector';
 export { useUploadStageLogic } from './useUploadStageLogic';
+export { usePlayer, PlayerProvider, REPEAT_MODE } from './usePlayerContext.jsx';

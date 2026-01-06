@@ -1,0 +1,58 @@
+/**
+ * Player Page Styles
+ */
+
+.container {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Stats bar */
+.statsBar {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--tertiary);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  color: #fff;
+}
+
+.statsBar span {
+  opacity: 0.9;
+}
+
+.refreshBtn {
+  margin-left: auto;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+  background-color: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #fff;
+}
+
+.refreshBtn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Content area */
+.content {
+  min-height: 300px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .statsBar {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .refreshBtn {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 0.5rem;
+  }
+}
