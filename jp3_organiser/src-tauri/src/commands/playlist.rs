@@ -375,3 +375,65 @@ pub fn remove_songs_from_playlist(
         songs_added: songs_removed as u32, // Reusing field as "songs_affected"
     })
 }
+
+/// Result of renaming a playlist.
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RenamePlaylistResult {
+    pub success: bool,
+    pub old_name: String,
+    pub new_name: String,
+}
+
+/// Rename a playlist by ID.
+#[tauri::command]
+pub fn rename_playlist(
+    base_path: String,
+    playlist_id: u32,
+    new_name: String,
+) -> Result<RenamePlaylistResult, String> {
+    // Validate new name
+    let new_name = new_name.trim().to_string();
+    if new_name.is_empty() {
+        return Err("Playlist name cannot be empty".to_string());
+    }
+
+    // Load existing playlist
+    let playlist = load_playlist(base_path.clone(), playlist_id)?;
+    let old_name = playlist.name.clone();
+
+    // Check for duplicate name (case-insensitive)
+    let base = Path::new(&base_path);
+    let playlists_path = get_playlists_path(base);
+
+    if playlists_path.exists() {
+        let entries = fs::read_dir(&playlists_path)
+            .map_err(|e| format!("Failed to read playlists directory: {}", e))?;
+
+        for entry in entries.flatten() {
+            let Some(other_id) = parse_playlist_id(&entry) else {
+                continue;
+            };
+            // Skip the current playlist
+            if other_id == playlist_id {
+                continue;
+            }
+            let Ok(other_playlist) = read_playlist_file(&entry.path(), other_id) else {
+                continue;
+            };
+            if other_playlist.name.to_lowercase() == new_name.to_lowercase() {
+                return Err("A playlist with this name already exists".to_string());
+            }
+        }
+    }
+
+    // Write updated playlist with new name
+    let playlist_file_path = playlists_path.join(format!("{}.bin", playlist_id));
+    write_playlist_file(&playlist_file_path, &new_name, &playlist.song_ids)?;
+
+    Ok(RenamePlaylistResult {
+        success: true,
+        old_name,
+        new_name,
+    })
+}

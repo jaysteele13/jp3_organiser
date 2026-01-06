@@ -8,11 +8,11 @@
  * Route: /playlist/:id
  */
 
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLibraryConfig } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
-import { deletePlaylistByName } from '../../services/libraryService';
+import { deletePlaylistByName, listPlaylists } from '../../services/libraryService';
 import { LoadingState, ErrorState, EmptyState, ConfirmModal } from '../../components';
 import { TABS, UPLOAD_MODE } from '../../utils/enums';
 import usePlaylistEdit from './usePlaylistEdit';
@@ -110,6 +110,7 @@ export default function PlaylistEdit() {
     toggleSongSelection,
     clearSelection,
     updateSearchQuery,
+    renameCurrentPlaylist,
   } = editor;
 
   const songLookup = useMemo(() => buildSongLookup(library), [library]);
@@ -153,6 +154,89 @@ export default function PlaylistEdit() {
   // Delete state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Rename state
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [renameError, setRenameError] = useState('');
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [existingPlaylists, setExistingPlaylists] = useState([]);
+
+  // Fetch existing playlists for duplicate name validation
+  useEffect(() => {
+    if (!libraryPath) return;
+    
+    let cancelled = false;
+    listPlaylists(libraryPath)
+      .then((playlists) => {
+        if (!cancelled) {
+          setExistingPlaylists(playlists);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch playlists:', err);
+      });
+
+    return () => { cancelled = true; };
+  }, [libraryPath]);
+
+  const handleRenameClick = useCallback(() => {
+    if (playlist) {
+      setNewPlaylistName(playlist.name);
+      setRenameError('');
+      setShowRenameModal(true);
+    }
+  }, [playlist]);
+
+  const handleConfirmRename = async () => {
+    const trimmedName = newPlaylistName.trim();
+    
+    // Validate
+    if (!trimmedName) {
+      setRenameError('Playlist name cannot be empty');
+      return;
+    }
+
+    // Check for duplicate name (case-insensitive, excluding current playlist)
+    const isDuplicate = existingPlaylists.some(
+      p => p.name.toLowerCase() === trimmedName.toLowerCase() && p.id !== playlist?.id
+    );
+    if (isDuplicate) {
+      setRenameError('A playlist with this name already exists');
+      return;
+    }
+
+    setIsRenaming(true);
+    setRenameError('');
+
+    const result = await renameCurrentPlaylist(trimmedName);
+
+    if (result.success) {
+      setShowRenameModal(false);
+      // Update the existingPlaylists cache with new name
+      setExistingPlaylists(prev => 
+        prev.map(p => p.id === playlist?.id ? { ...p, name: trimmedName } : p)
+      );
+    } else {
+      setRenameError(result.error || 'Failed to rename playlist');
+    }
+
+    setIsRenaming(false);
+  };
+
+  const handleCancelRename = () => {
+    if (isRenaming) return;
+    setShowRenameModal(false);
+    setRenameError('');
+  };
+
+  const handleRenameInputChange = (e) => {
+    setNewPlaylistName(e.target.value);
+    // Clear error when user starts typing
+    if (renameError) {
+      setRenameError('');
+    }
+  };
 
   const handleDeleteClick = () => {
     setShowDeleteModal(true);
@@ -219,7 +303,28 @@ export default function PlaylistEdit() {
             ← Back
           </button>
           <div className={styles.headerInfo}>
-            <h1 className={styles.title}>{playlist?.name}</h1>
+            <div className={styles.titleRow}>
+              <h1 className={styles.title}>{playlist?.name}</h1>
+              <button
+                className={styles.editNameBtn}
+                onClick={handleRenameClick}
+                title="Rename playlist"
+              >
+                <svg 
+                  width="16" 
+                  height="16" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                >
+                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                  <path d="m15 5 4 4" />
+                </svg>
+              </button>
+            </div>
             <span className={styles.subtitle}>
               {currentSongs.length} song{currentSongs.length !== 1 ? 's' : ''} in playlist
             </span>
@@ -364,6 +469,41 @@ export default function PlaylistEdit() {
           onCancel={handleCancelDelete}
           isLoading={isDeleting}
         />
+      )}
+
+      {/* Rename modal */}
+      {showRenameModal && playlist && (
+        <ConfirmModal
+          title="Rename Playlist"
+          confirmLabel="Rename"
+          variant="default"
+          onConfirm={handleConfirmRename}
+          onCancel={handleCancelRename}
+          isLoading={isRenaming}
+        >
+          <div className={styles.renameForm}>
+            <label htmlFor="rename-input" className={styles.renameLabel}>
+              Playlist Name
+            </label>
+            <input
+              id="rename-input"
+              type="text"
+              className={`${styles.renameInput} ${renameError ? styles.renameInputError : ''}`}
+              value={newPlaylistName}
+              onChange={handleRenameInputChange}
+              placeholder="Enter playlist name"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isRenaming) {
+                  handleConfirmRename();
+                }
+              }}
+            />
+            {renameError && (
+              <span className={styles.renameErrorText}>{renameError}</span>
+            )}
+          </div>
+        </ConfirmModal>
       )}
     </div>
   );

@@ -328,3 +328,20 @@ export async function addSongsToPlaylist(basePath, playlistId, songIds) {
 export async function removeSongsFromPlaylist(basePath, playlistId, songIds) {
   return await invoke('remove_songs_from_playlist', { basePath, playlistId, songIds });
 }
+
+/**
+ * Rename a playlist by ID.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {number} playlistId - Playlist ID to rename
+ * @param {string} newName - New playlist name
+ * @returns {Promise<RenamePlaylistResult>} Result with old and new names
+ * 
+ * @typedef {Object} RenamePlaylistResult
+ * @property {boolean} success - Whether the rename succeeded
+ * @property {string} oldName - Previous playlist name
+ * @property {string} newName - New playlist name
+ */
+export async function renamePlaylist(basePath, playlistId, newName) {
+  return await invoke('rename_playlist', { basePath, playlistId, newName });
+}

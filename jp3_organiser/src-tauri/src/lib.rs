@@ -47,6 +47,7 @@ use commands::{
     list_playlists,
     load_playlist,
     remove_songs_from_playlist,
+    rename_playlist,
     save_to_playlist,
 };
 
@@ -87,6 +88,7 @@ pub fn run() {
             load_playlist,
             list_playlists,
             delete_playlist_by_name,
+            rename_playlist,
             save_to_playlist,
             add_songs_to_playlist,
             remove_songs_from_playlist,
