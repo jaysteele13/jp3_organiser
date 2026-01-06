@@ -8,7 +8,7 @@
  * Provides a unified API for the entire app to control playback.
  */
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useAudioElement } from './player/useAudioElement';
 import { useQueueManager } from './player/useQueueManager';
 import { REPEAT_MODE } from './player/playerUtils';
@@ -86,13 +86,28 @@ export function PlayerProvider({ children }) {
     stop,
   } = audioElement;
 
-  // Auto-play when currentIndex changes
+  // Auto-play when currentIndex or libraryPath changes
+  // Uses a ref to track the last successfully triggered play to avoid duplicates
+  const lastPlayedRef = useRef({ index: -1, path: null });
+  
   useEffect(() => {
-    if (currentTrack?.path && libraryPath) {
-      const fullPath = resolveAudioPath(libraryPath, currentTrack.path);
-      if (fullPath) {
-        loadAndPlay(fullPath);
-      }
+    // Need both a track and library path to play
+    if (!currentTrack?.path || !libraryPath) {
+      return;
+    }
+    
+    // Avoid re-triggering for the same track
+    const playKey = `${currentIndex}:${currentTrack.path}`;
+    const lastKey = `${lastPlayedRef.current.index}:${lastPlayedRef.current.path}`;
+    
+    if (playKey === lastKey) {
+      return;
+    }
+    
+    const fullPath = resolveAudioPath(libraryPath, currentTrack.path);
+    if (fullPath) {
+      lastPlayedRef.current = { index: currentIndex, path: currentTrack.path };
+      loadAndPlay(fullPath);
     }
   }, [currentIndex, currentTrack?.path, libraryPath, loadAndPlay]);
 

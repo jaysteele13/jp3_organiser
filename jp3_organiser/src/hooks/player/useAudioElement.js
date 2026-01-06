@@ -15,6 +15,7 @@ export function useAudioElement({ onEnded, volume = 1 }) {
   const audioRef = useRef(null);
   const blobUrlRef = useRef(null);
   const isChangingSourceRef = useRef(false);
+  const loadRequestIdRef = useRef(0); // Track current load request to cancel stale ones
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -80,18 +81,13 @@ export function useAudioElement({ onEnded, volume = 1 }) {
     }
   }, [volume]);
 
-  // Load file as blob URL
+  // Load file as blob URL (does NOT revoke previous - caller handles that)
   const loadAudioAsBlob = useCallback(async (filePath) => {
     const fileBytes = await readFile(filePath);
     const mimeType = getMimeType(filePath);
 
-    if (blobUrlRef.current) {
-      URL.revokeObjectURL(blobUrlRef.current);
-    }
-
     const blob = new Blob([fileBytes], { type: mimeType });
     const blobUrl = URL.createObjectURL(blob);
-    blobUrlRef.current = blobUrl;
 
     return blobUrl;
   }, []);
@@ -99,7 +95,16 @@ export function useAudioElement({ onEnded, volume = 1 }) {
   // Load and play a track
   const loadAndPlay = useCallback(async (filePath) => {
     const audio = audioRef.current;
-    if (!audio || !filePath) return;
+    console.log('[loadAndPlay] Called with:', filePath);
+    
+    if (!audio || !filePath) {
+      console.log('[loadAndPlay] Early return - audio:', !!audio, 'filePath:', !!filePath);
+      return;
+    }
+
+    // Increment request ID - any previous in-flight request becomes stale
+    const requestId = ++loadRequestIdRef.current;
+    console.log('[loadAndPlay] Request ID:', requestId);
 
     try {
       setError(null);
@@ -111,36 +116,138 @@ export function useAudioElement({ onEnded, volume = 1 }) {
       audio.src = '';
       audio.currentTime = 0;
 
+      console.log('[loadAndPlay] Waiting 50ms...');
       await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Check if this request was superseded
+      if (requestId !== loadRequestIdRef.current) {
+        console.log('[loadAndPlay] Aborted after delay - superseded by request:', loadRequestIdRef.current);
+        isChangingSourceRef.current = false;
+        return;
+      }
+      
       isChangingSourceRef.current = false;
 
-      const blobUrl = await loadAudioAsBlob(filePath);
-      audio.src = blobUrl;
-      audio.currentTime = 0;
-
-      // Wait for ready state
+      console.log('[loadAndPlay] Loading blob for:', filePath);
+      const newBlobUrl = await loadAudioAsBlob(filePath);
+      console.log('[loadAndPlay] Blob created:', newBlobUrl);
+      
+      // Check again after async operation
+      if (requestId !== loadRequestIdRef.current) {
+        console.log('[loadAndPlay] Aborted after blob load - superseded by request:', loadRequestIdRef.current);
+        URL.revokeObjectURL(newBlobUrl);
+        return;
+      }
+      
+      // Revoke the OLD blob only after we have the new one ready
+      const oldBlobUrl = blobUrlRef.current;
+      blobUrlRef.current = newBlobUrl;
+      
+      console.log('[loadAndPlay] Setting up canplay listener and setting audio.src...');
+      
+      // Wait for ready state - set up listeners BEFORE setting src
       await new Promise((resolve, reject) => {
+        if (requestId !== loadRequestIdRef.current) {
+          console.log('[loadAndPlay] Aborted before setting src - superseded');
+          resolve();
+          return;
+        }
+        
         let resolved = false;
         const cleanup = () => {
+          audio.removeEventListener('canplaythrough', onReady);
           audio.removeEventListener('canplay', onReady);
           audio.removeEventListener('error', onError);
         };
-        const onReady = () => { if (!resolved) { resolved = true; cleanup(); resolve(); } };
-        const onError = () => { if (!resolved) { resolved = true; cleanup(); reject(new Error('Audio failed to load')); } };
+        const onReady = () => { 
+          if (!resolved) { 
+            console.log('[loadAndPlay] canplay/canplaythrough event received, readyState:', audio.readyState);
+            resolved = true; 
+            cleanup(); 
+            resolve(); 
+          } 
+        };
+        const onError = () => { 
+          console.log('[loadAndPlay] error event received, requestId:', requestId, 'current:', loadRequestIdRef.current);
+          console.log('[loadAndPlay] audio.error:', audio.error);
+          if (!resolved && requestId === loadRequestIdRef.current) { 
+            resolved = true; 
+            cleanup(); 
+            reject(new Error('Audio failed to load')); 
+          } else if (!resolved) {
+            resolved = true;
+            cleanup();
+            resolve();
+          }
+        };
 
+        // Add listeners BEFORE setting src
+        audio.addEventListener('canplaythrough', onReady);
         audio.addEventListener('canplay', onReady);
         audio.addEventListener('error', onError);
-        setTimeout(() => { if (!resolved && audio.readyState >= 2) { resolved = true; cleanup(); resolve(); } }, 3000);
+        
+        // Now set the source
+        console.log('[loadAndPlay] Setting audio.src to:', newBlobUrl);
+        audio.src = newBlobUrl;
+        audio.load(); // Explicitly trigger load
+        
+        console.log('[loadAndPlay] audio.src set, readyState:', audio.readyState);
+        
+        // Check if already ready (can happen synchronously)
+        if (audio.readyState >= 3) {
+          console.log('[loadAndPlay] Already ready, readyState:', audio.readyState);
+          resolved = true;
+          cleanup();
+          resolve();
+          return;
+        }
+        
+        // Timeout fallback
+        setTimeout(() => { 
+          if (!resolved) {
+            console.log('[loadAndPlay] Timeout reached, readyState:', audio.readyState);
+            if (audio.readyState >= 2) { 
+              console.log('[loadAndPlay] Timeout but readyState ok, proceeding');
+              resolved = true; 
+              cleanup(); 
+              resolve(); 
+            } else {
+              console.log('[loadAndPlay] Timeout and readyState not ok, rejecting');
+              resolved = true;
+              cleanup();
+              reject(new Error('Audio load timeout'));
+            }
+          }
+        }, 5000);
       });
 
+      // Final check before playing
+      if (requestId !== loadRequestIdRef.current) {
+        console.log('[loadAndPlay] Aborted before play - superseded');
+        return;
+      }
+
+      // Now safe to revoke the old blob
+      if (oldBlobUrl) {
+        console.log('[loadAndPlay] Revoking old blob:', oldBlobUrl);
+        URL.revokeObjectURL(oldBlobUrl);
+      }
+
+      console.log('[loadAndPlay] Calling audio.play(), readyState:', audio.readyState);
       audio.currentTime = 0;
       await audio.play();
+      console.log('[loadAndPlay] Playback started successfully');
       setIsLoading(false);
     } catch (err) {
-      console.error('Playback error:', err);
-      setError(`Playback error: ${err.message}`);
-      setIsPlaying(false);
-      setIsLoading(false);
+      if (requestId === loadRequestIdRef.current) {
+        console.error('[loadAndPlay] Playback error:', err);
+        console.error('[loadAndPlay] Error details - filePath:', filePath, 'requestId:', requestId);
+        setError(`Playback error: ${err.message}`);
+        setIsPlaying(false);
+        setIsLoading(false);
+      } else {
+        console.log('[loadAndPlay] Error ignored - stale request:', requestId, 'current:', loadRequestIdRef.current);
+      }
     }
   }, [loadAudioAsBlob]);
 
