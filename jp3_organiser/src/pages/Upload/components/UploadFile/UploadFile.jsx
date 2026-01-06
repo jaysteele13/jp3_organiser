@@ -16,6 +16,7 @@
  */
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import ProcessFile from '../ProcessFile';
 import ReviewScreen from '../ReviewScreen';
 import UploadModeSelector from '../UploadModeSelector';
@@ -32,9 +33,15 @@ import { Toast } from '../../../../components';
 import styles from './UploadFile.module.css';
 
 export default function UploadFile({ libraryPath }) {
+  const navigate = useNavigate();
   const toast = useToast(8000);
   const cache = useUploadCache();
-  const modeSelector = useUploadModeSelector();
+
+  const modeSelector = useUploadModeSelector({
+    libraryPath,
+    navigate,
+    toast,
+  });
 
   const workflow = useWorkflowMachine({
     workflowState: cache.workflowState,
@@ -70,6 +77,9 @@ export default function UploadFile({ libraryPath }) {
             mode={modeSelector.pendingMode}
             onSubmit={modeSelector.handleContextSubmit}
             onCancel={modeSelector.handleContextCancel}
+            onCreateEmpty={modeSelector.handleCreateEmptyPlaylist}
+            playlists={modeSelector.playlists}
+            playlistsLoading={modeSelector.playlistsLoading}
           />
         )}
 

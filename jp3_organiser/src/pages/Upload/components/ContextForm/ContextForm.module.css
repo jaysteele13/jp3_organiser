@@ -5,7 +5,7 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  overflow-x: hidden; /* Prevent horizontal scrolling */
+  overflow: visible; /* Allow dropdowns to extend beyond the form */
 }
 
 .field {
@@ -168,4 +168,60 @@
 .row .input {
   width: 100%;
   box-sizing: border-box;
+}
+
+/* Create Empty Playlist button */
+.createEmptyBtn {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  margin-top: 0.5rem;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.createEmptyBtn:hover {
+  border-color: var(--secondary);
+  color: var(--secondary);
+  background-color: rgba(153, 182, 73, 0.1);
+}
+
+/* Radio button group for playlist options */
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+
+.radioLabel:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.radioInput {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--tertiary);
+  cursor: pointer;
+  margin: 0;
+}
+
+.radioText {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
 }

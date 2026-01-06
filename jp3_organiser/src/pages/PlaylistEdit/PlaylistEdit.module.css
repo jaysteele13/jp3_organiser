@@ -40,10 +40,57 @@
   color: #fff;
 }
 
+/* Delete button in header */
+.deleteBtn {
+  background-color: var(--primary);
+  border: none;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.deleteBtn:hover {
+  background-color: var(--primary-hover);
+}
+
+/* Header actions container */
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Upload new songs button */
+.uploadBtn {
+  background-color: var(--tertiary);
+  border: none;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.uploadBtn:hover {
+  background-color: var(--tertiary-hover);
+}
+
 .headerInfo {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .title {
@@ -51,6 +98,24 @@
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--primary);
+}
+
+.editNameBtn {
+  background: none;
+  border: none;
+  color: #666;
+  padding: 0.25rem;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.editNameBtn:hover {
+  color: var(--primary);
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .subtitle {
@@ -368,4 +433,48 @@
   .table th:nth-child(4) {
     display: none;
   }
+}
+
+/* Rename form styles */
+.renameForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.renameLabel {
+  font-size: 0.85rem;
+  color: #888;
+  font-weight: 500;
+}
+
+.renameInput {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background-color: #2a2a2a;
+  color: #fff;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+
+.renameInput:focus {
+  outline: none;
+  border-color: var(--quaternary);
+}
+
+.renameInput::placeholder {
+  color: #666;
+}
+
+.renameInputError {
+  border-color: var(--primary);
+}
+
+.renameErrorText {
+  font-size: 0.8rem;
+  color: var(--primary);
 }

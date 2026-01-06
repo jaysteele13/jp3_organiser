@@ -28,12 +28,13 @@ jp3_organiser/
 ├── src/                      # React frontend
 │   ├── assets/               # Static assets (fonts, images, test files)
 │   ├── components/           # Shared/reusable components
-│   │   ├── ConfirmModal/     # Reusable confirmation dialog with variants
+│   │   ├── ConfirmModal/     # Reusable confirmation dialog with variants and custom content via children prop
 │   │   ├── EmptyState/       # Reusable empty state message
 │   │   ├── ErrorState/       # Reusable error display
 │   │   ├── Header/           # App header with title/description
 │   │   ├── LoadingState/     # Reusable loading spinner
 │   │   ├── Navbar/           # Collapsible sidebar navigation
+│   │   ├── PlaylistComboBox/ # Searchable dropdown for playlist selection
 │   │   └── Toast/            # Dismissible notification popup
 │   ├── hooks/                # Custom React hooks
 │   │   ├── useKeyboardShortcut.js  # Keyboard shortcut handler
@@ -110,7 +111,10 @@ jp3_organiser/
 15. **Swipe Animations** - Slide animations when navigating between files in review mode
 16. **Upload Mode Selection** - Choose between Add Songs, Add Album, Add Artist, or Add Playlist modes
 17. **Playlist Creation** - Create playlists with songs (saves songs to library + creates playlist file)
-18. **Playlist Management** - Add/remove songs from existing playlists via PlaylistEditor modal
+18. **Playlist Management** - Add/remove songs from existing playlists via PlaylistEdit page
+19. **Upload to Existing Playlist** - Navigate from PlaylistEdit to Upload with pre-set playlist context
+20. **Duplicate Song Handling** - When uploading songs already in library, their IDs are reused for playlist inclusion
+21. **Playlist Rename** - Rename playlists with duplicate name validation
 
 ### Planned
 - SD Card export workflow
@@ -181,7 +185,7 @@ Commands are organized into modules under `src-tauri/src/commands/`:
 | `audio.rs` | `process_audio_files`, `process_single_audio_file`, `get_audio_metadata`, `get_audio_metadata_from_acoustic_id` |
 | `config.rs` | `get_library_path`, `set_library_path`, `clear_library_path` |
 | `library.rs` | `initialize_library`, `get_library_info`, `save_to_library`, `load_library`, `delete_songs`, `edit_song_metadata`, `get_library_stats`, `compact_library` |
-| `playlist.rs` | `create_playlist`, `load_playlist`, `list_playlists`, `delete_playlist`, `save_to_playlist`, `add_songs_to_playlist`, `remove_songs_from_playlist` |
+| `playlist.rs` | `create_playlist`, `load_playlist`, `list_playlists`, `delete_playlist_by_name`, `rename_playlist`, `save_to_playlist`, `add_songs_to_playlist`, `remove_songs_from_playlist` |
 
 ```rust
 // Backend (commands/audio.rs)
@@ -263,6 +267,7 @@ Models are in `src-tauri/src/models/`:
 | `CreatePlaylistResult` | playlistId, songsAdded |
 | `SaveToPlaylistResult` | filesSaved, artistsAdded, albumsAdded, songsAdded, duplicatesSkipped, playlistId, playlistName |
 | `DeletePlaylistResult` | deleted |
+| `RenamePlaylistResult` | success, oldName, newName |
 
 **Parsed Types (Frontend display):**
 
@@ -274,7 +279,7 @@ Models are in `src-tauri/src/models/`:
 | `ParsedSong` | id, title, artistId, artistName, albumId, albumName, path, trackNumber, durationSec |
 | `LibraryInfo` | initialized, jp3Path, musicBuckets, hasLibraryBin |
 | `LibraryStats` | totalSongs, activeSongs, deletedSongs, shouldCompact, fileSizeBytes |
-| `SaveToLibraryResult` | filesSaved, artistsAdded, albumsAdded, songsAdded, duplicatesSkipped |
+| `SaveToLibraryResult` | filesSaved, artistsAdded, albumsAdded, songsAdded, duplicatesSkipped, songIds, duplicateSongIds |
 | `DeleteSongsResult` | songsDeleted, notFound, filesDeleted |
 | `EditSongResult` | newSongId, artistCreated, albumCreated |
 | `CompactResult` | songsRemoved, artistsRemoved, albumsRemoved, stringsRemoved, bytesSaved |
@@ -319,7 +324,8 @@ Models are in `src-tauri/src/models/`:
 - `createPlaylist(basePath, name, songIds)` - Create playlist with existing songs
 - `loadPlaylist(basePath, playlistId)` - Load single playlist by ID
 - `listPlaylists(basePath)` - List all playlist summaries
-- `deletePlaylist(basePath, playlistId)` - Delete playlist file
+- `deletePlaylistByName(basePath, playlistName)` - Delete playlist file by name
+- `renamePlaylist(basePath, playlistId, newName)` - Rename a playlist
 - `saveToPlaylist(basePath, playlistName, files)` - Save songs to library AND create playlist
 - `addSongsToPlaylist(basePath, playlistId, songIds)` - Add songs to existing playlist
 - `removeSongsFromPlaylist(basePath, playlistId, songIds)` - Remove songs from playlist
@@ -360,7 +366,7 @@ Models are in `src-tauri/src/models/`:
 | `useDebounce(value, delay)` | Debounce a value for delayed updates (used in search inputs) |
 | `useAutoSuggest(inputValue, items, key)` | Fuzzy-match suggestions from a list based on input (artist/album autosuggest) |
 | `useToast(duration?)` | Toast notification state management with auto-dismiss (default 5s) |
-| `useUploadModeSelector()` | Upload mode selection logic - handles mode transitions and context form |
+| `useUploadModeSelector()` | Upload mode selection logic - handles mode transitions, context form, and navigation state for pre-set playlist context |
 | `useUploadStageLogic(cache, workflow, modeSelector)` | Consolidates display state conditions and review navigation utilities |
 | `UploadCacheProvider` | Context provider wrapping app for upload state persistence |
 | `LibraryProvider` | Context provider for library data (wraps UploadFile in Upload.jsx) |
@@ -401,9 +407,11 @@ The upload workflow supports four modes to improve metadata accuracy:
 | **Add Songs** | Nothing | Everything | General upload, unknown files |
 | **Add Album** | Album + Artist + Year(opt) | Title, Track # | Uploading a known album |
 | **Add Artist** | Artist | Album, Title, Track # | Uploading songs by known artist |
-| **Add Playlist** | Playlist name | Everything | Create a new playlist with songs |
+| **Add Playlist** | Playlist name (new or existing) | Everything | Create/add to a playlist with songs |
 
 **Rationale:** AcousticID sometimes returns incorrect album metadata (e.g., compilations instead of original album). Album/Artist modes let users override unreliable API results while still leveraging AcousticID for song identification. Playlist mode adds songs to the library and groups them into a named playlist in one operation.
+
+**Existing Playlist Support:** When navigating from PlaylistEdit's "Upload New Songs" button, the upload page receives pre-set playlist context via React Router navigation state, automatically selecting Playlist mode and skipping the mode selector/context form.
 
 ### UploadFile Subcomponents (`src/pages/Upload/components/UploadFile/`)
 
@@ -461,14 +469,17 @@ The PlaylistEdit page (`src/pages/PlaylistEdit/`) provides a full-screen editor 
 | Component/Hook | Purpose |
 |----------------|---------|
 | `PlaylistEdit.jsx` | Two-column layout with current songs and song picker |
-| `usePlaylistEdit.js` | Hook managing playlist state, add/remove song operations |
+| `usePlaylistEdit.js` | Hook managing playlist state, add/remove/rename song operations |
 
 **Features:**
 - Two-column layout: current playlist songs (left) and library song picker (right)
 - Search/filter library songs by title, artist, or album
 - Batch selection with checkboxes for adding multiple songs
 - Remove songs with one click
-- Back button to return to View page
+- Rename playlist with pen icon button (validates duplicate names)
+- Delete playlist with confirmation modal
+- "Upload New Songs" button navigates to Upload with pre-set playlist context
+- Back button returns to View page with Playlists tab active
 
 ## Available Tauri Plugins
 
@@ -532,6 +543,7 @@ cargo test
 - `save_to_library` loads existing data and merges
 - Duplicate detection by (title, artist_id, album_id) tuple
 - New entries appended rather than rebuilding entire file
+- Returns both `songIds` (new) and `duplicateSongIds` (existing) for playlist inclusion
 
 ### Upload State Persistence
 - `UploadCacheProvider` wraps app for persistent upload state

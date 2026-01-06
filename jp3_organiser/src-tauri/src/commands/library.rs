@@ -134,6 +134,8 @@ struct ExistingLibraryData {
     album_map: HashMap<String, u32>,
     /// Set of existing songs keyed by (title, artist_id, album_id) to detect duplicates
     song_set: HashSet<(u32, u32, u32)>,
+    /// Map from (title_string_id, artist_id, album_id) to song_id for finding duplicate IDs
+    song_id_map: HashMap<(u32, u32, u32), u32>,
 }
 
 /// Load existing library data from library.bin for merging with new songs.
@@ -220,12 +222,16 @@ fn load_existing_library_data(
         header.song_count as usize,
     )?;
     let mut song_set: HashSet<(u32, u32, u32)> = HashSet::new();
+    let mut song_id_map: HashMap<(u32, u32, u32), u32> = HashMap::new();
     let songs: Vec<SongEntry> = raw_songs
         .iter()
-        .map(|raw| {
-            // Only add active (non-deleted) songs to the duplicate set
+        .enumerate()
+        .map(|(idx, raw)| {
+            // Only add active (non-deleted) songs to the duplicate set and map
             if raw.flags & song_flags::DELETED == 0 {
-                song_set.insert((raw.title_string_id, raw.artist_id, raw.album_id));
+                let song_key = (raw.title_string_id, raw.artist_id, raw.album_id);
+                song_set.insert(song_key);
+                song_id_map.insert(song_key, idx as u32);
             }
             SongEntry {
                 title_string_id: raw.title_string_id,
@@ -247,6 +253,7 @@ fn load_existing_library_data(
         artist_map,
         album_map,
         song_set,
+        song_id_map,
     }))
 }
 
@@ -287,6 +294,7 @@ pub fn save_to_library(
         mut artist_map,
         mut album_map,
         mut song_set,
+        song_id_map,
     ) = match existing {
         Some(data) => (
             data.string_table,
@@ -296,6 +304,7 @@ pub fn save_to_library(
             data.artist_map,
             data.album_map,
             data.song_set,
+            data.song_id_map,
         ),
         None => (
             StringTable::new(),
@@ -305,6 +314,7 @@ pub fn save_to_library(
             HashMap::new(),
             HashMap::new(),
             HashSet::new(),
+            HashMap::new(),
         ),
     };
 
@@ -317,6 +327,8 @@ pub fn save_to_library(
 
     let mut files_saved = 0u32;
     let mut duplicates_skipped = 0u32;
+    let mut saved_song_ids: Vec<u32> = Vec::new();
+    let mut duplicate_song_ids: Vec<u32> = Vec::new();
 
     for file_to_save in files {
         let source = Path::new(&file_to_save.source_path);
@@ -370,6 +382,11 @@ pub fn save_to_library(
                     artist_name,
                     album_name
                 );
+                // Look up the existing song's ID and add to duplicate_song_ids
+                // This allows the frontend to add duplicates to playlists
+                if let Some(&existing_song_id) = song_id_map.get(&song_key) {
+                    duplicate_song_ids.push(existing_song_id);
+                }
                 duplicates_skipped += 1;
                 continue;
             }
@@ -408,6 +425,9 @@ pub fn save_to_library(
         let song_key = (title_string_id, artist_id, album_id);
         song_set.insert(song_key);
 
+        // Track the song ID before adding
+        let new_song_id = songs.len() as u32;
+
         songs.push(SongEntry::new(
             title_string_id,
             artist_id,
@@ -417,6 +437,7 @@ pub fn save_to_library(
             metadata.duration_secs.unwrap_or(0) as u16,
         ));
 
+        saved_song_ids.push(new_song_id);
         files_in_bucket += 1;
         files_saved += 1;
     }
@@ -465,6 +486,8 @@ pub fn save_to_library(
         albums_added: albums.len() as u32 - existing_album_count,
         songs_added: songs.len() as u32 - existing_song_count,
         duplicates_skipped,
+        song_ids: saved_song_ids,
+        duplicate_song_ids,
     })
 }
 

@@ -52,6 +52,7 @@ export default function ReviewScreen({
   const { uploadMode, uploadContext } = useUploadCache();
   const isPlaylistMode = uploadMode === UPLOAD_MODE.PLAYLIST;
   const playlistName = uploadContext?.playlist;
+  const isExistingPlaylist = uploadContext?.playlistId != null;
 
   // Navigation hook
   const navigation = useReviewNavigation(files, {
@@ -111,7 +112,9 @@ export default function ReviewScreen({
         <div className={styles.playlistBanner}>
           <span className={styles.playlistIcon}>☰</span>
           <div>
-            <div className={styles.playlistLabel}>Creating Playlist</div>
+            <div className={styles.playlistLabel}>
+              {isExistingPlaylist ? 'Playlist' : 'Creating Playlist'}
+            </div>
             <div className={styles.playlistName}>{playlistName}</div>
           </div>
         </div>

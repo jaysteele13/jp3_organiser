@@ -91,6 +91,9 @@ export async function getLibraryInfo(basePath) {
  * @property {number} artistsAdded - Number of artists in library
  * @property {number} albumsAdded - Number of albums in library
  * @property {number} songsAdded - Number of songs in library
+ * @property {number} duplicatesSkipped - Number of duplicate songs skipped
+ * @property {number[]} songIds - IDs of the newly saved songs
+ * @property {number[]} duplicateSongIds - IDs of existing songs that were duplicates (for playlists)
  */
 export async function saveToLibrary(basePath, files) {
   return await invoke('save_to_library', { basePath, files });
@@ -262,17 +265,19 @@ export async function listPlaylists(basePath) {
 }
 
 /**
- * Delete a playlist by ID.
+ * Delete a playlist by name.
+ * 
+ * Searches all playlist files to find one with the matching name and deletes it.
  * 
  * @param {string} basePath - The base library directory path
- * @param {number} playlistId - Playlist ID to delete
+ * @param {string} playlistName - Playlist name to delete
  * @returns {Promise<DeletePlaylistResult>} Result indicating if deleted
  * 
  * @typedef {Object} DeletePlaylistResult
  * @property {boolean} deleted - Whether the playlist was deleted
  */
-export async function deletePlaylist(basePath, playlistId) {
-  return await invoke('delete_playlist', { basePath, playlistId });
+export async function deletePlaylistByName(basePath, playlistName) {
+  return await invoke('delete_playlist_by_name', { basePath, playlistName });
 }
 
 /**
@@ -322,4 +327,21 @@ export async function addSongsToPlaylist(basePath, playlistId, songIds) {
  */
 export async function removeSongsFromPlaylist(basePath, playlistId, songIds) {
   return await invoke('remove_songs_from_playlist', { basePath, playlistId, songIds });
+}
+
+/**
+ * Rename a playlist by ID.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {number} playlistId - Playlist ID to rename
+ * @param {string} newName - New playlist name
+ * @returns {Promise<RenamePlaylistResult>} Result with old and new names
+ * 
+ * @typedef {Object} RenamePlaylistResult
+ * @property {boolean} success - Whether the rename succeeded
+ * @property {string} oldName - Previous playlist name
+ * @property {string} newName - New playlist name
+ */
+export async function renamePlaylist(basePath, playlistId, newName) {
+  return await invoke('rename_playlist', { basePath, playlistId, newName });
 }

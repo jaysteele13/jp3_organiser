@@ -43,6 +43,7 @@
 /* Optional content area */
 .content {
   margin-bottom: 1.5rem;
+  overflow: visible; /* Allow dropdowns to extend beyond content */
 }
 
 /* Action buttons container */

@@ -12,7 +12,8 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { 
   loadPlaylist, 
   addSongsToPlaylist, 
-  removeSongsFromPlaylist 
+  removeSongsFromPlaylist,
+  renamePlaylist,
 } from '../../services/libraryService';
 
 export default function usePlaylistEdit(libraryPath, playlistId) {
@@ -137,6 +138,37 @@ export default function usePlaylistEdit(libraryPath, playlistId) {
   }, []);
 
   /**
+   * Rename the playlist
+   * @param {string} newName - New playlist name
+   * @returns {Promise<{success: boolean, error?: string}>}
+   */
+  const renameCurrentPlaylist = useCallback(async (newName) => {
+    if (!playlist) return { success: false, error: 'No playlist loaded' };
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const result = await renamePlaylist(libraryPath, playlist.id, newName);
+      
+      // Update local state with new name
+      setPlaylist(prev => ({
+        ...prev,
+        name: result.newName,
+      }));
+
+      return { success: true };
+    } catch (err) {
+      console.error('Failed to rename playlist:', err);
+      const errorMessage = err?.toString() || 'Failed to rename playlist';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setIsSaving(false);
+    }
+  }, [playlist, libraryPath]);
+
+  /**
    * Set of songIds currently in playlist (for quick lookup)
    */
   const playlistSongIdSet = useMemo(() => {
@@ -159,5 +191,6 @@ export default function usePlaylistEdit(libraryPath, playlistId) {
     toggleSongSelection,
     clearSelection,
     updateSearchQuery,
+    renameCurrentPlaylist,
   };
 }
