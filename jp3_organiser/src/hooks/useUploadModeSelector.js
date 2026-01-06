@@ -11,14 +11,19 @@
  * - ARTIST: Show context form (artist)
  * - PLAYLIST: Show context form (playlist name)
  * 
+ * @param {Object} options
+ * @param {string} options.libraryPath - Library path for creating empty playlists
+ * @param {function} options.navigate - React Router navigate function
+ * @param {Object} options.toast - Toast hook instance with showToast method
  * @returns {Object} Mode selection state and handlers
  */
 
 import { useState, useCallback } from 'react';
 import { useUploadCache } from './useUploadCache';
-import { UPLOAD_MODE } from '../utils';
+import { UPLOAD_MODE, TABS } from '../utils';
+import { createPlaylist } from '../services/libraryService';
 
-export function useUploadModeSelector() {
+export function useUploadModeSelector({ libraryPath, navigate, toast } = {}) {
   const cache = useUploadCache();
   
   // Local state for context form UI
@@ -65,6 +70,25 @@ export function useUploadModeSelector() {
     setPendingMode(null);
   }, []);
 
+  // Handle create empty playlist (playlist mode only)
+  const handleCreateEmptyPlaylist = useCallback(async (playlistName) => {
+    if (!libraryPath) {
+      console.error('Library path not available');
+      return;
+    }
+
+    try {
+      await createPlaylist(libraryPath, playlistName, []);
+      setShowContextForm(false);
+      setPendingMode(null);
+      toast?.showToast(`Created empty playlist "${playlistName}"`, 'success');
+      navigate?.('/view', { state: { tab: TABS.PLAYLISTS } });
+    } catch (err) {
+      console.error('Failed to create empty playlist:', err);
+      toast?.showToast('Failed to create playlist', 'error');
+    }
+  }, [libraryPath, navigate, toast]);
+
   // Handle change mode button click
   const handleChangeMode = useCallback(() => {
     cache.setModeSelected(false);
@@ -83,6 +107,7 @@ export function useUploadModeSelector() {
     handleSelectPlaylistMode,
     handleContextSubmit,
     handleContextCancel,
+    handleCreateEmptyPlaylist,
     handleChangeMode,
   };
 }

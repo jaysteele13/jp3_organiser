@@ -12,7 +12,8 @@
  * Artist mode: Shows Artist field only
  * 
  * Playlist mode: Shows Playlist Name field only
- *   - Songs will be saved to library AND added to a new playlist
+ *   - "Select Files" saves songs to library AND adds them to a new playlist
+ *   - "Create Empty" creates an empty playlist (no songs required)
  * 
  * Uses ConfirmModal as the base modal and reuses autosuggest patterns
  * from MetadataForm for library-based suggestions.
@@ -21,6 +22,7 @@
  * @param {string} props.mode - 'album', 'artist', or 'playlist' from UPLOAD_MODE
  * @param {function} props.onSubmit - Called with context { album, artist, year, playlist }
  * @param {function} props.onCancel - Called when modal is cancelled
+ * @param {function} props.onCreateEmpty - Called with playlist name when creating empty playlist (playlist mode only)
  */
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
@@ -186,7 +188,7 @@ function AlbumSuggestibleInput({
   );
 }
 
-export default function ContextForm({ mode, onSubmit, onCancel }) {
+export default function ContextForm({ mode, onSubmit, onCancel, onCreateEmpty }) {
   const { library } = useLibraryContext();
   
   const [formData, setFormData] = useState({
@@ -305,10 +307,19 @@ export default function ContextForm({ mode, onSubmit, onCancel }) {
     onSubmit(context);
   };
 
+  const handleCreateEmpty = () => {
+    // Validate playlist name
+    if (!formData.playlist.trim()) {
+      setErrors({ playlist: 'Playlist name is required' });
+      return;
+    }
+    onCreateEmpty(formData.playlist.trim());
+  };
+
   return (
     <ConfirmModal
       title={title}
-      confirmLabel="Select Files"
+      confirmLabel={isPlaylistMode ? "Add Songs" : "Select Files"}
       cancelLabel="Cancel"
       onConfirm={handleSubmit}
       onCancel={onCancel}
@@ -403,10 +414,21 @@ export default function ContextForm({ mode, onSubmit, onCancel }) {
           {isAlbumMode 
             ? 'These values will override AcousticID album and artist results for all selected files.'
             : isPlaylistMode
-            ? 'Songs will be added to the library and grouped into this playlist.'
+            ? 'Add songs to the library and group them into this playlist, or create an empty playlist to add songs later.'
             : 'This artist will override AcousticID artist results for all selected files.'
           }
         </p>
+
+        {/* Create Empty button - playlist mode only */}
+        {isPlaylistMode && onCreateEmpty && (
+          <button
+            type="button"
+            className={styles.createEmptyBtn}
+            onClick={handleCreateEmpty}
+          >
+            Create Empty Playlist
+          </button>
+        )}
       </div>
     </ConfirmModal>
   );
