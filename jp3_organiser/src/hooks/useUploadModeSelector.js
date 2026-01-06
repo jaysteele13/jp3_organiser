@@ -28,9 +28,6 @@ export function useUploadModeSelector({ libraryPath, navigate, toast } = {}) {
   const cache = useUploadCache();
   const location = useLocation();
   
-  // Track if we've already handled navigation state (prevent re-processing on re-renders)
-  const hasHandledNavState = useRef(false);
-  
   // Local state for context form UI
   const [showContextForm, setShowContextForm] = useState(false);
   const [pendingMode, setPendingMode] = useState(null);
@@ -40,13 +37,20 @@ export function useUploadModeSelector({ libraryPath, navigate, toast } = {}) {
   const [playlistsLoading, setPlaylistsLoading] = useState(false);
 
   // Handle pre-set context from navigation state (e.g., from PlaylistEdit "Upload New Songs" button)
-  // This runs once when navigating to the upload page with state
+  // Using a ref to track the last processed state key prevents re-processing
+  const processedNavStateKey = useRef(null);
+  
   useEffect(() => {
     const navState = location.state;
     
-    // Only process if we have navigation state with mode and haven't handled it yet
-    if (navState?.mode && navState?.playlistId && !hasHandledNavState.current) {
-      hasHandledNavState.current = true;
+    // Create a unique key for this navigation state
+    const stateKey = navState?.mode && navState?.playlistId 
+      ? `${navState.mode}-${navState.playlistId}` 
+      : null;
+    
+    // Only process if we have valid state and haven't processed this exact state before
+    if (stateKey && stateKey !== processedNavStateKey.current) {
+      processedNavStateKey.current = stateKey;
       
       // Pre-populate the cache with the navigation state
       cache.setUploadMode(navState.mode);
@@ -60,27 +64,44 @@ export function useUploadModeSelector({ libraryPath, navigate, toast } = {}) {
       cache.setModeSelected(true);
       
       // Clear the navigation state to prevent re-processing on future navigations
-      // This replaces the current history entry without the state
       navigate('/upload', { replace: true });
     }
   }, [location.state, cache, navigate]);
 
   // Fetch playlists when showing context form in playlist mode
   useEffect(() => {
-    if (showContextForm && pendingMode === UPLOAD_MODE.PLAYLIST && libraryPath) {
+    // Early exit if conditions aren't met
+    if (!showContextForm || pendingMode !== UPLOAD_MODE.PLAYLIST || !libraryPath) {
+      return;
+    }
+
+    let isCancelled = false;
+    
+    const fetchPlaylists = async () => {
       setPlaylistsLoading(true);
-      listPlaylists(libraryPath)
-        .then((result) => {
+      try {
+        const result = await listPlaylists(libraryPath);
+        if (!isCancelled) {
           setPlaylists(result || []);
-        })
-        .catch((err) => {
+        }
+      } catch (err) {
+        if (!isCancelled) {
           console.error('Failed to load playlists:', err);
           setPlaylists([]);
-        })
-        .finally(() => {
+        }
+      } finally {
+        if (!isCancelled) {
           setPlaylistsLoading(false);
-        });
-    }
+        }
+      }
+    };
+
+    fetchPlaylists();
+
+    // Cleanup: cancel any pending state updates if effect re-runs or unmounts
+    return () => {
+      isCancelled = true;
+    };
   }, [showContextForm, pendingMode, libraryPath]);
 
   // Handle "Add Songs" mode - proceed directly to file selection
