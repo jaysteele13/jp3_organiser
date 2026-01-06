@@ -93,6 +93,7 @@ export async function getLibraryInfo(basePath) {
  * @property {number} songsAdded - Number of songs in library
  * @property {number} duplicatesSkipped - Number of duplicate songs skipped
  * @property {number[]} songIds - IDs of the newly saved songs
+ * @property {number[]} duplicateSongIds - IDs of existing songs that were duplicates (for playlists)
  */
 export async function saveToLibrary(basePath, files) {
   return await invoke('save_to_library', { basePath, files });

@@ -64,15 +64,28 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
         // Existing playlist mode: save to library, then add songs to playlist
         const libraryResult = await saveToLibrary(libraryPath, files);
         
-        if (libraryResult.songIds && libraryResult.songIds.length > 0) {
-          await addSongsToPlaylist(libraryPath, playlistId, libraryResult.songIds);
+        // Combine newly saved songs AND duplicate songs (which already exist in library)
+        // Both should be added to the playlist
+        const allSongIds = [
+          ...(libraryResult.songIds || []),
+          ...(libraryResult.duplicateSongIds || []),
+        ];
+        
+        if (allSongIds.length > 0) {
+          await addSongsToPlaylist(libraryPath, playlistId, allSongIds);
         }
         
-        message = `Added ${libraryResult.songIds.length} song(s) to playlist "${playlistName}". ` +
-          `${libraryResult.artistsAdded} artist(s), ${libraryResult.albumsAdded} album(s) added to library.`;
+        const newSongsCount = libraryResult.songIds?.length || 0;
+        const duplicatesCount = libraryResult.duplicateSongIds?.length || 0;
         
-        if (libraryResult.duplicatesSkipped > 0) {
-          message += ` ${libraryResult.duplicatesSkipped} duplicate(s) skipped.`;
+        message = `Added ${allSongIds.length} song(s) to playlist "${playlistName}". `;
+        
+        if (newSongsCount > 0) {
+          message += `${libraryResult.artistsAdded} artist(s), ${libraryResult.albumsAdded} album(s) added to library. `;
+        }
+        
+        if (duplicatesCount > 0) {
+          message += `${duplicatesCount} existing song(s) also added to playlist.`;
         }
       } else if (isPlaylistMode && playlistName) {
         // New playlist mode: save to library AND create playlist
