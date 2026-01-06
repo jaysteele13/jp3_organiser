@@ -287,8 +287,17 @@ export default function ContextForm({
       }
     } else if (isPlaylistMode) {
       if (playlistOption === 'new') {
-        if (!formData.playlist.trim()) {
+        const playlistName = formData.playlist.trim();
+        if (!playlistName) {
           newErrors.playlist = 'Playlist name is required';
+        } else {
+          // Check for duplicate playlist name (case-insensitive)
+          const isDuplicate = playlists.some(
+            p => p.name.toLowerCase() === playlistName.toLowerCase()
+          );
+          if (isDuplicate) {
+            newErrors.playlist = 'A playlist with this name already exists';
+          }
         }
       } else {
         // Existing playlist
@@ -341,12 +350,24 @@ export default function ContextForm({
   };
 
   const handleCreateEmpty = () => {
+    const playlistName = formData.playlist.trim();
+    
     // Validate playlist name
-    if (!formData.playlist.trim()) {
+    if (!playlistName) {
       setErrors({ playlist: 'Playlist name is required' });
       return;
     }
-    onCreateEmpty(formData.playlist.trim());
+    
+    // Check for duplicate playlist name (case-insensitive)
+    const isDuplicate = playlists.some(
+      p => p.name.toLowerCase() === playlistName.toLowerCase()
+    );
+    if (isDuplicate) {
+      setErrors({ playlist: 'A playlist with this name already exists' });
+      return;
+    }
+    
+    onCreateEmpty(playlistName);
   };
 
   return (
