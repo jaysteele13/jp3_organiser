@@ -4,8 +4,8 @@
  * Persistent bottom bar displaying the currently playing track
  * with playback controls and progress slider.
  * 
- * This component should be rendered at the app root level
- * and remains visible across all routes.
+ * Always visible at the bottom of the app. Shows empty state
+ * when no track is playing.
  */
 
 import React, { useState } from 'react';
@@ -38,12 +38,7 @@ export default function PlayerBar() {
 
   const [isQueueOpen, setIsQueueOpen] = useState(false);
 
-  // Don't render if no track has ever been loaded
   const hasTrack = currentTrack !== null;
-
-  if (!hasTrack) {
-    return null;
-  }
 
   const handleToggleQueue = () => {
     setIsQueueOpen(prev => !prev);

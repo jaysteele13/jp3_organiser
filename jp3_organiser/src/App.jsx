@@ -7,24 +7,19 @@ import Upload from './pages/Upload';
 import View from './pages/View';
 import Player from './pages/Player';
 import PlaylistEdit from './pages/PlaylistEdit';
-import { useKeyboardShortcut, UploadCacheProvider, PlayerProvider, usePlayer } from './hooks';
+import { useKeyboardShortcut, UploadCacheProvider, PlayerProvider } from './hooks';
 
 /**
- * AppContent - Inner component that uses player context
- * 
- * Separated to access usePlayer hook for conditional styling.
+ * AppContent - Inner component wrapped by providers
  */
 function AppContent({ isNavCollapsed, onToggle }) {
-  const { currentTrack } = usePlayer();
-  const hasPlayer = currentTrack !== null;
-
   return (
     <div className={styles.appLayout}>
       <Navbar isCollapsed={isNavCollapsed} onToggle={onToggle} />
       <main className={`
         ${styles.content} 
         ${isNavCollapsed ? styles.contentCollapsed : ''}
-        ${hasPlayer ? styles.hasPlayerBar : ''}
+        ${styles.hasPlayerBar}
       `}>
         <Routes>
           <Route path="/" element={<Navigate to="/upload" replace />} />

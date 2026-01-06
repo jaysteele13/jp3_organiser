@@ -2,13 +2,15 @@
 
 ## Project Overview
 
-**JP3 Organiser** is a desktop application that prepares music files for playback on an ESP32 microcontroller. It formats audio files and metadata into an optimized `library.bin` format that the ESP32 can read efficiently without RAM issues.
+**JP3 Organiser** is a desktop application that prepares music files for playback on an ESP32 microcontroller AND serves as a full-featured desktop music player. It formats audio files and metadata into an optimized `library.bin` format that the ESP32 can read efficiently without RAM issues.
 
 **Tagline:** "Turn your SD card into an MP3 Haven. Think Local Spotify - offline, and running on an ESP32."
 
 ### Core Flow
 ```
 User's Audio Files → JP3 Organiser → library.bin → MicroSD Card → ESP32 → Music Playback
+                          ↓
+                   Desktop Playback (like Spotify)
 ```
 
 ## Tech Stack
@@ -34,9 +36,15 @@ jp3_organiser/
 │   │   ├── Header/           # App header with title/description
 │   │   ├── LoadingState/     # Reusable loading spinner
 │   │   ├── Navbar/           # Collapsible sidebar navigation
+│   │   ├── PlayerBar/        # Persistent bottom audio player bar
 │   │   ├── PlaylistComboBox/ # Searchable dropdown for playlist selection
+│   │   ├── QueueDrawer/      # Slide-out queue management panel
 │   │   └── Toast/            # Dismissible notification popup
 │   ├── hooks/                # Custom React hooks
+│   │   ├── player/           # Audio player hooks
+│   │   │   ├── useAudioElement.js   # Audio element lifecycle, blob loading
+│   │   │   ├── useQueueManager.js   # Queue state, navigation, reorder
+│   │   │   └── playerUtils.js       # Helper functions, REPEAT_MODE constant
 │   │   ├── useKeyboardShortcut.js  # Keyboard shortcut handler
 │   │   ├── useLibraryConfig.js     # Library path configuration
 │   │   ├── useLibrary.js           # Library data fetching
@@ -47,13 +55,17 @@ jp3_organiser/
 │   │   ├── useAutoSuggest.js       # Fuzzy-match autosuggest hook
 │   │   ├── useToast.js             # Toast notification state management
 │   │   ├── useUploadModeSelector.js # Upload mode selection logic
-│   │   └── useUploadStageLogic.js  # Display state & review navigation
+│   │   ├── useUploadStageLogic.js  # Display state & review navigation
+│   │   └── usePlayerContext.jsx    # Global audio player context
 │   ├── pages/                # Route-level page components
 │   │   ├── About/            # About page with info cards
+│   │   ├── Player/           # Music player with library browsing
+│   │   │   └── components/   # TabSelector, TabContent, SongList, AlbumList, ArtistList, PlaylistList
 │   │   ├── Upload/           # File upload and metadata workflow
 │   │   │   └── components/   # UploadModeSelector, ContextForm, ProcessFile, ReviewScreen, MetadataForm, SaveToLibrary
-│   │   └── View/             # Library viewer with tabs
-│   │       └── components/   # StatsBar, ViewHeader, Tabs, DeleteConfirmModal
+│   │   ├── View/             # Library viewer with tabs
+│   │   │   └── components/   # StatsBar, ViewHeader, Tabs, DeleteConfirmModal
+│   │   └── PlaylistEdit/     # Full-page playlist editor
 │   ├── services/             # API services, Tauri command wrappers
 │   │   ├── audioService.js   # Audio file processing & metadata
 │   │   └── libraryService.js # Library CRUD operations
@@ -115,9 +127,14 @@ jp3_organiser/
 19. **Upload to Existing Playlist** - Navigate from PlaylistEdit to Upload with pre-set playlist context
 20. **Duplicate Song Handling** - When uploading songs already in library, their IDs are reused for playlist inclusion
 21. **Playlist Rename** - Rename playlists with duplicate name validation
+22. **Desktop Music Player** - Full-featured audio playback with queue management
+23. **Queue Drawer** - Slide-out panel to view, reorder, and manage playback queue
+24. **Persistent PlayerBar** - Always-visible bottom bar with playback controls
 
 ### Planned
 - SD Card export workflow
+- Keyboard shortcuts (space=play/pause, arrows for next/prev)
+- Volume control slider
 
 ## Coding Standards
 
@@ -368,6 +385,8 @@ Models are in `src-tauri/src/models/`:
 | `useToast(duration?)` | Toast notification state management with auto-dismiss (default 5s) |
 | `useUploadModeSelector()` | Upload mode selection logic - handles mode transitions, context form, and navigation state for pre-set playlist context |
 | `useUploadStageLogic(cache, workflow, modeSelector)` | Consolidates display state conditions and review navigation utilities |
+| `usePlayer()` | Hook to access global player context (playback, queue, controls) |
+| `PlayerProvider` | Context provider for audio player state (wraps app in App.jsx) |
 | `UploadCacheProvider` | Context provider wrapping app for upload state persistence |
 | `LibraryProvider` | Context provider for library data (wraps UploadFile in Upload.jsx) |
 
@@ -380,6 +399,7 @@ Uses React Router for navigation:
 | `/` | Redirects to `/upload` | Default route |
 | `/upload` | Upload | File upload workflow |
 | `/view` | View | Library browser |
+| `/player` | Player | Music player with library browsing |
 | `/playlist/:id` | PlaylistEdit | Full-page playlist editor |
 | `/about` | About | App information |
 
@@ -481,6 +501,123 @@ The PlaylistEdit page (`src/pages/PlaylistEdit/`) provides a full-screen editor 
 - "Upload New Songs" button navigates to Upload with pre-set playlist context
 - Back button returns to View page with Playlists tab active
 
+## Player Page
+
+The Player page (`src/pages/Player/`) provides a Spotify-like music browsing and playback experience:
+
+| Component | Purpose |
+|-----------|---------|
+| `Player.jsx` | Main page with library loading, stats, and tabbed browsing |
+| `TabSelector.jsx` | Tab buttons for Songs/Albums/Artists/Playlists |
+| `TabContent.jsx` | Switches content based on active tab |
+| `SongList.jsx` | Song list with Play/Queue buttons |
+| `AlbumList.jsx` | Expandable album list with album-level Play/Queue |
+| `ArtistList.jsx` | Expandable artist list with artist-level Play All/Queue |
+| `PlaylistList.jsx` | Expandable playlist list with Play/Queue |
+
+**Features:**
+- Browse library by Songs, Albums, Artists, or Playlists
+- Play individual tracks or entire albums/artists/playlists
+- Add to queue functionality
+- Current track highlighting in lists
+- Expandable groups (albums show their songs when clicked)
+
+## PlayerBar Component
+
+The PlayerBar (`src/components/PlayerBar/`) is always visible at the bottom of the app:
+
+| Component | Purpose |
+|-----------|---------|
+| `PlayerBar.jsx` | Main container, manages queue drawer state |
+| `TrackInfo.jsx` | Displays current track title/artist/album |
+| `PlaybackControls.jsx` | Play/pause, prev/next, shuffle, repeat buttons |
+| `ProgressSlider.jsx` | Seekable progress bar with time display |
+
+**Features:**
+- Always visible (shows "No track selected" when empty)
+- Play/Pause, Previous, Next controls
+- Shuffle toggle and repeat mode cycling (Off → All → One)
+- Progress slider with seek functionality
+- Queue button showing track count
+
+## QueueDrawer Component
+
+The QueueDrawer (`src/components/QueueDrawer/`) slides out from the right:
+
+**Features:**
+- View all tracks in queue
+- Current track highlighting with green indicator
+- Click any track to jump to it
+- Drag-to-reorder tracks (drag handle on left)
+- Remove individual tracks (X button on hover)
+- Clear entire queue button
+- Track count in footer
+- Backdrop click to close
+
+## Audio Player Architecture
+
+The player system uses a layered hook architecture:
+
+```
+App.jsx
+└── PlayerProvider (usePlayerContext.jsx)
+    ├── useAudioElement.js  - Audio element lifecycle
+    │   └── HTML5 Audio API, blob URL loading via Tauri readFile
+    └── useQueueManager.js  - Queue state management
+        └── Queue array, currentIndex, shuffle, repeat modes
+```
+
+### Player Context API (`usePlayer()`)
+
+| Property/Method | Type | Description |
+|-----------------|------|-------------|
+| `queue` | Track[] | Current queue of tracks |
+| `currentIndex` | number | Index of current track (-1 if none) |
+| `currentTrack` | Track \| null | Currently playing track |
+| `isPlaying` | boolean | Whether audio is playing |
+| `isLoading` | boolean | Whether audio is loading |
+| `position` | number | Current position in seconds |
+| `duration` | number | Track duration in seconds |
+| `shuffle` | boolean | Shuffle mode enabled |
+| `repeatMode` | REPEAT_MODE | OFF, ALL, or ONE |
+| `hasNext` | boolean | Whether next track exists |
+| `hasPrev` | boolean | Whether previous track exists |
+| `playTrack(track, queue)` | function | Play track within queue context |
+| `playNow(track)` | function | Play single track, clear queue |
+| `addToQueue(tracks)` | function | Add track(s) to end of queue |
+| `togglePlayPause()` | function | Toggle play/pause |
+| `next()` | function | Skip to next track |
+| `prev()` | function | Go to previous (or restart if >3s in) |
+| `seek(seconds)` | function | Seek to position |
+| `skipToIndex(index)` | function | Jump to queue index |
+| `removeFromQueue(index)` | function | Remove track at index |
+| `reorderQueue(from, to)` | function | Move track in queue |
+| `clearQueue()` | function | Clear entire queue |
+| `toggleShuffle()` | function | Toggle shuffle mode |
+| `cycleRepeatMode()` | function | Cycle OFF → ALL → ONE → OFF |
+| `setLibraryPath(path)` | function | Set library path for audio loading |
+| `isCurrentTrack(id)` | function | Check if track is currently playing |
+
+### Audio Path Resolution
+
+Songs in the library have relative paths (e.g., `00/001.mp3`). The player resolves absolute paths:
+
+```
+{libraryPath}/jp3/music/{relativePath}
+```
+
+Audio is loaded via Tauri's `readFile` command and converted to blob URLs for the HTML5 Audio element.
+
+### REPEAT_MODE Constant
+
+```javascript
+const REPEAT_MODE = {
+  OFF: 'off',   // Stop at end of queue
+  ALL: 'all',   // Loop entire queue
+  ONE: 'one',   // Loop current track
+};
+```
+
 ## Available Tauri Plugins
 
 - `tauri-plugin-dialog` - Native file picker dialogs
@@ -581,9 +718,11 @@ The upload workflow uses an explicit state machine (`useWorkflowMachine`) to man
 ```
 App.jsx
 └── UploadCacheProvider (upload state persists across navigation)
-    └── Upload.jsx
-        └── LibraryProvider (library data for autosuggest)
-            └── UploadFile → ReviewScreen → MetadataForm
+    └── PlayerProvider (global audio player state)
+        └── AppContent
+            ├── Navbar
+            ├── Routes (Upload, View, Player, PlaylistEdit, About)
+            └── PlayerBar (always visible)
 ```
 
 ## Future Considerations
@@ -591,3 +730,16 @@ App.jsx
 - State management (Context API or Zustand) as app grows
 - Don't use TypeScript - this is a ReactJS project
 - Testing setup (Vitest for React, Rust tests for backend)
+
+## Known Issues / Technical Debt
+
+### Duration Not Displayed
+Songs don't show duration in the Player page because:
+1. ID3 tags often don't include duration (TLEN frame)
+2. The fingerprint service (`fpcalc`) DOES return duration, but it's not being passed through to `AudioMetadata` when saving
+
+**Potential fix:** In `src-tauri/src/commands/audio.rs`, after fingerprint processing, set:
+```rust
+tracked_file.metadata.duration_secs = Some(audio_finger_print.duration_seconds);
+```
+This needs to be added in both `process_audio_files()` and `process_single_audio_file()` functions.
