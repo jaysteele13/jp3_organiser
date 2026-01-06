@@ -4,8 +4,11 @@
  * Displays the "Ready to Save" stage of the upload workflow.
  * Shows confirmed files and provides save/back/reset actions.
  * 
- * In Playlist mode, calls save_to_playlist which saves songs to library
- * AND creates a new playlist with those songs.
+ * Playlist modes:
+ * - New playlist (playlistId = null): Uses save_to_playlist which saves songs 
+ *   to library AND creates a new playlist with those songs.
+ * - Existing playlist (playlistId = number): Saves songs to library, then adds
+ *   the returned song IDs to the existing playlist.
  * 
  * @param {Object} props
  * @param {string} props.libraryPath - The configured library directory path
@@ -14,7 +17,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { saveToLibrary, saveToPlaylist, MetadataStatus } from '../../../../services';
+import { saveToLibrary, saveToPlaylist, addSongsToPlaylist, MetadataStatus } from '../../../../services';
 import { useUploadCache } from '../../../../hooks';
 import { UPLOAD_MODE } from '../../../../utils';
 import styles from './SaveToLibrary.module.css';
@@ -28,6 +31,8 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
   
   const isPlaylistMode = uploadMode === UPLOAD_MODE.PLAYLIST;
   const playlistName = uploadContext?.playlist;
+  const playlistId = uploadContext?.playlistId;
+  const isExistingPlaylist = isPlaylistMode && playlistId !== null;
 
   const handleSaveToLibrary = useCallback(async () => {
     if (!libraryPath) {
@@ -55,15 +60,29 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
 
       let message;
       
-      if (isPlaylistMode && playlistName) {
-        // Playlist mode: save to library AND create playlist
+      if (isExistingPlaylist) {
+        // Existing playlist mode: save to library, then add songs to playlist
+        const libraryResult = await saveToLibrary(libraryPath, files);
+        
+        if (libraryResult.songIds && libraryResult.songIds.length > 0) {
+          await addSongsToPlaylist(libraryPath, playlistId, libraryResult.songIds);
+        }
+        
+        message = `Added ${libraryResult.songIds.length} song(s) to playlist "${playlistName}". ` +
+          `${libraryResult.artistsAdded} artist(s), ${libraryResult.albumsAdded} album(s) added to library.`;
+        
+        if (libraryResult.duplicatesSkipped > 0) {
+          message += ` ${libraryResult.duplicatesSkipped} duplicate(s) skipped.`;
+        }
+      } else if (isPlaylistMode && playlistName) {
+        // New playlist mode: save to library AND create playlist
         const result = await saveToPlaylist(libraryPath, playlistName, files);
         
         message = `Created playlist "${result.playlistName}" with ${result.songsAdded} song(s). ` +
           `${result.artistsAdded} artist(s), ${result.albumsAdded} album(s).`;
         
         if (result.duplicatesSkipped > 0) {
-          message += ` ${result.duplicatesSkipped} duplicate(s) skipped.`;
+          message += ` ${result.duplicatesSkipped} skipped.`;
         }
       } else {
         // Normal mode: save to library only
@@ -85,7 +104,7 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
     } finally {
       setIsSaving(false);
     }
-  }, [libraryPath, confirmedFiles, removeConfirmedFiles, workflow, toast, isPlaylistMode, playlistName]);
+  }, [libraryPath, confirmedFiles, removeConfirmedFiles, workflow, toast, isPlaylistMode, isExistingPlaylist, playlistName, playlistId]);
 
   const handleBackToReview = useCallback(() => {
     const startIndex = confirmedFiles.findIndex(f => !f.isConfirmed);
@@ -102,12 +121,19 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
     <div className={styles.completeContainer}>
       <div className={styles.completeHeader}>
         <h3 className={styles.completeTitle}>
-          {isPlaylistMode ? 'Ready to Create Playlist' : 'Ready to Add to Library'}
+          {isExistingPlaylist 
+            ? 'Ready to Add to Playlist'
+            : isPlaylistMode 
+              ? 'Ready to Create Playlist' 
+              : 'Ready to Add to Library'
+          }
         </h3>
         <p className={styles.completeMessage}>
-          {isPlaylistMode 
+          {isExistingPlaylist
             ? `${confirmedFiles.length} file(s) will be added to playlist "${playlistName}".`
-            : `${confirmedFiles.length} file(s) confirmed and ready to be added.`
+            : isPlaylistMode 
+              ? `${confirmedFiles.length} file(s) will create a new playlist "${playlistName}".`
+              : `${confirmedFiles.length} file(s) confirmed and ready to be added.`
           }
         </p>
       </div>
@@ -124,9 +150,11 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
         >
           {isSaving 
             ? 'Saving...' 
-            : isPlaylistMode
-              ? `Create Playlist with ${confirmedFiles.length} Song(s)`
-              : `Add ${confirmedFiles.length} File(s) to Library`
+            : isExistingPlaylist
+              ? `Add ${confirmedFiles.length} Song(s) to Playlist`
+              : isPlaylistMode
+                ? `Create Playlist with ${confirmedFiles.length} Song(s)`
+                : `Add ${confirmedFiles.length} File(s) to Library`
           }
         </button>
 

@@ -78,6 +78,8 @@ export default function UploadFile({ libraryPath }) {
             onSubmit={modeSelector.handleContextSubmit}
             onCancel={modeSelector.handleContextCancel}
             onCreateEmpty={modeSelector.handleCreateEmptyPlaylist}
+            playlists={modeSelector.playlists}
+            playlistsLoading={modeSelector.playlistsLoading}
           />
         )}
 

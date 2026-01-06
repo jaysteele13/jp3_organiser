@@ -317,6 +317,7 @@ pub fn save_to_library(
 
     let mut files_saved = 0u32;
     let mut duplicates_skipped = 0u32;
+    let mut saved_song_ids: Vec<u32> = Vec::new();
 
     for file_to_save in files {
         let source = Path::new(&file_to_save.source_path);
@@ -408,6 +409,9 @@ pub fn save_to_library(
         let song_key = (title_string_id, artist_id, album_id);
         song_set.insert(song_key);
 
+        // Track the song ID before adding
+        let new_song_id = songs.len() as u32;
+
         songs.push(SongEntry::new(
             title_string_id,
             artist_id,
@@ -417,6 +421,7 @@ pub fn save_to_library(
             metadata.duration_secs.unwrap_or(0) as u16,
         ));
 
+        saved_song_ids.push(new_song_id);
         files_in_bucket += 1;
         files_saved += 1;
     }
@@ -465,6 +470,7 @@ pub fn save_to_library(
         albums_added: albums.len() as u32 - existing_album_count,
         songs_added: songs.len() as u32 - existing_song_count,
         duplicates_skipped,
+        song_ids: saved_song_ids,
     })
 }
 

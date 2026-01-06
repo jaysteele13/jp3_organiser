@@ -8,13 +8,13 @@
  * Route: /playlist/:id
  */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLibraryConfig } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
 import { deletePlaylistByName } from '../../services/libraryService';
 import { LoadingState, ErrorState, EmptyState, ConfirmModal } from '../../components';
-import { TABS } from '../../utils/enums';
+import { TABS, UPLOAD_MODE } from '../../utils/enums';
 import usePlaylistEdit from './usePlaylistEdit';
 import styles from './PlaylistEdit.module.css';
 
@@ -138,6 +138,18 @@ export default function PlaylistEdit() {
     navigate('/view', { state: { tab: TABS.PLAYLISTS } });
   };
 
+  // Navigate to upload page with pre-set playlist context
+  const handleUploadToPlaylist = useCallback(() => {
+    if (!playlist) return;
+    navigate('/upload', { 
+      state: { 
+        mode: UPLOAD_MODE.PLAYLIST,
+        playlistId: playlist.id,
+        playlistName: playlist.name,
+      }
+    });
+  }, [navigate, playlist]);
+
   // Delete state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -213,13 +225,22 @@ export default function PlaylistEdit() {
             </span>
           </div>
         </div>
-        <button 
-          className={styles.deleteBtn}
-          onClick={handleDeleteClick}
-          title="Delete playlist"
-        >
-          Delete Playlist
-        </button>
+        <div className={styles.headerActions}>
+          <button 
+            className={styles.uploadBtn}
+            onClick={handleUploadToPlaylist}
+            title="Upload new songs directly to this playlist"
+          >
+            Upload New Songs
+          </button>
+          <button 
+            className={styles.deleteBtn}
+            onClick={handleDeleteClick}
+            title="Delete playlist"
+          >
+            Delete Playlist
+          </button>
+        </div>
       </header>
 
       {/* Error banner */}

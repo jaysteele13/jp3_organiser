@@ -74,6 +74,7 @@ export function UploadCacheProvider({ children }) {
     artist: null,
     year: null,
     playlist: null,
+    playlistId: null, // null = create new playlist, number = existing playlist
   });
   // Whether user has selected a mode (persists across navigation)
   const [modeSelected, setModeSelected] = useState(false);
@@ -156,7 +157,7 @@ export function UploadCacheProvider({ children }) {
     setTrackedFiles([]);
     setError(null);
     setUploadMode(UPLOAD_MODE.SONGS);
-    setUploadContext({ album: null, artist: null, year: null, playlist: null });
+    setUploadContext({ album: null, artist: null, year: null, playlist: null, playlistId: null });
     setModeSelected(false);
     setWorkflowState({
       stage: UploadStage.PROCESS,
@@ -167,7 +168,7 @@ export function UploadCacheProvider({ children }) {
 
   // Clear just the upload context (mode remains)
   const clearUploadContext = useCallback(() => {
-    setUploadContext({ album: null, artist: null, year: null, playlist: null });
+    setUploadContext({ album: null, artist: null, year: null, playlist: null, playlistId: null });
   }, []);
 
   // Update metadata for a file and mark as complete

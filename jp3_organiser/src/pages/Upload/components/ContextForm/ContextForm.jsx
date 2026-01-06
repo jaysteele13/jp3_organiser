@@ -11,8 +11,9 @@
  * 
  * Artist mode: Shows Artist field only
  * 
- * Playlist mode: Shows Playlist Name field only
- *   - "Select Files" saves songs to library AND adds them to a new playlist
+ * Playlist mode: Shows option to create new or add to existing playlist
+ *   - Create New: Enter playlist name, then add songs
+ *   - Add to Existing: Select from searchable dropdown, then add songs
  *   - "Create Empty" creates an empty playlist (no songs required)
  * 
  * Uses ConfirmModal as the base modal and reuses autosuggest patterns
@@ -20,13 +21,15 @@
  * 
  * @param {Object} props
  * @param {string} props.mode - 'album', 'artist', or 'playlist' from UPLOAD_MODE
- * @param {function} props.onSubmit - Called with context { album, artist, year, playlist }
+ * @param {function} props.onSubmit - Called with context { album, artist, year, playlist, playlistId }
  * @param {function} props.onCancel - Called when modal is cancelled
  * @param {function} props.onCreateEmpty - Called with playlist name when creating empty playlist (playlist mode only)
+ * @param {Array} props.playlists - Array of existing playlists for selection (playlist mode only)
+ * @param {boolean} props.playlistsLoading - Whether playlists are loading (playlist mode only)
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { ConfirmModal } from '../../../../components';
+import { useState, useMemo, useCallback } from 'react';
+import { ConfirmModal, PlaylistComboBox } from '../../../../components';
 import { useAutoSuggest, SuggestionSource, useLibraryContext, useDebounce } from '../../../../hooks';
 import { extractLibraryEntries, extractAlbumsWithMetadata, findAlbumMatches, UPLOAD_MODE } from '../../../../utils';
 import styles from './ContextForm.module.css';
@@ -188,7 +191,14 @@ function AlbumSuggestibleInput({
   );
 }
 
-export default function ContextForm({ mode, onSubmit, onCancel, onCreateEmpty }) {
+export default function ContextForm({ 
+  mode, 
+  onSubmit, 
+  onCancel, 
+  onCreateEmpty,
+  playlists = [],
+  playlistsLoading = false,
+}) {
   const { library } = useLibraryContext();
   
   const [formData, setFormData] = useState({
@@ -200,6 +210,10 @@ export default function ContextForm({ mode, onSubmit, onCancel, onCreateEmpty })
   const [errors, setErrors] = useState({});
   // Track if artist/year were auto-filled from album selection
   const [autoFilledFromAlbum, setAutoFilledFromAlbum] = useState(false);
+  
+  // Playlist mode: "new" or "existing"
+  const [playlistOption, setPlaylistOption] = useState('new');
+  const [selectedPlaylist, setSelectedPlaylist] = useState(null);
 
   // Extract library entries for suggestions
   const libraryData = useMemo(() => {
@@ -272,8 +286,15 @@ export default function ContextForm({ mode, onSubmit, onCancel, onCreateEmpty })
         newErrors.artist = 'Artist name is required';
       }
     } else if (isPlaylistMode) {
-      if (!formData.playlist.trim()) {
-        newErrors.playlist = 'Playlist name is required';
+      if (playlistOption === 'new') {
+        if (!formData.playlist.trim()) {
+          newErrors.playlist = 'Playlist name is required';
+        }
+      } else {
+        // Existing playlist
+        if (!selectedPlaylist) {
+          newErrors.selectedPlaylist = 'Please select a playlist';
+        }
       }
     } else {
       // Artist mode
@@ -301,8 +322,20 @@ export default function ContextForm({ mode, onSubmit, onCancel, onCreateEmpty })
       artist: formData.artist.trim() || null,
       album: isAlbumMode ? formData.album.trim() : null,
       year: formData.year.trim() ? parseInt(formData.year.trim(), 10) : null,
-      playlist: isPlaylistMode ? formData.playlist.trim() : null,
+      playlist: null,
+      playlistId: null,
     };
+
+    // Handle playlist mode
+    if (isPlaylistMode) {
+      if (playlistOption === 'new') {
+        context.playlist = formData.playlist.trim();
+      } else {
+        // Existing playlist
+        context.playlist = selectedPlaylist.name;
+        context.playlistId = selectedPlaylist.id;
+      }
+    }
 
     onSubmit(context);
   };
@@ -325,26 +358,84 @@ export default function ContextForm({ mode, onSubmit, onCancel, onCreateEmpty })
       onCancel={onCancel}
     >
       <div className={styles.form}>
-        {/* Playlist field - only in playlist mode */}
+        {/* Playlist mode - radio options for new vs existing */}
         {isPlaylistMode && (
-          <div className={styles.field}>
-            <label htmlFor="context-playlist" className={styles.label}>
-              Playlist Name <span className={styles.required}>*</span>
-            </label>
-            <input
-              type="text"
-              id="context-playlist"
-              name="playlist"
-              value={formData.playlist}
-              onChange={handleChange}
-              className={`${styles.input} ${errors.playlist ? styles.inputError : ''}`}
-              placeholder=""
-              autoFocus
-            />
-            {errors.playlist && (
-              <span className={styles.errorText}>{errors.playlist}</span>
+          <>
+            {/* Radio buttons */}
+            <div className={styles.radioGroup}>
+              <label className={styles.radioLabel}>
+                <input
+                  type="radio"
+                  name="playlistOption"
+                  value="new"
+                  checked={playlistOption === 'new'}
+                  onChange={() => {
+                    setPlaylistOption('new');
+                    setSelectedPlaylist(null);
+                    setErrors({});
+                  }}
+                  className={styles.radioInput}
+                />
+                <span className={styles.radioText}>Create New Playlist</span>
+              </label>
+              <label className={styles.radioLabel}>
+                <input
+                  type="radio"
+                  name="playlistOption"
+                  value="existing"
+                  checked={playlistOption === 'existing'}
+                  onChange={() => {
+                    setPlaylistOption('existing');
+                    setFormData(prev => ({ ...prev, playlist: '' }));
+                    setErrors({});
+                  }}
+                  className={styles.radioInput}
+                />
+                <span className={styles.radioText}>Add to Existing Playlist</span>
+              </label>
+            </div>
+
+            {/* New playlist name input */}
+            {playlistOption === 'new' && (
+              <div className={styles.field}>
+                <label htmlFor="context-playlist" className={styles.label}>
+                  Playlist Name <span className={styles.required}>*</span>
+                </label>
+                <input
+                  type="text"
+                  id="context-playlist"
+                  name="playlist"
+                  value={formData.playlist}
+                  onChange={handleChange}
+                  className={`${styles.input} ${errors.playlist ? styles.inputError : ''}`}
+                  placeholder=""
+                  autoFocus
+                />
+                {errors.playlist && (
+                  <span className={styles.errorText}>{errors.playlist}</span>
+                )}
+              </div>
             )}
-          </div>
+
+            {/* Existing playlist selector */}
+            {playlistOption === 'existing' && (
+              <div className={styles.field}>
+                <label className={styles.label}>
+                  Select Playlist <span className={styles.required}>*</span>
+                </label>
+                <PlaylistComboBox
+                  playlists={playlists}
+                  selectedPlaylist={selectedPlaylist}
+                  onSelect={setSelectedPlaylist}
+                  placeholder="Search playlists..."
+                  isLoading={playlistsLoading}
+                />
+                {errors.selectedPlaylist && (
+                  <span className={styles.errorText}>{errors.selectedPlaylist}</span>
+                )}
+              </div>
+            )}
+          </>
         )}
 
         {/* Album field - only in album mode */}
@@ -414,13 +505,15 @@ export default function ContextForm({ mode, onSubmit, onCancel, onCreateEmpty })
           {isAlbumMode 
             ? 'These values will override AcousticID album and artist results for all selected files.'
             : isPlaylistMode
-            ? 'Add songs to the library and group them into this playlist, or create an empty playlist to add songs later.'
+            ? playlistOption === 'new'
+              ? 'Add songs to the library and group them into this playlist, or create an empty playlist to add songs later.'
+              : 'Upload new songs to the library and add them to the selected playlist.'
             : 'This artist will override AcousticID artist results for all selected files.'
           }
         </p>
 
-        {/* Create Empty button - playlist mode only */}
-        {isPlaylistMode && onCreateEmpty && (
+        {/* Create Empty button - playlist mode only, only for new playlists */}
+        {isPlaylistMode && playlistOption === 'new' && onCreateEmpty && (
           <button
             type="button"
             className={styles.createEmptyBtn}

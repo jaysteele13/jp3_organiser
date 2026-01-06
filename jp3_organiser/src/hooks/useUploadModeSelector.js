@@ -9,7 +9,7 @@
  * - SONGS: Direct to file selection (no context)
  * - ALBUM: Show context form (album + artist + year)
  * - ARTIST: Show context form (artist)
- * - PLAYLIST: Show context form (playlist name)
+ * - PLAYLIST: Show context form (playlist name or existing playlist)
  * 
  * @param {Object} options
  * @param {string} options.libraryPath - Library path for creating empty playlists
@@ -18,17 +18,70 @@
  * @returns {Object} Mode selection state and handlers
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useUploadCache } from './useUploadCache';
 import { UPLOAD_MODE, TABS } from '../utils';
-import { createPlaylist } from '../services/libraryService';
+import { createPlaylist, listPlaylists } from '../services/libraryService';
 
 export function useUploadModeSelector({ libraryPath, navigate, toast } = {}) {
   const cache = useUploadCache();
+  const location = useLocation();
+  
+  // Track if we've already handled navigation state (prevent re-processing on re-renders)
+  const hasHandledNavState = useRef(false);
   
   // Local state for context form UI
   const [showContextForm, setShowContextForm] = useState(false);
   const [pendingMode, setPendingMode] = useState(null);
+  
+  // Playlists for existing playlist selection
+  const [playlists, setPlaylists] = useState([]);
+  const [playlistsLoading, setPlaylistsLoading] = useState(false);
+
+  // Handle pre-set context from navigation state (e.g., from PlaylistEdit "Upload New Songs" button)
+  // This runs once when navigating to the upload page with state
+  useEffect(() => {
+    const navState = location.state;
+    
+    // Only process if we have navigation state with mode and haven't handled it yet
+    if (navState?.mode && navState?.playlistId && !hasHandledNavState.current) {
+      hasHandledNavState.current = true;
+      
+      // Pre-populate the cache with the navigation state
+      cache.setUploadMode(navState.mode);
+      cache.setUploadContext({
+        album: null,
+        artist: null,
+        year: null,
+        playlist: navState.playlistName || null,
+        playlistId: navState.playlistId,
+      });
+      cache.setModeSelected(true);
+      
+      // Clear the navigation state to prevent re-processing on future navigations
+      // This replaces the current history entry without the state
+      navigate('/upload', { replace: true });
+    }
+  }, [location.state, cache, navigate]);
+
+  // Fetch playlists when showing context form in playlist mode
+  useEffect(() => {
+    if (showContextForm && pendingMode === UPLOAD_MODE.PLAYLIST && libraryPath) {
+      setPlaylistsLoading(true);
+      listPlaylists(libraryPath)
+        .then((result) => {
+          setPlaylists(result || []);
+        })
+        .catch((err) => {
+          console.error('Failed to load playlists:', err);
+          setPlaylists([]);
+        })
+        .finally(() => {
+          setPlaylistsLoading(false);
+        });
+    }
+  }, [showContextForm, pendingMode, libraryPath]);
 
   // Handle "Add Songs" mode - proceed directly to file selection
   const handleSelectSongsMode = useCallback(() => {
@@ -99,6 +152,8 @@ export function useUploadModeSelector({ libraryPath, navigate, toast } = {}) {
     showContextForm,
     pendingMode,
     modeSelected: cache.modeSelected,
+    playlists,
+    playlistsLoading,
     
     // Handlers
     handleSelectSongsMode,
