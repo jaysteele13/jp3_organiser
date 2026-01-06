@@ -204,7 +204,7 @@
 }
 
 /* ============================================
-   RIGHT SECTION (Future: Volume/Queue)
+   RIGHT SECTION (Queue Button)
    ============================================ */
 
 .right {
@@ -212,6 +212,27 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
+}
+
+.queueBtn {
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.queueBtn:hover {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.queueBtn.active {
+  background-color: var(--primary);
+  border-color: var(--primary);
 }
 
 /* ============================================

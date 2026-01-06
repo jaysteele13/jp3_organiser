@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { loadLibrary, listPlaylists } from '../services';
+import { loadLibrary, listPlaylists, loadPlaylist } from '../services';
 
 /**
  * useLibrary Hook
@@ -21,16 +21,29 @@ export function useLibrary(libraryPath) {
     setIsLoading(true);
     setError(null);
     try {
-      // Fetch library and playlists in parallel
-      const [libraryData, playlistsData] = await Promise.all([
+      // Fetch library and playlist summaries in parallel
+      const [libraryData, playlistSummaries] = await Promise.all([
         loadLibrary(libraryPath),
         listPlaylists(libraryPath).catch(() => []), // Gracefully handle missing playlists
       ]);
 
+      // Fetch full playlist data (with songIds) for each playlist
+      let fullPlaylists = [];
+      if (playlistSummaries.length > 0) {
+        fullPlaylists = await Promise.all(
+          playlistSummaries.map(summary => 
+            loadPlaylist(libraryPath, summary.id).catch(() => ({
+              ...summary,
+              songIds: [], // Fallback if individual playlist fails to load
+            }))
+          )
+        );
+      }
+
       // Combine into single library object
       setLibrary({
         ...libraryData,
-        playlists: playlistsData,
+        playlists: fullPlaylists,
       });
     } catch (err) {
       setError(err.toString());

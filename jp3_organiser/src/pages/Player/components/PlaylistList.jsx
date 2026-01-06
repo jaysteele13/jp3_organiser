@@ -7,7 +7,6 @@
 
 import React, { useState, useMemo } from 'react';
 import { usePlayer } from '../../../hooks';
-import { formatDuration } from '../../../utils/formatters';
 import styles from './ListStyles.module.css';
 
 export default function PlaylistList({ playlists, songs }) {
@@ -114,9 +113,6 @@ export default function PlaylistList({ playlists, songs }) {
                           {song.artistName}{song.albumName ? ` - ${song.albumName}` : ''}
                         </span>
                       </div>
-                      <span className={styles.duration}>
-                        {formatDuration(song.durationSec)}
-                      </span>
                       <div className={styles.actions}>
                         <button 
                           className={styles.actionBtn}

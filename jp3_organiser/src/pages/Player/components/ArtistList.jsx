@@ -7,7 +7,6 @@
 
 import React, { useState, useMemo } from 'react';
 import { usePlayer } from '../../../hooks';
-import { formatDuration } from '../../../utils/formatters';
 import styles from './ListStyles.module.css';
 
 export default function ArtistList({ artists, songs }) {
@@ -111,9 +110,6 @@ export default function ArtistList({ artists, songs }) {
                       <span className={styles.title}>{song.title}</span>
                       <span className={styles.subtitle}>{song.albumName || 'Unknown Album'}</span>
                     </div>
-                    <span className={styles.duration}>
-                      {formatDuration(song.durationSec)}
-                    </span>
                     <div className={styles.actions}>
                       <button 
                         className={styles.actionBtn}

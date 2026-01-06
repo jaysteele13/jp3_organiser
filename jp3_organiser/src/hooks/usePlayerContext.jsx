@@ -55,6 +55,7 @@ export function PlayerProvider({ children }) {
     prev: prevTrack,
     skipToIndex,
     removeFromQueue: removeFromQueueState,
+    reorderQueue,
     toggleShuffle,
     cycleRepeatMode,
   } = queueManager;
@@ -204,6 +205,7 @@ export function PlayerProvider({ children }) {
     prev,
     skipToIndex,
     removeFromQueue,
+    reorderQueue,
 
     // Options
     toggleShuffle,

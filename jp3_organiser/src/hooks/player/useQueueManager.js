@@ -126,6 +126,36 @@ export function useQueueManager() {
   }, [queue.length, currentIndex]);
 
   /**
+   * Reorder a track in the queue (drag-and-drop).
+   * Moves track from fromIndex to toIndex.
+   */
+  const reorderQueue = useCallback((fromIndex, toIndex) => {
+    if (fromIndex < 0 || fromIndex >= queue.length) return;
+    if (toIndex < 0 || toIndex >= queue.length) return;
+    if (fromIndex === toIndex) return;
+
+    setQueue(prev => {
+      const newQueue = [...prev];
+      const [removed] = newQueue.splice(fromIndex, 1);
+      newQueue.splice(toIndex, 0, removed);
+
+      // Update currentIndex if needed
+      if (fromIndex === currentIndex) {
+        // Moving the current track
+        setCurrentIndex(toIndex);
+      } else if (fromIndex < currentIndex && toIndex >= currentIndex) {
+        // Moving a track from before current to after current
+        setCurrentIndex(curr => curr - 1);
+      } else if (fromIndex > currentIndex && toIndex <= currentIndex) {
+        // Moving a track from after current to before current
+        setCurrentIndex(curr => curr + 1);
+      }
+
+      return newQueue;
+    });
+  }, [queue.length, currentIndex]);
+
+  /**
    * Toggle shuffle mode.
    */
   const toggleShuffle = useCallback(() => {
@@ -165,6 +195,7 @@ export function useQueueManager() {
     prev,
     skipToIndex,
     removeFromQueue,
+    reorderQueue,
     toggleShuffle,
     cycleRepeatMode,
   };
