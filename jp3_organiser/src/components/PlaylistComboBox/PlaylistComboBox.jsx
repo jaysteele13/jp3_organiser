@@ -17,7 +17,7 @@
  * @param {boolean} props.isLoading - If true, shows loading state
  */
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import styles from './PlaylistComboBox.module.css';
 
 export default function PlaylistComboBox({
@@ -36,15 +36,20 @@ export default function PlaylistComboBox({
   const inputRef = useRef(null);
   const listRef = useRef(null);
 
-  // Filter playlists based on search term
-  const filteredPlaylists = playlists.filter((playlist) =>
-    playlist.name.toLowerCase().includes(searchTerm.toLowerCase())
+  // Memoize filtered playlists to avoid recalculating on every render
+  const filteredPlaylists = useMemo(() => 
+    playlists.filter((playlist) =>
+      playlist.name.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    [playlists, searchTerm]
   );
 
-  // Reset highlighted index when filtered list changes
-  useEffect(() => {
-    setHighlightedIndex(0);
-  }, [searchTerm]);
+  // Scroll a specific index into view
+  const scrollIndexIntoView = useCallback((index) => {
+    if (listRef.current?.children[index]) {
+      listRef.current.children[index].scrollIntoView({ block: 'nearest' });
+    }
+  }, []);
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -58,26 +63,15 @@ export default function PlaylistComboBox({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Scroll highlighted item into view
-  useEffect(() => {
-    if (isOpen && listRef.current) {
-      const highlightedItem = listRef.current.children[highlightedIndex];
-      if (highlightedItem) {
-        highlightedItem.scrollIntoView({ block: 'nearest' });
-      }
-    }
-  }, [highlightedIndex, isOpen]);
-
-  const handleInputChange = (e) => {
+  const handleInputChange = useCallback((e) => {
     setSearchTerm(e.target.value);
-    if (!isOpen) {
-      setIsOpen(true);
-    }
-  };
-
-  const handleInputFocus = () => {
+    setHighlightedIndex(0); // Reset highlight when search changes
     setIsOpen(true);
-  };
+  }, []);
+
+  const handleInputFocus = useCallback(() => {
+    setIsOpen(true);
+  }, []);
 
   const handleSelect = useCallback((playlist) => {
     onSelect(playlist);
@@ -85,7 +79,7 @@ export default function PlaylistComboBox({
     setIsOpen(false);
   }, [onSelect]);
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = useCallback((e) => {
     if (!isOpen) {
       if (e.key === 'ArrowDown' || e.key === 'Enter') {
         setIsOpen(true);
@@ -97,13 +91,20 @@ export default function PlaylistComboBox({
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setHighlightedIndex((prev) =>
-          prev < filteredPlaylists.length - 1 ? prev + 1 : prev
-        );
+        setHighlightedIndex((prev) => {
+          const next = prev < filteredPlaylists.length - 1 ? prev + 1 : prev;
+          // Use setTimeout to scroll after state update
+          setTimeout(() => scrollIndexIntoView(next), 0);
+          return next;
+        });
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+        setHighlightedIndex((prev) => {
+          const next = prev > 0 ? prev - 1 : 0;
+          setTimeout(() => scrollIndexIntoView(next), 0);
+          return next;
+        });
         break;
       case 'Enter':
         e.preventDefault();
@@ -117,14 +118,26 @@ export default function PlaylistComboBox({
       default:
         break;
     }
-  };
+  }, [isOpen, filteredPlaylists, highlightedIndex, handleSelect, scrollIndexIntoView]);
 
-  const handleClear = (e) => {
+  const handleClear = useCallback((e) => {
     e.stopPropagation();
     onSelect(null);
     setSearchTerm('');
     inputRef.current?.focus();
-  };
+  }, [onSelect]);
+
+  const toggleOpen = useCallback(() => {
+    if (!disabled) {
+      setIsOpen((prev) => !prev);
+    }
+  }, [disabled]);
+
+  const openDropdown = useCallback(() => {
+    if (!disabled) {
+      setIsOpen(true);
+    }
+  }, [disabled]);
 
   return (
     <div 
@@ -140,7 +153,7 @@ export default function PlaylistComboBox({
         </span>
         
         {selectedPlaylist && !isOpen ? (
-          <div className={styles.selectedValue} onClick={() => !disabled && setIsOpen(true)}>
+          <div className={styles.selectedValue} onClick={openDropdown}>
             <span className={styles.playlistIcon}>&#9835;</span>
             <span className={styles.playlistName}>{selectedPlaylist.name}</span>
             <span className={styles.songCount}>({selectedPlaylist.songCount})</span>
@@ -169,7 +182,7 @@ export default function PlaylistComboBox({
         
         <span 
           className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`}
-          onClick={() => !disabled && setIsOpen(!isOpen)}
+          onClick={toggleOpen}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="m6 9 6 6 6-6" />
