@@ -7,6 +7,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { usePlayer } from '../../../hooks';
+import PlayerSongCard from './PlayerSongCard';
 import styles from './ListStyles.module.css';
 
 export default function ArtistList({ artists, songs }) {
@@ -60,8 +61,7 @@ export default function ArtistList({ artists, songs }) {
     playTrack(song, artistSongs);
   };
 
-  const handleQueueSong = (song, e) => {
-    e.stopPropagation();
+  const handleQueueSong = (song) => {
     addToQueue(song);
   };
 
@@ -102,29 +102,14 @@ export default function ArtistList({ artists, songs }) {
             {isExpanded && (
               <div className={styles.groupSongs}>
                 {artistSongs.map((song) => (
-                  <div 
-                    key={song.id} 
-                    className={`${styles.row} ${isCurrentTrack(song.id) ? styles.playing : ''}`}
-                  >
-                    <div className={styles.info}>
-                      <span className={styles.title}>{song.title}</span>
-                      <span className={styles.subtitle}>{song.albumName || 'Unknown Album'}</span>
-                    </div>
-                    <div className={styles.actions}>
-                      <button 
-                        className={styles.actionBtn}
-                        onClick={() => handlePlaySong(song, artistSongs)}
-                      >
-                        Play
-                      </button>
-                      <button 
-                        className={`${styles.actionBtn} ${styles.queue}`}
-                        onClick={(e) => handleQueueSong(song, e)}
-                      >
-                        Queue
-                      </button>
-                    </div>
-                  </div>
+                  <PlayerSongCard
+                    key={song.id}
+                    song={song}
+                    isPlaying={isCurrentTrack(song.id)}
+                    onPlay={(s) => handlePlaySong(s, artistSongs)}
+                    onQueue={handleQueueSong}
+                    subtitle={song.albumName || 'Unknown Album'}
+                  />
                 ))}
               </div>
             )}

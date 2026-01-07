@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { usePlayer } from '../../../hooks';
+import PlayerSongCard from './PlayerSongCard';
 import styles from './ListStyles.module.css';
 
 export default function SongList({ songs }) {
@@ -19,39 +20,20 @@ export default function SongList({ songs }) {
     playTrack(song, songs);
   };
 
-  const handleQueue = (song, e) => {
-    e.stopPropagation();
+  const handleQueue = (song) => {
     addToQueue(song);
   };
 
   return (
     <div className={styles.list}>
       {songs.map((song) => (
-        <div 
-          key={song.id} 
-          className={`${styles.row} ${isCurrentTrack(song.id) ? styles.playing : ''}`}
-        >
-          <div className={styles.info}>
-            <span className={styles.title}>{song.title}</span>
-            <span className={styles.subtitle}>
-              {song.artistName}{song.albumName ? ` - ${song.albumName}` : ''}
-            </span>
-          </div>
-          <div className={styles.actions}>
-            <button 
-              className={styles.actionBtn}
-              onClick={() => handlePlay(song)}
-            >
-              Play
-            </button>
-            <button 
-              className={`${styles.actionBtn} ${styles.queue}`}
-              onClick={(e) => handleQueue(song, e)}
-            >
-              Queue
-            </button>
-          </div>
-        </div>
+        <PlayerSongCard
+          key={song.id}
+          song={song}
+          isPlaying={isCurrentTrack(song.id)}
+          onPlay={handlePlay}
+          onQueue={handleQueue}
+        />
       ))}
     </div>
   );

@@ -11,10 +11,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useLibraryConfig, usePlayer } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
 import { LoadingState, ErrorState, EmptyState, Header } from '../../components';
+import StatsBar from '../View/components/StatsBar'
 import styles from './Player.module.css';
 
 import { TABS } from '../../utils/enums';
-import TabSelector from './components/TabSelector';
+import TabSelector from '../View/components/Tabs/TabSelector';
 import TabContent from './components/TabContent';
 
 export default function Player() {
@@ -68,23 +69,11 @@ export default function Player() {
 
       {library && !isLoading && (
         <>
-          <div className={styles.statsBar}>
-            <span>{stats.songs} songs</span>
-            <span>{stats.albums} albums</span>
-            <span>{stats.artists} artists</span>
-            <span>{stats.playlists} playlists</span>
-            <button 
-              className={styles.refreshBtn}
-              onClick={handleRefresh}
-              title="Refresh library"
-            >
-              Refresh
-            </button>
-          </div>
+          <StatsBar stats={stats} />
 
           <TabSelector 
             activeTab={activeTab}
-            onTabChange={setActiveTab}
+            setActiveTab={setActiveTab}
           />
 
           <div className={styles.content}>

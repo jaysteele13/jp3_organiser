@@ -7,6 +7,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { usePlayer } from '../../../hooks';
+import PlayerSongCard from './PlayerSongCard';
 import styles from './ListStyles.module.css';
 
 export default function AlbumList({ albums, songs }) {
@@ -55,8 +56,7 @@ export default function AlbumList({ albums, songs }) {
     playTrack(song, albumSongs);
   };
 
-  const handleQueueSong = (song, e) => {
-    e.stopPropagation();
+  const handleQueueSong = (song) => {
     addToQueue(song);
   };
 
@@ -97,30 +97,15 @@ export default function AlbumList({ albums, songs }) {
             {isExpanded && (
               <div className={styles.groupSongs}>
                 {albumSongs.map((song) => (
-                  <div 
-                    key={song.id} 
-                    className={`${styles.row} ${isCurrentTrack(song.id) ? styles.playing : ''}`}
-                  >
-                    <div className={styles.info}>
-                      <span className={styles.title}>
-                        {song.trackNumber ? `${song.trackNumber}. ` : ''}{song.title}
-                      </span>
-                    </div>
-                    <div className={styles.actions}>
-                      <button 
-                        className={styles.actionBtn}
-                        onClick={() => handlePlaySong(song, albumSongs)}
-                      >
-                        Play
-                      </button>
-                      <button 
-                        className={`${styles.actionBtn} ${styles.queue}`}
-                        onClick={(e) => handleQueueSong(song, e)}
-                      >
-                        Queue
-                      </button>
-                    </div>
-                  </div>
+                  <PlayerSongCard
+                    key={song.id}
+                    song={song}
+                    isPlaying={isCurrentTrack(song.id)}
+                    onPlay={(s) => handlePlaySong(s, albumSongs)}
+                    onQueue={handleQueueSong}
+                    showTrackNumber={true}
+                    subtitle=""
+                  />
                 ))}
               </div>
             )}
