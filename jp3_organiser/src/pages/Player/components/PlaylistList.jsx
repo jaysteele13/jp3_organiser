@@ -1,8 +1,9 @@
 /**
  * PlaylistList Component
  * 
- * Displays playlists with expandable song lists.
- * Play queues all playlist songs.
+ * Displays playlists as cards in a flex grid layout.
+ * Clicking a card expands to show songs below the grid.
+ * Uses secondary (lime) color scheme.
  */
 
 import React, { useState, useMemo } from 'react';
@@ -28,8 +29,16 @@ export default function PlaylistList({ playlists, songs }) {
     if (!playlist.songIds) return [];
     return playlist.songIds
       .map(id => songMap[id])
-      .filter(Boolean); // Filter out any undefined songs
+      .filter(Boolean);
   };
+
+  // Get expanded playlist data
+  const expandedPlaylist = useMemo(() => {
+    if (!expandedPlaylistId) return null;
+    return playlists.find(p => p.id === expandedPlaylistId);
+  }, [expandedPlaylistId, playlists]);
+
+  const expandedSongs = expandedPlaylist ? getPlaylistSongs(expandedPlaylist) : [];
 
   if (playlists.length === 0) {
     return <div className={styles.empty}>No playlists in library</div>;
@@ -53,8 +62,8 @@ export default function PlaylistList({ playlists, songs }) {
     addToQueue(playlistSongs);
   };
 
-  const handlePlaySong = (song, playlistSongs) => {
-    playTrack(song, playlistSongs);
+  const handlePlaySong = (song) => {
+    playTrack(song, expandedSongs);
   };
 
   const handleQueueSong = (song) => {
@@ -62,33 +71,33 @@ export default function PlaylistList({ playlists, songs }) {
   };
 
   return (
-    <div className={styles.list}>
-      {playlists.map((playlist) => {
-        const playlistSongs = getPlaylistSongs(playlist);
-        const isExpanded = expandedPlaylistId === playlist.id;
+    <div>
+      {/* Playlist Cards Grid */}
+      <div className={styles.cardGrid}>
+        {playlists.map((playlist) => {
+          const playlistSongs = getPlaylistSongs(playlist);
+          const isExpanded = expandedPlaylistId === playlist.id;
 
-        return (
-          <div key={playlist.id}>
-            <div 
-              className={styles.groupHeader}
+          return (
+            <div
+              key={playlist.id}
+              className={`${styles.card} ${styles.playlistCard} ${isExpanded ? styles.expanded : ''}`}
               onClick={() => toggleExpand(playlist.id)}
             >
-              <div className={styles.groupInfo}>
-                <span className={styles.groupTitle}>{playlist.name}</span>
-                <span className={styles.groupSubtitle}>
-                  {playlistSongs.length} songs
-                </span>
-              </div>
-              <div className={styles.groupActions}>
-                <button 
-                  className={styles.actionBtn}
+              <span className={styles.cardTitle}>{playlist.name}</span>
+              <span className={styles.cardMeta}>
+                {playlistSongs.length} songs
+              </span>
+              <div className={styles.cardActions}>
+                <button
+                  className={styles.cardBtn}
                   onClick={(e) => handlePlayPlaylist(playlist, e)}
                   disabled={playlistSongs.length === 0}
                 >
                   Play
                 </button>
-                <button 
-                  className={`${styles.actionBtn} ${styles.queue}`}
+                <button
+                  className={`${styles.cardBtn} ${styles.queue}`}
                   onClick={(e) => handleQueuePlaylist(playlist, e)}
                   disabled={playlistSongs.length === 0}
                 >
@@ -96,27 +105,41 @@ export default function PlaylistList({ playlists, songs }) {
                 </button>
               </div>
             </div>
+          );
+        })}
+      </div>
 
-            {isExpanded && (
-              <div className={styles.groupSongs}>
-                {playlistSongs.length === 0 ? (
-                  <div className={styles.empty}>Playlist is empty</div>
-                ) : (
-                  playlistSongs.map((song, index) => (
-                    <PlayerSongCard
-                      key={`${playlist.id}-${song.id}-${index}`}
-                      song={song}
-                      isPlaying={isCurrentTrack(song.id)}
-                      onPlay={(s) => handlePlaySong(s, playlistSongs)}
-                      onQueue={handleQueueSong}
-                    />
-                  ))
-                )}
-              </div>
+      {/* Expanded Songs Section */}
+      {expandedPlaylist && (
+        <div className={styles.expandedSection}>
+          <div className={styles.expandedHeader}>
+            <span className={styles.expandedTitle}>
+              {expandedPlaylist.name}
+            </span>
+            <button
+              className={styles.closeBtn}
+              onClick={() => setExpandedPlaylistId(null)}
+            >
+              Close
+            </button>
+          </div>
+          <div className={styles.expandedSongs}>
+            {expandedSongs.length === 0 ? (
+              <div className={styles.empty}>Playlist is empty</div>
+            ) : (
+              expandedSongs.map((song, index) => (
+                <PlayerSongCard
+                  key={`${expandedPlaylist.id}-${song.id}-${index}`}
+                  song={song}
+                  isPlaying={isCurrentTrack(song.id)}
+                  onPlay={handlePlaySong}
+                  onQueue={handleQueueSong}
+                />
+              ))
             )}
           </div>
-        );
-      })}
+        </div>
+      )}
     </div>
   );
 }

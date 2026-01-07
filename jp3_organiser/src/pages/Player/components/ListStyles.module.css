@@ -2,69 +2,265 @@
  * Shared List Styles
  * 
  * Common styles for SongList, AlbumList, ArtistList, PlaylistList components.
- * Follows the same patterns as View page tables.
+ * - SongList uses row-based layout
+ * - AlbumList, ArtistList, PlaylistList use card grid layout with distinct colors
  */
 
-/* List container */
+/* ========================================
+   SONG LIST - Row Layout
+   ======================================== */
+
 .list {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-/* Individual row */
-.row {
+/* ========================================
+   CARD GRID - For Albums, Artists, Playlists
+   ======================================== */
+
+.cardGrid {
   display: flex;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  background-color: var(--tertiary);
-  border-radius: 6px;
-  transition: background-color 0.15s ease;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
-.row:hover {
-  background-color: var(--tertiary-hover);
-}
-
-.row.playing {
-  background-color: var(--quaternary);
-}
-
-/* Row info section */
-.info {
-  flex: 1;
-  min-width: 0;
+.card {
+  width: 180px;
+  padding: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.5rem;
 }
 
-.title {
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card.expanded {
+  box-shadow: 0 0 0 2px #fff;
+}
+
+/* Card info */
+.cardTitle {
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 600;
   color: #000;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.subtitle {
+.cardSubtitle {
   font-size: 0.75rem;
-  color: #444;
+  color: #333;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.duration {
-  font-size: 0.75rem;
-  color: #666;
-  margin-right: 1rem;
-  min-width: 40px;
-  text-align: right;
+.cardMeta {
+  font-size: 0.7rem;
+  color: #555;
+  margin-top: auto;
 }
 
-/* Action buttons */
+/* Card actions */
+.cardActions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.cardBtn {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.65rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  box-shadow: none;
+}
+
+/* ========================================
+   ALBUM CARDS - Primary (Rose) color
+   ======================================== */
+
+.albumCard {
+  background-color: var(--primary);
+  border-left: 4px solid var(--primary-hover);
+}
+
+.albumCard:hover {
+  background-color: var(--primary-hover);
+}
+
+.albumCard .cardTitle,
+.albumCard .cardSubtitle {
+  color: #fff;
+}
+
+.albumCard .cardMeta {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.albumCard .cardBtn {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: var(--primary-hover);
+}
+
+.albumCard .cardBtn:hover {
+  background-color: #fff;
+}
+
+.albumCard .cardBtn.queue {
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  color: #fff;
+}
+
+.albumCard .cardBtn.queue:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ========================================
+   ARTIST CARDS - Quaternary (Purple) color
+   ======================================== */
+
+.artistCard {
+  background-color: var(--quaternary);
+  border-left: 4px solid var(--quaternary-hover);
+}
+
+.artistCard:hover {
+  background-color: var(--quaternary-hover);
+}
+
+.artistCard .cardTitle,
+.artistCard .cardSubtitle {
+  color: #fff;
+}
+
+.artistCard .cardMeta {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.artistCard .cardBtn {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: var(--quaternary-hover);
+}
+
+.artistCard .cardBtn:hover {
+  background-color: #fff;
+}
+
+.artistCard .cardBtn.queue {
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  color: #fff;
+}
+
+.artistCard .cardBtn.queue:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ========================================
+   PLAYLIST CARDS - Secondary (Lime) color
+   ======================================== */
+
+.playlistCard {
+  background-color: var(--secondary);
+  border-left: 4px solid var(--secondary-hover);
+}
+
+.playlistCard:hover {
+  background-color: var(--secondary-hover);
+}
+
+.playlistCard .cardTitle,
+.playlistCard .cardSubtitle,
+.playlistCard .cardMeta {
+  color: #000;
+}
+
+.playlistCard .cardBtn {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: #000;
+}
+
+.playlistCard .cardBtn:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.playlistCard .cardBtn.queue {
+  background-color: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  color: #000;
+}
+
+.playlistCard .cardBtn.queue:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================
+   EXPANDED SONGS SECTION
+   ======================================== */
+
+.expandedSection {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border-left: 3px solid var(--tertiary);
+}
+
+.expandedHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.expandedTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.closeBtn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.closeBtn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.expandedSongs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* ========================================
+   LEGACY - Keeping for SongList compatibility
+   ======================================== */
+
+/* Action buttons for song rows */
 .actions {
   display: flex;
   gap: 0.5rem;
@@ -97,79 +293,36 @@
   color: #fff;
 }
 
-/* Group header (for albums, artists, playlists) */
-.groupHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  background-color: var(--tertiary);
-  border-radius: 6px;
-  margin-top: 0.5rem;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.groupHeader:first-child {
-  margin-top: 0;
-}
-
-.groupHeader:hover {
-  background-color: var(--tertiary-hover);
-}
-
-.groupTitle {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #000;
-}
-
-.groupSubtitle {
-  font-size: 0.75rem;
-  color: #444;
-}
-
-.groupInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-}
-
-.groupActions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-/* Expanded group songs */
-.groupSongs {
-  margin-left: 1rem;
-  border-left: 2px solid var(--tertiary);
-  padding-left: 0.5rem;
-}
-
 /* Empty state */
 .empty {
   text-align: center;
   padding: 2rem;
-  color: #666;
+  color: #888;
   font-style: italic;
 }
 
-/* Responsive */
-@media (max-width: 640px) {
-  .row {
-    flex-wrap: wrap;
-    gap: 0.5rem;
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 768px) {
+  .cardGrid {
+    gap: 0.75rem;
   }
 
-  .duration {
-    order: 3;
-    margin-right: 0;
+  .card {
+    width: 150px;
+    padding: 0.75rem;
   }
 
-  .actions {
-    order: 4;
-    width: 100%;
-    justify-content: flex-end;
+  .cardTitle {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    width: calc(50% - 0.5rem);
+    min-width: 120px;
   }
 }

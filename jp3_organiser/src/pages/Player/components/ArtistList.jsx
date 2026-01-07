@@ -1,8 +1,9 @@
 /**
  * ArtistList Component
  * 
- * Displays artists with expandable song lists.
- * Play All queues all artist's songs.
+ * Displays artists as cards in a flex grid layout.
+ * Clicking a card expands to show songs below the grid.
+ * Uses quaternary (purple) color scheme.
  */
 
 import React, { useState, useMemo } from 'react';
@@ -35,6 +36,30 @@ export default function ArtistList({ artists, songs }) {
     return map;
   }, [songs]);
 
+  // Get expanded artist data
+  const expandedArtist = useMemo(() => {
+    if (!expandedArtistId) return null;
+    return artists.find(a => a.id === expandedArtistId);
+  }, [expandedArtistId, artists]);
+
+  const expandedSongs = expandedArtist ? (artistSongsMap[expandedArtist.id] || []) : [];
+
+  // Count unique albums for each artist
+  const artistAlbumCounts = useMemo(() => {
+    const counts = {};
+    songs.forEach(song => {
+      if (!counts[song.artistId]) {
+        counts[song.artistId] = new Set();
+      }
+      if (song.albumId) {
+        counts[song.artistId].add(song.albumId);
+      }
+    });
+    return Object.fromEntries(
+      Object.entries(counts).map(([id, set]) => [id, set.size])
+    );
+  }, [songs]);
+
   if (artists.length === 0) {
     return <div className={styles.empty}>No artists in library</div>;
   }
@@ -57,8 +82,8 @@ export default function ArtistList({ artists, songs }) {
     addToQueue(artistSongs);
   };
 
-  const handlePlaySong = (song, artistSongs) => {
-    playTrack(song, artistSongs);
+  const handlePlaySong = (song) => {
+    playTrack(song, expandedSongs);
   };
 
   const handleQueueSong = (song) => {
@@ -66,56 +91,71 @@ export default function ArtistList({ artists, songs }) {
   };
 
   return (
-    <div className={styles.list}>
-      {artists.map((artist) => {
-        const artistSongs = artistSongsMap[artist.id] || [];
-        const isExpanded = expandedArtistId === artist.id;
+    <div>
+      {/* Artist Cards Grid */}
+      <div className={styles.cardGrid}>
+        {artists.map((artist) => {
+          const artistSongs = artistSongsMap[artist.id] || [];
+          const albumCount = artistAlbumCounts[artist.id] || 0;
+          const isExpanded = expandedArtistId === artist.id;
 
-        return (
-          <div key={artist.id}>
-            <div 
-              className={styles.groupHeader}
+          return (
+            <div
+              key={artist.id}
+              className={`${styles.card} ${styles.artistCard} ${isExpanded ? styles.expanded : ''}`}
               onClick={() => toggleExpand(artist.id)}
             >
-              <div className={styles.groupInfo}>
-                <span className={styles.groupTitle}>{artist.name}</span>
-                <span className={styles.groupSubtitle}>
-                  {artistSongs.length} songs
-                </span>
-              </div>
-              <div className={styles.groupActions}>
-                <button 
-                  className={styles.actionBtn}
+              <span className={styles.cardTitle}>{artist.name}</span>
+              <span className={styles.cardMeta}>
+                {albumCount} {albumCount === 1 ? 'album' : 'albums'} - {artistSongs.length} songs
+              </span>
+              <div className={styles.cardActions}>
+                <button
+                  className={styles.cardBtn}
                   onClick={(e) => handlePlayAll(artist, e)}
                 >
                   Play All
                 </button>
-                <button 
-                  className={`${styles.actionBtn} ${styles.queue}`}
+                <button
+                  className={`${styles.cardBtn} ${styles.queue}`}
                   onClick={(e) => handleQueueAll(artist, e)}
                 >
                   Queue
                 </button>
               </div>
             </div>
+          );
+        })}
+      </div>
 
-            {isExpanded && (
-              <div className={styles.groupSongs}>
-                {artistSongs.map((song) => (
-                  <PlayerSongCard
-                    key={song.id}
-                    song={song}
-                    isPlaying={isCurrentTrack(song.id)}
-                    onPlay={(s) => handlePlaySong(s, artistSongs)}
-                    onQueue={handleQueueSong}
-                    subtitle={song.albumName || 'Unknown Album'}
-                  />
-                ))}
-              </div>
-            )}
+      {/* Expanded Songs Section */}
+      {expandedArtist && (
+        <div className={styles.expandedSection}>
+          <div className={styles.expandedHeader}>
+            <span className={styles.expandedTitle}>
+              {expandedArtist.name} - All Songs
+            </span>
+            <button
+              className={styles.closeBtn}
+              onClick={() => setExpandedArtistId(null)}
+            >
+              Close
+            </button>
           </div>
-        );
-      })}
+          <div className={styles.expandedSongs}>
+            {expandedSongs.map((song) => (
+              <PlayerSongCard
+                key={song.id}
+                song={song}
+                isPlaying={isCurrentTrack(song.id)}
+                onPlay={handlePlaySong}
+                onQueue={handleQueueSong}
+                subtitle={song.albumName || 'Unknown Album'}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
