@@ -1,4 +1,5 @@
 export const TABS = {
+  HOME: 'home',
   SONGS: 'songs',
   ALBUMS: 'albums',
   ARTISTS: 'artists',

@@ -72,6 +72,7 @@ export default function AlbumDetail() {
   return (
     <DetailView
       type="album"
+      itemId={albumId}
       title={album.name}
       subtitle={album.artistName}
       meta={meta}

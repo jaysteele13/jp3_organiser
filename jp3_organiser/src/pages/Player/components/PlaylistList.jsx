@@ -9,6 +9,7 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlayer } from '../../../hooks';
+import { addToRecents, RECENT_TYPE } from '../../../services/recentsService';
 import styles from './ListStyles.module.css';
 
 export default function PlaylistList({ playlists, songs }) {
@@ -45,6 +46,7 @@ export default function PlaylistList({ playlists, songs }) {
     const playlistSongs = getPlaylistSongs(playlist);
     if (playlistSongs.length > 0) {
       playTrack(playlistSongs[0], playlistSongs);
+      addToRecents(RECENT_TYPE.PLAYLIST, playlist.id);
     }
   };
 

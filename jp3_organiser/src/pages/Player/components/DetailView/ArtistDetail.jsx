@@ -84,6 +84,7 @@ export default function ArtistDetail() {
   return (
     <DetailView
       type="artist"
+      itemId={artistId}
       title={artist.name}
       subtitle=""
       meta={meta}

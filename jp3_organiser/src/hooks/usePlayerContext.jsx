@@ -12,6 +12,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { useAudioElement } from './player/useAudioElement';
 import { useQueueManager } from './player/useQueueManager';
 import { REPEAT_MODE } from './player/playerUtils';
+import { addToRecents, RECENT_TYPE } from '../services/recentsService';
 
 const PlayerContext = createContext(null);
 
@@ -109,6 +110,13 @@ export function PlayerProvider({ children }) {
     if (fullPath) {
       lastPlayedRef.current = { index: currentIndex, path: currentTrack.path };
       loadAndPlay(fullPath);
+      
+      // Track this song in recents
+      if (currentTrack.id) {
+        addToRecents(RECENT_TYPE.SONG, currentTrack.id).catch(err => {
+          console.warn('Failed to add to recents:', err);
+        });
+      }
     }
   }, [currentIndex, currentTrack?.path, libraryPath, loadAndPlay]);
 

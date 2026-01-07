@@ -9,6 +9,7 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlayer } from '../../../hooks';
+import { addToRecents, RECENT_TYPE } from '../../../services/recentsService';
 import styles from './ListStyles.module.css';
 
 export default function AlbumList({ albums, songs }) {
@@ -44,6 +45,7 @@ export default function AlbumList({ albums, songs }) {
     const albumSongs = albumSongsMap[album.id] || [];
     if (albumSongs.length > 0) {
       playTrack(albumSongs[0], albumSongs);
+      addToRecents(RECENT_TYPE.ALBUM, album.id);
     }
   };
 

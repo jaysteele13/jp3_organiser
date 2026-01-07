@@ -1,0 +1,43 @@
+/**
+ * HomeView Styles
+ * 
+ * Clean home page layout with optimized GPU-accelerated animations.
+ * Uses transform and opacity only for smooth 60fps performance.
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Welcome Header */
+.welcomeHeader {
+  margin-bottom: 1rem;
+}
+
+.welcomeTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #000;
+  margin: 0 0 0.25rem 0;
+}
+
+.welcomeSubtitle {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0;
+}
+
+/* Sections */
+.section {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .welcomeTitle {
+    font-size: 1.5rem;
+  }
+}

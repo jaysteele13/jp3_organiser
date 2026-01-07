@@ -10,7 +10,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLibraryConfig, usePlayer } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
-import { LoadingState, ErrorState, EmptyState, Header } from '../../components';
+import { LoadingState, ErrorState, EmptyState } from '../../components';
 import StatsBar from '../View/components/StatsBar'
 import styles from './Player.module.css';
 
@@ -21,7 +21,7 @@ import TabContent from './components/TabContent';
 export default function Player() {
   const { libraryPath, isLoading: configLoading } = useLibraryConfig();
   const { setLibraryPath } = usePlayer();
-  const [activeTab, setActiveTab] = useState(TABS.SONGS);
+  const [activeTab, setActiveTab] = useState(TABS.HOME);
   
   const { library, isLoading, error, handleRefresh } = useLibrary(libraryPath);
 
@@ -58,11 +58,6 @@ export default function Player() {
 
   return (
     <div className={styles.container}>
-      <Header 
-        title="Music Player"
-        description="Browse and play your music library"
-      />
-
       {isLoading && <LoadingState message="Loading library..." />}
       
       <ErrorState error={error} />

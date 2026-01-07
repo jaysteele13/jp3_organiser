@@ -2,12 +2,12 @@
  * PlayerSongCard Component
  * 
  * Reusable song row for Player lists (SongList, AlbumList, ArtistList, PlaylistList).
- * Displays song info with Play and Queue actions.
+ * Click the row to play, use Queue button to add to queue.
  * 
  * Props:
  * - song: Song object with title, artistName, albumName, trackNumber
  * - isPlaying: Whether this song is currently playing
- * - onPlay: Callback when Play button is clicked
+ * - onPlay: Callback when row is clicked
  * - onQueue: Callback when Queue button is clicked
  * - showTrackNumber: Prefix title with track number (for album context)
  * - subtitle: Custom subtitle string (defaults to "artist - album")
@@ -29,7 +29,7 @@ export default function PlayerSongCard({
     onQueue?.(song);
   };
 
-  const handlePlay = () => {
+  const handleRowClick = () => {
     onPlay?.(song);
   };
 
@@ -45,28 +45,28 @@ export default function PlayerSongCard({
 
   return (
     <div className={styles.padding}>
-    <div className={`${styles.row} ${isPlaying ? styles.playing : ''}`}>
-      <div className={styles.info}>
-        <span className={styles.title}>{displayTitle}</span>
-        {displaySubtitle && (
-          <span className={styles.subtitle}>{displaySubtitle}</span>
-        )}
+      <div 
+        className={`${styles.row} ${isPlaying ? styles.playing : ''}`}
+        onClick={handleRowClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === 'Enter' && handleRowClick()}
+      >
+        <div className={styles.info}>
+          <span className={styles.title}>{displayTitle}</span>
+          {displaySubtitle && (
+            <span className={styles.subtitle}>{displaySubtitle}</span>
+          )}
+        </div>
+        <div className={styles.actions}>
+          <button 
+            className={`${styles.actionBtn} ${styles.queue}`}
+            onClick={handleQueue}
+          >
+            Queue
+          </button>
+        </div>
       </div>
-      <div className={styles.actions}>
-        <button 
-          className={styles.actionBtn}
-          onClick={handlePlay}
-        >
-          Play
-        </button>
-        <button 
-          className={`${styles.actionBtn} ${styles.queue}`}
-          onClick={handleQueue}
-        >
-          Queue
-        </button>
-      </div>
-    </div>
     </div>
   );
 }

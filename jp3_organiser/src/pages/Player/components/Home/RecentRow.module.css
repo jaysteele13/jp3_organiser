@@ -1,0 +1,203 @@
+/**
+ * RecentRow Styles
+ * 
+ * Horizontal scrollable carousel for recently played items.
+ * Optimized for GPU-accelerated animations (transform/opacity only).
+ */
+
+.container {
+  width: 100%;
+  overflow: hidden;
+}
+
+.scrollContainer {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.scrollContainer::-webkit-scrollbar {
+  height: 6px;
+}
+
+.scrollContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollContainer::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.scrollContainer::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Card - base styles */
+.card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 200px;
+  max-width: 260px;
+  padding: 0.75rem;
+  border-radius: 8px;
+  flex-shrink: 0;
+  cursor: pointer;
+  /* GPU-accelerated transition */
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  will-change: transform;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.card:active {
+  transform: translateY(0);
+}
+
+/* Card type variants */
+.cardSong {
+  background-color: var(--tertiary);
+}
+
+.cardAlbum {
+  background-color: var(--primary);
+}
+
+.cardArtist {
+  background-color: var(--quaternary);
+}
+
+.cardPlaylist {
+  background-color: var(--secondary);
+}
+
+/* Icon */
+.cardIcon {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  border-radius: 6px;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Info */
+.cardInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subtitle {
+  font-size: 0.7rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.typeLabel {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+
+/* Text colors for dark backgrounds (album, artist) */
+.cardAlbum .title,
+.cardArtist .title {
+  color: #fff;
+}
+
+.cardAlbum .subtitle,
+.cardArtist .subtitle {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.cardAlbum .typeLabel,
+.cardArtist .typeLabel {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Text colors for light backgrounds (song, playlist) */
+.cardSong .title,
+.cardPlaylist .title {
+  color: #000;
+}
+
+.cardSong .subtitle,
+.cardPlaylist .subtitle {
+  color: #333;
+}
+
+.cardSong .typeLabel,
+.cardPlaylist .typeLabel {
+  color: #555;
+}
+
+/* Play button */
+.playBtn {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.card:hover .playBtn {
+  opacity: 1;
+}
+
+.playBtn:hover {
+  transform: scale(1.1);
+}
+
+/* Play button colors per card type */
+.cardSong .playBtn,
+.cardPlaylist .playBtn {
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #fff;
+}
+
+.cardAlbum .playBtn,
+.cardArtist .playBtn {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #000;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .card {
+    min-width: 170px;
+  }
+
+  .playBtn {
+    opacity: 1;
+  }
+}

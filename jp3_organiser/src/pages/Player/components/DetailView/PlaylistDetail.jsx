@@ -82,6 +82,7 @@ export default function PlaylistDetail() {
   return (
     <DetailView
       type="playlist"
+      itemId={playlistId}
       title={playlist.name}
       subtitle=""
       meta={meta}

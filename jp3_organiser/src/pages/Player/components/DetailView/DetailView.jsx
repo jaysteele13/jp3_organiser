@@ -7,21 +7,21 @@
  * 
  * Props:
  * - type: 'album' | 'artist' | 'playlist' - determines styling and icon
+ * - itemId: number - ID of the album/artist/playlist (for recents tracking)
  * - title: string - main title (album name, artist name, playlist name)
  * - subtitle: string - secondary info (artist name for albums, song/album count for artists)
  * - meta: string - additional metadata (year, duration, etc.)
  * - songs: array - list of songs to display
- * - onPlay: function - called when Play button is clicked (receives all songs)
- * - onShuffle: function - called when Shuffle button is clicked
  * - onBack: function - called when back button is clicked
  */
 
 import React from 'react';
 import { usePlayer } from '../../../../hooks';
+import { addToRecents, RECENT_TYPE } from '../../../../services/recentsService';
 import PlayerSongCard from '../PlayerSongCard';
 import styles from './DetailView.module.css';
 
-// Type-specific icons (using text/emoji for now, could be replaced with SVG icons)
+// Type-specific icons
 const TYPE_ICONS = {
   album: '💿',
   artist: '🎤',
@@ -34,8 +34,16 @@ const TYPE_LABELS = {
   playlist: 'Playlist',
 };
 
+// Map view type to recents type
+const TYPE_TO_RECENT = {
+  album: RECENT_TYPE.ALBUM,
+  artist: RECENT_TYPE.ARTIST,
+  playlist: RECENT_TYPE.PLAYLIST,
+};
+
 export default function DetailView({
   type = 'album',
+  itemId,
   title,
   subtitle,
   meta,
@@ -47,6 +55,10 @@ export default function DetailView({
   const handlePlayAll = () => {
     if (songs.length > 0) {
       playTrack(songs[0], songs);
+      // Track in recents
+      if (itemId && TYPE_TO_RECENT[type]) {
+        addToRecents(TYPE_TO_RECENT[type], itemId);
+      }
     }
   };
 
@@ -55,6 +67,10 @@ export default function DetailView({
       // Create shuffled copy
       const shuffled = [...songs].sort(() => Math.random() - 0.5);
       playTrack(shuffled[0], shuffled);
+      // Track in recents
+      if (itemId && TYPE_TO_RECENT[type]) {
+        addToRecents(TYPE_TO_RECENT[type], itemId);
+      }
     }
   };
 
