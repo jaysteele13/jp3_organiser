@@ -6,6 +6,7 @@ import About from './pages/About';
 import Upload from './pages/Upload';
 import View from './pages/View';
 import Player from './pages/Player';
+import { AlbumDetail, ArtistDetail, PlaylistDetail } from './pages/Player/components/DetailView';
 import PlaylistEdit from './pages/PlaylistEdit';
 import { useKeyboardShortcut, UploadCacheProvider, PlayerProvider } from './hooks';
 
@@ -26,6 +27,9 @@ function AppContent({ isNavCollapsed, onToggle }) {
           <Route path="/upload" element={<Upload />} />
           <Route path="/view" element={<View />} />
           <Route path="/player" element={<Player />} />
+          <Route path="/player/album/:id" element={<AlbumDetail />} />
+          <Route path="/player/artist/:id" element={<ArtistDetail />} />
+          <Route path="/player/playlist/:id" element={<PlaylistDetail />} />
           <Route path="/playlist/:id" element={<PlaylistEdit />} />
           <Route path="/about" element={<About />} />
         </Routes>

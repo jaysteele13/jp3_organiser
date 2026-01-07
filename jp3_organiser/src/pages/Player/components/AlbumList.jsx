@@ -2,20 +2,20 @@
  * AlbumList Component
  * 
  * Displays albums as cards in a flex grid layout.
- * Clicking a card expands to show songs below the grid.
+ * Clicking a card navigates to the album detail page.
  * Uses primary (rose) color scheme.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { usePlayer } from '../../../hooks';
-import PlayerSongCard from './PlayerSongCard';
 import styles from './ListStyles.module.css';
 
 export default function AlbumList({ albums, songs }) {
-  const { playTrack, addToQueue, isCurrentTrack } = usePlayer();
-  const [expandedAlbumId, setExpandedAlbumId] = useState(null);
+  const navigate = useNavigate();
+  const { playTrack, addToQueue } = usePlayer();
 
-  // Group songs by album
+  // Group songs by album for song count
   const albumSongsMap = useMemo(() => {
     const map = {};
     songs.forEach(song => {
@@ -31,20 +31,12 @@ export default function AlbumList({ albums, songs }) {
     return map;
   }, [songs]);
 
-  // Get expanded album data
-  const expandedAlbum = useMemo(() => {
-    if (!expandedAlbumId) return null;
-    return albums.find(a => a.id === expandedAlbumId);
-  }, [expandedAlbumId, albums]);
-
-  const expandedSongs = expandedAlbum ? (albumSongsMap[expandedAlbum.id] || []) : [];
-
   if (albums.length === 0) {
     return <div className={styles.empty}>No albums in library</div>;
   }
 
-  const toggleExpand = (albumId) => {
-    setExpandedAlbumId(prev => prev === albumId ? null : albumId);
+  const handleCardClick = (album) => {
+    navigate(`/player/album/${album.id}`);
   };
 
   const handlePlayAlbum = (album, e) => {
@@ -61,81 +53,39 @@ export default function AlbumList({ albums, songs }) {
     addToQueue(albumSongs);
   };
 
-  const handlePlaySong = (song) => {
-    playTrack(song, expandedSongs);
-  };
-
-  const handleQueueSong = (song) => {
-    addToQueue(song);
-  };
-
   return (
-    <div>
-      {/* Album Cards Grid */}
-      <div className={styles.cardGrid}>
-        {albums.map((album) => {
-          const albumSongs = albumSongsMap[album.id] || [];
-          const isExpanded = expandedAlbumId === album.id;
+    <div className={styles.cardGrid}>
+      {albums.map((album) => {
+        const albumSongs = albumSongsMap[album.id] || [];
 
-          return (
-            <div
-              key={album.id}
-              className={`${styles.card} ${styles.albumCard} ${isExpanded ? styles.expanded : ''}`}
-              onClick={() => toggleExpand(album.id)}
-            >
-              <span className={styles.cardTitle}>{album.name}</span>
-              <span className={styles.cardSubtitle}>{album.artistName}</span>
-              <span className={styles.cardMeta}>
-                {album.year ? `${album.year} - ` : ''}{albumSongs.length} songs
-              </span>
-              <div className={styles.cardActions}>
-                <button
-                  className={styles.cardBtn}
-                  onClick={(e) => handlePlayAlbum(album, e)}
-                >
-                  Play
-                </button>
-                <button
-                  className={`${styles.cardBtn} ${styles.queue}`}
-                  onClick={(e) => handleQueueAlbum(album, e)}
-                >
-                  Queue
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Expanded Songs Section */}
-      {expandedAlbum && (
-        <div className={styles.expandedSection}>
-          <div className={styles.expandedHeader}>
-            <span className={styles.expandedTitle}>
-              {expandedAlbum.name} - {expandedAlbum.artistName}
+        return (
+          <div
+            key={album.id}
+            className={`${styles.card} ${styles.albumCard}`}
+            onClick={() => handleCardClick(album)}
+          >
+            <span className={styles.cardTitle}>{album.name}</span>
+            <span className={styles.cardSubtitle}>{album.artistName}</span>
+            <span className={styles.cardMeta}>
+              {album.year ? `${album.year} - ` : ''}{albumSongs.length} songs
             </span>
-            <button
-              className={styles.closeBtn}
-              onClick={() => setExpandedAlbumId(null)}
-            >
-              Close
-            </button>
+            <div className={styles.cardActions}>
+              <button
+                className={styles.cardBtn}
+                onClick={(e) => handlePlayAlbum(album, e)}
+              >
+                Play
+              </button>
+              <button
+                className={`${styles.cardBtn} ${styles.queue}`}
+                onClick={(e) => handleQueueAlbum(album, e)}
+              >
+                Queue
+              </button>
+            </div>
           </div>
-          <div className={styles.expandedSongs}>
-            {expandedSongs.map((song) => (
-              <PlayerSongCard
-                key={song.id}
-                song={song}
-                isPlaying={isCurrentTrack(song.id)}
-                onPlay={handlePlaySong}
-                onQueue={handleQueueSong}
-                showTrackNumber={true}
-                subtitle=""
-              />
-            ))}
-          </div>
-        </div>
-      )}
+        );
+      })}
     </div>
   );
 }
