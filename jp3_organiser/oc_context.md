@@ -43,7 +43,7 @@ jp3_organiser/
 │   ├── hooks/                # Custom React hooks
 │   │   ├── player/           # Audio player hooks
 │   │   │   ├── useAudioElement.js   # Audio element lifecycle, blob loading
-│   │   │   ├── useQueueManager.js   # Queue state, navigation, reorder
+│   │   │   ├── useQueueManager.js   # Context + User Queue state management
 │   │   │   └── playerUtils.js       # Helper functions, REPEAT_MODE constant
 │   │   ├── useKeyboardShortcut.js  # Keyboard shortcut handler
 │   │   ├── useLibraryConfig.js     # Library path configuration
@@ -576,36 +576,65 @@ The PlayerBar (`src/components/PlayerBar/`) is always visible at the bottom of t
 
 The QueueDrawer (`src/components/QueueDrawer/`) slides out from the right:
 
+**Sections:**
+1. **Now Playing** - Current track with "Queue" badge if from user queue
+2. **Next in Queue** - User-added songs (draggable, removable, consumed when played)
+3. **Up Next** - Remaining context tracks (clickable to jump)
+
 **Features:**
-- View all tracks in queue
-- Current track highlighting with green indicator
-- Click any track to jump to it
-- Drag-to-reorder tracks (drag handle on left)
-- Remove individual tracks (X button on hover)
-- Clear entire queue button
+- Current track highlighting
+- Click context tracks to jump to them
+- Drag-to-reorder user queue tracks
+- Remove individual tracks from user queue
+- Clear user queue or clear all buttons
 - Track count in footer
 - Backdrop click to close
 
 ## Audio Player Architecture
 
-The player system uses a layered hook architecture:
+The player system uses a layered hook architecture with two key concepts:
+
+1. **Context** - The album/playlist/artist you're playing from. Immutable during playback. Navigate freely with Next/Prev without songs being removed.
+
+2. **User Queue** - Songs explicitly added via "Add to Queue" button. These play next (before context continues) and are consumed (removed) when played.
+
+This matches Spotify/Apple Music behavior.
 
 ```
 App.jsx
 └── PlayerProvider (usePlayerContext.jsx)
     ├── useAudioElement.js  - Audio element lifecycle
     │   └── HTML5 Audio API, blob URL loading via Tauri readFile
-    └── useQueueManager.js  - Queue state management
-        └── Queue array, currentIndex, shuffle, repeat modes
+    └── useQueueManager.js  - Context + User Queue state management
+        ├── context[]       - Album/playlist being played (immutable)
+        ├── contextIndex    - Current position in context
+        ├── userQueue[]     - User-added songs (consumed when played)
+        └── playingFromUserQueue - Whether currently playing a user queue item
 ```
+
+### Queue Behavior
+
+| Action | Behavior |
+|--------|----------|
+| Click song in any list | Sets that list as context, plays from clicked song. Next/Prev work within context. |
+| Press Next | User queue consumed first (if any), then advances in context |
+| Press Prev | If >3s into track, restarts. If in user queue, back to context. Otherwise back in context. |
+| Add to Queue button | Adds to user queue (plays next, before context continues) |
+| Song finishes | Same as Next |
+| Repeat ALL | Loops through context indefinitely |
+| Repeat ONE | Repeats current song |
+| Shuffle toggle | Shuffles context when playing a new track |
 
 ### Player Context API (`usePlayer()`)
 
 | Property/Method | Type | Description |
 |-----------------|------|-------------|
-| `queue` | Track[] | Current queue of tracks |
-| `currentIndex` | number | Index of current track (-1 if none) |
+| `context` | Track[] | Current playback context (album/playlist) |
+| `contextIndex` | number | Index in context (-1 if none) |
+| `userQueue` | Track[] | User-added queue (consumed when played) |
 | `currentTrack` | Track \| null | Currently playing track |
+| `playingFromUserQueue` | boolean | Whether playing from user queue |
+| `displayQueue` | object | Combined queue data for UI display |
 | `isPlaying` | boolean | Whether audio is playing |
 | `isLoading` | boolean | Whether audio is loading |
 | `position` | number | Current position in seconds |
@@ -614,17 +643,18 @@ App.jsx
 | `repeatMode` | REPEAT_MODE | OFF, ALL, or ONE |
 | `hasNext` | boolean | Whether next track exists |
 | `hasPrev` | boolean | Whether previous track exists |
-| `playTrack(track, queue)` | function | Play track within queue context |
-| `playNow(track)` | function | Play single track, clear queue |
-| `addToQueue(tracks)` | function | Add track(s) to end of queue |
+| `playTrack(track, context)` | function | Play track within context (album/playlist) |
+| `playNow(track)` | function | Play single track, clear everything |
+| `addToQueue(tracks)` | function | Add track(s) to user queue |
+| `clearQueue()` | function | Stop playback, clear context + user queue |
+| `clearUserQueue()` | function | Clear only user queue |
 | `togglePlayPause()` | function | Toggle play/pause |
 | `next()` | function | Skip to next track |
 | `prev()` | function | Go to previous (or restart if >3s in) |
 | `seek(seconds)` | function | Seek to position |
-| `skipToIndex(index)` | function | Jump to queue index |
-| `removeFromQueue(index)` | function | Remove track at index |
-| `reorderQueue(from, to)` | function | Move track in queue |
-| `clearQueue()` | function | Clear entire queue |
+| `skipToIndex(index)` | function | Jump to context index |
+| `removeFromUserQueue(index)` | function | Remove track from user queue |
+| `reorderUserQueue(from, to)` | function | Reorder user queue (drag-drop) |
 | `toggleShuffle()` | function | Toggle shuffle mode |
 | `cycleRepeatMode()` | function | Cycle OFF → ALL → ONE → OFF |
 | `setLibraryPath(path)` | function | Set library path for audio loading |

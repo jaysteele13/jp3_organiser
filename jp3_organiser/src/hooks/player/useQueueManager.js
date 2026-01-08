@@ -1,159 +1,244 @@
 /**
  * useQueueManager Hook
  * 
- * Manages the playback queue state and operations.
- * Handles adding, removing, and navigating tracks.
+ * Manages playback with two separate concepts:
  * 
- * This is a low-level hook used by usePlayerContext.
+ * 1. CONTEXT - The source you're playing from (album, playlist, artist, all songs)
+ *    - Immutable during playback
+ *    - Next/Prev navigate within context
+ *    - Songs are NOT removed when played
+ * 
+ * 2. USER QUEUE - Songs explicitly added via "Add to Queue"
+ *    - Plays AFTER current song, BEFORE next context song
+ *    - Songs ARE removed when played (consumed)
+ * 
+ * This matches Spotify/Apple Music behavior.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { shuffleArray, REPEAT_MODE } from './playerUtils';
 
 export function useQueueManager() {
-  const [queue, setQueue] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(-1);
+  // Context: the album/playlist/etc being played
+  const [context, setContext] = useState([]);
+  const [contextIndex, setContextIndex] = useState(-1);
+  
+  // User queue: explicitly queued songs (consumed when played)
+  const [userQueue, setUserQueue] = useState([]);
+  
+  // Are we currently playing from user queue?
+  const [playingFromUserQueue, setPlayingFromUserQueue] = useState(false);
+  
+  // Playback options
   const [shuffle, setShuffle] = useState(false);
   const [repeatMode, setRepeatMode] = useState(REPEAT_MODE.OFF);
 
-  // Derived state
-  const currentTrack = currentIndex >= 0 && currentIndex < queue.length 
-    ? queue[currentIndex] 
-    : null;
-  const hasNext = currentIndex < queue.length - 1 || repeatMode === REPEAT_MODE.ALL;
-  const hasPrev = currentIndex > 0 || repeatMode === REPEAT_MODE.ALL;
+  // Current track - either from user queue or context
+  const currentTrack = useMemo(() => {
+    if (playingFromUserQueue && userQueue.length > 0) {
+      return userQueue[0];
+    }
+    if (contextIndex >= 0 && contextIndex < context.length) {
+      return context[contextIndex];
+    }
+    return null;
+  }, [playingFromUserQueue, userQueue, context, contextIndex]);
+
+  // Navigation availability
+  const hasNext = useMemo(() => {
+    // Can always go next if there's user queue
+    if (userQueue.length > 0 && !playingFromUserQueue) return true;
+    if (userQueue.length > 1 && playingFromUserQueue) return true;
+    // Or if there are more context songs
+    if (contextIndex < context.length - 1) return true;
+    // Or if repeat all is on
+    if (repeatMode === REPEAT_MODE.ALL && context.length > 0) return true;
+    return false;
+  }, [userQueue.length, playingFromUserQueue, contextIndex, context.length, repeatMode]);
+
+  const hasPrev = useMemo(() => {
+    // Can go prev if we're in user queue (go back to context)
+    if (playingFromUserQueue) return contextIndex >= 0;
+    // Or if there are previous context songs
+    if (contextIndex > 0) return true;
+    // Or if repeat all is on
+    if (repeatMode === REPEAT_MODE.ALL && context.length > 0) return true;
+    return false;
+  }, [playingFromUserQueue, contextIndex, context.length, repeatMode]);
+
+  // Combined queue for display (context remaining + user queue)
+  const displayQueue = useMemo(() => {
+    const contextRemaining = contextIndex >= 0 
+      ? context.slice(contextIndex) 
+      : [];
+    return {
+      contextRemaining,
+      userQueue,
+      currentTrack,
+      playingFromUserQueue,
+    };
+  }, [context, contextIndex, userQueue, currentTrack, playingFromUserQueue]);
 
   /**
-   * Play a single track immediately, clearing the queue.
+   * Play a track within a context (album, playlist, etc.)
+   * Replaces the current context entirely.
    */
-  const playNow = useCallback((track) => {
-    setQueue([track]);
-    setCurrentIndex(0);
-  }, []);
-
-  /**
-   * Play a track within a queue context.
-   */
-  const playTrack = useCallback((track, trackQueue) => {
-    const newQueue = shuffle ? shuffleArray(trackQueue) : trackQueue;
-    const index = newQueue.findIndex(t => t.id === track.id);
+  const playTrack = useCallback((track, trackContext) => {
+    const newContext = shuffle ? shuffleArray(trackContext) : [...trackContext];
+    const index = newContext.findIndex(t => t.id === track.id);
     
-    setQueue(newQueue);
-    setCurrentIndex(index >= 0 ? index : 0);
+    setContext(newContext);
+    setContextIndex(index >= 0 ? index : 0);
+    setPlayingFromUserQueue(false);
+    // Don't clear user queue - they may want those songs after
   }, [shuffle]);
 
   /**
-   * Add tracks to the end of the queue.
+   * Play a single track immediately (clears context and user queue).
+   */
+  const playNow = useCallback((track) => {
+    setContext([track]);
+    setContextIndex(0);
+    setUserQueue([]);
+    setPlayingFromUserQueue(false);
+  }, []);
+
+  /**
+   * Add tracks to the user queue (plays after current song).
    */
   const addToQueue = useCallback((tracks) => {
     const tracksArray = Array.isArray(tracks) ? tracks : [tracks];
-    
-    setQueue(prev => {
-      const newQueue = [...prev, ...tracksArray];
-      if (prev.length === 0) {
-        setCurrentIndex(0);
-      }
-      return newQueue;
-    });
+    setUserQueue(prev => [...prev, ...tracksArray]);
   }, []);
 
   /**
-   * Clear the queue entirely.
+   * Clear the user queue only.
+   */
+  const clearUserQueue = useCallback(() => {
+    setUserQueue([]);
+    if (playingFromUserQueue) {
+      setPlayingFromUserQueue(false);
+    }
+  }, [playingFromUserQueue]);
+
+  /**
+   * Clear everything (context + user queue).
    */
   const clearQueue = useCallback(() => {
-    setQueue([]);
-    setCurrentIndex(-1);
+    setContext([]);
+    setContextIndex(-1);
+    setUserQueue([]);
+    setPlayingFromUserQueue(false);
   }, []);
 
   /**
-   * Move to next track. Returns true if moved, false if at end.
+   * Move to next track.
+   * Priority: User queue (consumed) > Next context song > Loop (if repeat all)
    */
   const next = useCallback(() => {
-    if (currentIndex < queue.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-      return true;
-    } else if (repeatMode === REPEAT_MODE.ALL && queue.length > 0) {
-      setCurrentIndex(0);
+    // If currently playing from user queue, consume it and check for more
+    if (playingFromUserQueue) {
+      setUserQueue(prev => {
+        const remaining = prev.slice(1);
+        if (remaining.length === 0) {
+          // User queue exhausted, continue with context
+          setPlayingFromUserQueue(false);
+          // Move to next context song
+          if (contextIndex < context.length - 1) {
+            setContextIndex(contextIndex + 1);
+          } else if (repeatMode === REPEAT_MODE.ALL && context.length > 0) {
+            setContextIndex(0);
+          }
+        }
+        return remaining;
+      });
       return true;
     }
+
+    // If there are songs in user queue, play from there
+    if (userQueue.length > 0) {
+      setPlayingFromUserQueue(true);
+      return true;
+    }
+
+    // Otherwise, advance in context
+    if (contextIndex < context.length - 1) {
+      setContextIndex(prev => prev + 1);
+      return true;
+    } else if (repeatMode === REPEAT_MODE.ALL && context.length > 0) {
+      setContextIndex(0);
+      return true;
+    }
+
     return false;
-  }, [currentIndex, queue.length, repeatMode]);
+  }, [playingFromUserQueue, userQueue.length, contextIndex, context.length, repeatMode]);
 
   /**
-   * Move to previous track. Returns true if moved.
+   * Move to previous track.
+   * If in user queue, go back to context. Otherwise go back in context.
    */
   const prev = useCallback(() => {
-    if (currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1);
-      return true;
-    } else if (repeatMode === REPEAT_MODE.ALL && queue.length > 0) {
-      setCurrentIndex(queue.length - 1);
+    // If playing from user queue, go back to current context position
+    if (playingFromUserQueue) {
+      setPlayingFromUserQueue(false);
       return true;
     }
+
+    // Go back in context
+    if (contextIndex > 0) {
+      setContextIndex(prev => prev - 1);
+      return true;
+    } else if (repeatMode === REPEAT_MODE.ALL && context.length > 0) {
+      setContextIndex(context.length - 1);
+      return true;
+    }
+
     return false;
-  }, [currentIndex, queue.length, repeatMode]);
+  }, [playingFromUserQueue, contextIndex, context.length, repeatMode]);
 
   /**
-   * Skip to a specific index in the queue.
+   * Skip to a specific index in context.
    */
   const skipToIndex = useCallback((index) => {
-    if (index >= 0 && index < queue.length) {
-      setCurrentIndex(index);
+    if (index >= 0 && index < context.length) {
+      setContextIndex(index);
+      setPlayingFromUserQueue(false);
     }
-  }, [queue.length]);
+  }, [context.length]);
 
   /**
-   * Remove a track from the queue by index.
+   * Remove a track from user queue by index.
    */
-  const removeFromQueue = useCallback((index) => {
-    if (index < 0 || index >= queue.length) return;
-
-    setQueue(prev => {
-      const newQueue = prev.filter((_, i) => i !== index);
-
-      if (index < currentIndex) {
-        setCurrentIndex(curr => curr - 1);
-      } else if (index === currentIndex) {
-        if (newQueue.length === 0) {
-          setCurrentIndex(-1);
-        } else if (index >= newQueue.length) {
-          setCurrentIndex(newQueue.length - 1);
-        }
+  const removeFromUserQueue = useCallback((index) => {
+    if (index < 0 || index >= userQueue.length) return;
+    
+    setUserQueue(prev => prev.filter((_, i) => i !== index));
+    
+    // If we removed the currently playing user queue item
+    if (playingFromUserQueue && index === 0) {
+      if (userQueue.length <= 1) {
+        // No more user queue items, go back to context
+        setPlayingFromUserQueue(false);
       }
-
-      return newQueue;
-    });
-  }, [queue.length, currentIndex]);
+      // Otherwise the next user queue item becomes current
+    }
+  }, [userQueue.length, playingFromUserQueue]);
 
   /**
-   * Reorder a track in the queue (drag-and-drop).
-   * Moves track from fromIndex to toIndex.
+   * Reorder user queue (drag-and-drop).
    */
-  const reorderQueue = useCallback((fromIndex, toIndex) => {
-    if (fromIndex < 0 || fromIndex >= queue.length) return;
-    if (toIndex < 0 || toIndex >= queue.length) return;
+  const reorderUserQueue = useCallback((fromIndex, toIndex) => {
+    if (fromIndex < 0 || fromIndex >= userQueue.length) return;
+    if (toIndex < 0 || toIndex >= userQueue.length) return;
     if (fromIndex === toIndex) return;
 
-    setQueue(prev => {
+    setUserQueue(prev => {
       const newQueue = [...prev];
       const [removed] = newQueue.splice(fromIndex, 1);
       newQueue.splice(toIndex, 0, removed);
-
-      // Update currentIndex if needed
-      if (fromIndex === currentIndex) {
-        // Moving the current track
-        setCurrentIndex(toIndex);
-      } else if (fromIndex < currentIndex && toIndex >= currentIndex) {
-        // Moving a track from before current to after current
-        setCurrentIndex(curr => curr - 1);
-      } else if (fromIndex > currentIndex && toIndex <= currentIndex) {
-        // Moving a track from after current to before current
-        setCurrentIndex(curr => curr + 1);
-      }
-
       return newQueue;
     });
-  }, [queue.length, currentIndex]);
+  }, [userQueue.length]);
 
   /**
    * Toggle shuffle mode.
@@ -178,24 +263,28 @@ export function useQueueManager() {
 
   return {
     // State
-    queue,
-    currentIndex,
+    context,
+    contextIndex,
+    userQueue,
     currentTrack,
+    playingFromUserQueue,
     shuffle,
     repeatMode,
     hasNext,
     hasPrev,
+    displayQueue,
 
     // Actions
     playNow,
     playTrack,
     addToQueue,
+    clearUserQueue,
     clearQueue,
     next,
     prev,
     skipToIndex,
-    removeFromQueue,
-    reorderQueue,
+    removeFromUserQueue,
+    reorderUserQueue,
     toggleShuffle,
     cycleRepeatMode,
   };

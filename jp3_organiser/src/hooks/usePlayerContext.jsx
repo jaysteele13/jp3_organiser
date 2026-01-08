@@ -3,9 +3,13 @@
  * 
  * Orchestrates the audio player by composing:
  * - useAudioElement: Audio element lifecycle and controls
- * - useQueueManager: Queue state and navigation
+ * - useQueueManager: Queue state and navigation (context + user queue)
  * 
  * Provides a unified API for the entire app to control playback.
+ * 
+ * Architecture:
+ * - CONTEXT: The album/playlist/artist you're playing from. Navigate freely with next/prev.
+ * - USER QUEUE: Songs added via "Add to Queue". Consumed (removed) when played.
  */
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
@@ -38,35 +42,40 @@ export function PlayerProvider({ children }) {
   const [volume, setVolumeState] = useState(1);
   const [libraryPath, setLibraryPathState] = useState(null);
 
-  // Queue management
+  // Queue management (context + user queue)
   const queueManager = useQueueManager();
   const {
-    queue,
-    currentIndex,
+    context,
+    contextIndex,
+    userQueue,
     currentTrack,
+    playingFromUserQueue,
     shuffle,
     repeatMode,
     hasNext,
     hasPrev,
+    displayQueue,
     playNow,
     playTrack,
     addToQueue,
+    clearUserQueue,
     clearQueue: clearQueueState,
     next: nextTrack,
     prev: prevTrack,
     skipToIndex,
-    removeFromQueue: removeFromQueueState,
-    reorderQueue,
+    removeFromUserQueue,
+    reorderUserQueue,
     toggleShuffle,
     cycleRepeatMode,
   } = queueManager;
 
-  // Handle track ended - advance queue or repeat
+  // Handle track ended - advance to next track
   const handleTrackEnded = useCallback(() => {
     if (repeatMode === REPEAT_MODE.ONE) {
-      // Handled by audio element - just restart
+      // Repeat one is handled by the effect below - just restart
       return;
     }
+    // Move to next track (user queue items are consumed, context advances)
     nextTrack();
   }, [repeatMode, nextTrack]);
 
@@ -88,9 +97,9 @@ export function PlayerProvider({ children }) {
     stop,
   } = audioElement;
 
-  // Auto-play when currentIndex or libraryPath changes
+  // Auto-play when current track changes
   // Uses a ref to track the last successfully triggered play to avoid duplicates
-  const lastPlayedRef = useRef({ index: -1, path: null });
+  const lastPlayedRef = useRef({ id: null, path: null });
   
   useEffect(() => {
     // Need both a track and library path to play
@@ -98,17 +107,17 @@ export function PlayerProvider({ children }) {
       return;
     }
     
-    // Avoid re-triggering for the same track
-    const playKey = `${currentIndex}:${currentTrack.path}`;
-    const lastKey = `${lastPlayedRef.current.index}:${lastPlayedRef.current.path}`;
-    
-    if (playKey === lastKey) {
+    // Avoid re-triggering for the same track (by ID and path)
+    if (
+      lastPlayedRef.current.id === currentTrack.id &&
+      lastPlayedRef.current.path === currentTrack.path
+    ) {
       return;
     }
     
     const fullPath = resolveAudioPath(libraryPath, currentTrack.path);
     if (fullPath) {
-      lastPlayedRef.current = { index: currentIndex, path: currentTrack.path };
+      lastPlayedRef.current = { id: currentTrack.id, path: currentTrack.path };
       loadAndPlay(fullPath);
       
       // Track this song in recents
@@ -118,7 +127,7 @@ export function PlayerProvider({ children }) {
         });
       }
     }
-  }, [currentIndex, currentTrack?.path, libraryPath, loadAndPlay]);
+  }, [currentTrack?.id, currentTrack?.path, libraryPath, loadAndPlay]);
 
   // Handle repeat one - seek to start when track ends
   useEffect(() => {
@@ -152,20 +161,14 @@ export function PlayerProvider({ children }) {
     prevTrack();
   }, [position, seek, prevTrack]);
 
+  const next = useCallback(() => {
+    nextTrack();
+  }, [nextTrack]);
+
   const clearQueue = useCallback(() => {
     stop();
     clearQueueState();
   }, [stop, clearQueueState]);
-
-  const removeFromQueue = useCallback((index) => {
-    const isRemovingCurrent = index === currentIndex;
-    removeFromQueueState(index);
-    
-    // If removing the current track and queue is now empty, stop
-    if (isRemovingCurrent && queue.length <= 1) {
-      stop();
-    }
-  }, [removeFromQueueState, currentIndex, queue.length, stop]);
 
   const setVolume = useCallback((value) => {
     setVolumeState(Math.max(0, Math.min(1, value)));
@@ -185,9 +188,12 @@ export function PlayerProvider({ children }) {
 
   const value = {
     // State
-    queue,
-    currentIndex,
+    context,
+    contextIndex,
+    userQueue,
     currentTrack,
+    playingFromUserQueue,
+    displayQueue,
     isPlaying,
     isLoading,
     position,
@@ -205,15 +211,16 @@ export function PlayerProvider({ children }) {
     playTrack,
     addToQueue,
     clearQueue,
+    clearUserQueue,
     pause,
     resume,
     togglePlayPause,
     seek,
-    next: nextTrack,
+    next,
     prev,
     skipToIndex,
-    removeFromQueue,
-    reorderQueue,
+    removeFromUserQueue,
+    reorderUserQueue,
 
     // Options
     toggleShuffle,

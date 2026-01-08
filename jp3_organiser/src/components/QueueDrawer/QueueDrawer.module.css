@@ -239,6 +239,70 @@
 }
 
 /* ============================================
+   SECTIONS
+   ============================================ */
+
+.section {
+  margin-bottom: 0.5rem;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+}
+
+.sectionTitle {
+  margin: 0;
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sectionHeader .sectionTitle {
+  padding: 0;
+}
+
+.clearSectionBtn {
+  background-color: transparent;
+  border: none;
+  color: var(--primary);
+  font-size: 0.7rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  transition: opacity 0.2s ease;
+}
+
+.clearSectionBtn:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* User Queue Item styling */
+.userQueueItem {
+  background-color: rgba(182, 73, 99, 0.1);
+}
+
+.userQueueItem:hover {
+  background-color: rgba(182, 73, 99, 0.2);
+}
+
+/* Queue Badge */
+.queueBadge {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.4rem;
+  background-color: var(--primary);
+  color: #000;
+  border-radius: 3px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* ============================================
    RESPONSIVE
    ============================================ */
 

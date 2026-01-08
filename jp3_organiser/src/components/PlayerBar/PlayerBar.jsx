@@ -27,7 +27,9 @@ export default function PlayerBar() {
     hasPrev,
     shuffle,
     repeatMode,
-    queue,
+    context,
+    contextIndex,
+    userQueue,
     togglePlayPause,
     prev,
     next,
@@ -39,6 +41,10 @@ export default function PlayerBar() {
   const [isQueueOpen, setIsQueueOpen] = useState(false);
 
   const hasTrack = currentTrack !== null;
+  
+  // Calculate total upcoming tracks (user queue + remaining context)
+  const upNextCount = userQueue.length + 
+    (contextIndex >= 0 ? Math.max(0, context.length - contextIndex - 1) : 0);
 
   const handleToggleQueue = () => {
     setIsQueueOpen(prev => !prev);
@@ -82,7 +88,7 @@ export default function PlayerBar() {
               onClick={handleToggleQueue}
               title="Toggle queue"
             >
-              Queue ({queue.length})
+              Queue {upNextCount > 0 ? `(${upNextCount})` : ''}
             </button>
           </div>
         </div>

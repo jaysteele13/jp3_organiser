@@ -17,6 +17,7 @@ export default function SongList({ songs }) {
   }
 
   const handlePlay = (song) => {
+    // Play this song within the context of all songs (enables next/prev)
     playTrack(song, songs);
   };
 

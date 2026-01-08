@@ -81,6 +81,7 @@ export default function DetailView({
   };
 
   const handlePlaySong = (song) => {
+    // Play this song within the context of the album/artist/playlist (enables next/prev)
     playTrack(song, songs);
   };
 
