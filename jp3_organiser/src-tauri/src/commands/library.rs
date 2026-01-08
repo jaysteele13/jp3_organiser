@@ -594,6 +594,69 @@ pub fn delete_songs(
     })
 }
 
+/// Remap a song ID in all playlists.
+///
+/// Scans all playlist files and replaces occurrences of `old_id` with `new_id`.
+/// Returns the number of playlists that were updated.
+fn remap_song_id_in_playlists(jp3_path: &Path, old_id: u32, new_id: u32) -> Result<u32, String> {
+    use crate::commands::playlist::{read_playlist_file, write_playlist_file};
+
+    let playlists_path = jp3_path.join(PLAYLISTS_DIR);
+
+    if !playlists_path.exists() {
+        return Ok(0);
+    }
+
+    let entries = fs::read_dir(&playlists_path)
+        .map_err(|e| format!("Failed to read playlists directory: {}", e))?;
+
+    let mut playlists_updated = 0u32;
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+
+        // Skip non-.bin files
+        if path.extension().and_then(|e| e.to_str()) != Some("bin") {
+            continue;
+        }
+
+        // Extract playlist ID from filename
+        let playlist_id = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .and_then(|s| s.parse::<u32>().ok());
+
+        let playlist_id = match playlist_id {
+            Some(id) => id,
+            None => continue,
+        };
+
+        // Read playlist
+        let playlist = match read_playlist_file(&path, playlist_id) {
+            Ok(p) => p,
+            Err(_) => continue, // Skip corrupted playlists
+        };
+
+        // Check if this playlist contains the old ID
+        if !playlist.song_ids.contains(&old_id) {
+            continue;
+        }
+
+        // Remap old_id to new_id
+        let updated_song_ids: Vec<u32> = playlist
+            .song_ids
+            .iter()
+            .map(|&id| if id == old_id { new_id } else { id })
+            .collect();
+
+        // Write updated playlist
+        write_playlist_file(&path, &playlist.name, &updated_song_ids)?;
+        playlists_updated += 1;
+    }
+
+    Ok(playlists_updated)
+}
+
 /// Edit a song's metadata by soft-deleting the old entry and appending a new one.
 ///
 /// This approach minimizes write cycles by:
@@ -711,10 +774,14 @@ pub fn edit_song_metadata(
     // Rebuild and write library.bin
     write_library_bin(&library_bin_path, &string_table, &artists, &albums, &songs)?;
 
+    // Remap old song ID to new song ID in all playlists
+    let playlists_updated = remap_song_id_in_playlists(&jp3_path, song_id, new_song_id)?;
+
     Ok(crate::models::EditSongResult {
         new_song_id,
         artist_created: artists.len() > old_artist_count,
         album_created: albums.len() > old_album_count,
+        playlists_updated,
     })
 }
 

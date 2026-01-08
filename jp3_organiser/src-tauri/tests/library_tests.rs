@@ -7,11 +7,13 @@
 //! - Soft delete operations
 //! - Metadata editing
 //! - Library compaction
+//! - Edit with playlist remapping
 
 use jp3_organiser_lib::commands::library::{
     compact_library, delete_songs, edit_song_metadata, get_library_stats, initialize_library,
     load_library, save_to_library, FileToSave,
 };
+use jp3_organiser_lib::commands::playlist::{create_playlist, load_playlist};
 use jp3_organiser_lib::models::AudioMetadata;
 
 /// Helper to create a test environment with initialized library.
@@ -95,8 +97,16 @@ fn test_string_deduplication_across_batches() {
     // Verify library state
     let library = load_library(base_path).unwrap();
     assert_eq!(library.songs.len(), 2, "Should have 2 songs");
-    assert_eq!(library.artists.len(), 1, "Should have 1 artist (deduplicated)");
-    assert_eq!(library.albums.len(), 1, "Should have 1 album (deduplicated)");
+    assert_eq!(
+        library.artists.len(),
+        1,
+        "Should have 1 artist (deduplicated)"
+    );
+    assert_eq!(
+        library.albums.len(),
+        1,
+        "Should have 1 album (deduplicated)"
+    );
 }
 
 // =============================================================================
@@ -121,23 +131,35 @@ fn test_duplicate_song_detection_across_batches() {
     let result1 = save_to_library(base_path.clone(), files1).unwrap();
     assert_eq!(result1.files_saved, 1, "First save should save 1 file");
     assert_eq!(result1.songs_added, 1, "First save should add 1 song");
-    assert_eq!(result1.duplicates_skipped, 0, "First save should skip 0 duplicates");
+    assert_eq!(
+        result1.duplicates_skipped, 0,
+        "First save should skip 0 duplicates"
+    );
 
     // Second save: try to add the SAME song (same title/artist/album)
     let file2 = create_dummy_audio_file(&temp_dir, "test2.mp3");
     let files2 = vec![create_file_to_save(
         file2,
-        "Unique Song",  // Same title
-        "Test Artist",  // Same artist
-        "Test Album",   // Same album
+        "Unique Song", // Same title
+        "Test Artist", // Same artist
+        "Test Album",  // Same album
         2020,
         1,
     )];
 
     let result2 = save_to_library(base_path.clone(), files2).unwrap();
-    assert_eq!(result2.files_saved, 0, "Second save should save 0 files (duplicate)");
-    assert_eq!(result2.songs_added, 0, "Second save should add 0 songs (duplicate)");
-    assert_eq!(result2.duplicates_skipped, 1, "Second save should skip 1 duplicate");
+    assert_eq!(
+        result2.files_saved, 0,
+        "Second save should save 0 files (duplicate)"
+    );
+    assert_eq!(
+        result2.songs_added, 0,
+        "Second save should add 0 songs (duplicate)"
+    );
+    assert_eq!(
+        result2.duplicates_skipped, 1,
+        "Second save should skip 1 duplicate"
+    );
 
     // Verify library still has only 1 song
     let library = load_library(base_path.clone()).unwrap();
@@ -169,7 +191,10 @@ fn test_duplicate_detection_within_same_batch() {
     let result = save_to_library(base_path.clone(), files).unwrap();
     assert_eq!(result.files_saved, 1, "Should save 1 file");
     assert_eq!(result.songs_added, 1, "Should add 1 song");
-    assert_eq!(result.duplicates_skipped, 1, "Should skip 1 duplicate in batch");
+    assert_eq!(
+        result.duplicates_skipped, 1,
+        "Should skip 1 duplicate in batch"
+    );
 
     // Verify library has only 1 song
     let library = load_library(base_path).unwrap();
@@ -203,14 +228,23 @@ fn test_soft_delete_songs() {
     let music_path = temp_dir.path().join("jp3/music");
     let audio_file_1 = music_path.join("00/001.mp3");
     let audio_file_2 = music_path.join("00/002.mp3");
-    assert!(audio_file_1.exists(), "Audio file 1 should exist before delete");
-    assert!(audio_file_2.exists(), "Audio file 2 should exist before delete");
+    assert!(
+        audio_file_1.exists(),
+        "Audio file 1 should exist before delete"
+    );
+    assert!(
+        audio_file_2.exists(),
+        "Audio file 2 should exist before delete"
+    );
 
     // Delete song 0
     let delete_result = delete_songs(base_path.clone(), vec![0]).unwrap();
     assert_eq!(delete_result.songs_deleted, 1, "Should delete 1 song");
     assert_eq!(delete_result.files_deleted, 1, "Should delete 1 audio file");
-    assert!(delete_result.not_found.is_empty(), "Should not have any not_found");
+    assert!(
+        delete_result.not_found.is_empty(),
+        "Should not have any not_found"
+    );
 
     // Verify audio file was deleted
     assert!(!audio_file_1.exists(), "Audio file 1 should be deleted");
@@ -219,7 +253,10 @@ fn test_soft_delete_songs() {
     // Verify we now have 1 song (deleted one is filtered out)
     let library = load_library(base_path.clone()).unwrap();
     assert_eq!(library.songs.len(), 1, "Should have 1 song after delete");
-    assert_eq!(library.songs[0].title, "Song Two", "Remaining song should be Song Two");
+    assert_eq!(
+        library.songs[0].title, "Song Two",
+        "Remaining song should be Song Two"
+    );
 
     // Check stats show 1 deleted
     let stats = get_library_stats(base_path).unwrap();
@@ -234,7 +271,9 @@ fn test_delete_nonexistent_song() {
 
     // Add one song
     let file = create_dummy_audio_file(&temp_dir, "test.mp3");
-    let files = vec![create_file_to_save(file, "Song One", "Artist", "Album", 2020, 1)];
+    let files = vec![create_file_to_save(
+        file, "Song One", "Artist", "Album", 2020, 1,
+    )];
     save_to_library(base_path.clone(), files).unwrap();
 
     // Try to delete nonexistent song IDs
@@ -324,14 +363,23 @@ fn test_compact_library() {
     // Check stats before compaction
     let stats_deleted = get_library_stats(base_path.clone()).unwrap();
     assert_eq!(stats_deleted.deleted_songs, 1);
-    assert_eq!(stats_deleted.total_artists, 2, "Artists still 2 before compact");
+    assert_eq!(
+        stats_deleted.total_artists, 2,
+        "Artists still 2 before compact"
+    );
 
     // Compact
     let compact_result = compact_library(base_path.clone()).unwrap();
 
     assert_eq!(compact_result.songs_removed, 1, "Should remove 1 song");
-    assert_eq!(compact_result.artists_removed, 1, "Should remove orphaned Artist Two");
-    assert_eq!(compact_result.albums_removed, 1, "Should remove orphaned Album Two");
+    assert_eq!(
+        compact_result.artists_removed, 1,
+        "Should remove orphaned Artist Two"
+    );
+    assert_eq!(
+        compact_result.albums_removed, 1,
+        "Should remove orphaned Album Two"
+    );
     assert!(compact_result.bytes_saved > 0, "Should save some bytes");
 
     // Verify final state
@@ -348,4 +396,122 @@ fn test_compact_library() {
     assert!(titles.contains(&"Song One"));
     assert!(titles.contains(&"Song Three"));
     assert!(!titles.contains(&"Song Two")); // This was deleted
+}
+
+// =============================================================================
+// Edit with Playlist Remapping Tests
+// =============================================================================
+
+#[test]
+fn test_edit_song_remaps_playlist_ids() {
+    let (temp_dir, base_path) = setup_test_library();
+
+    // Add three songs
+    let file1 = create_dummy_audio_file(&temp_dir, "song1.mp3");
+    let file2 = create_dummy_audio_file(&temp_dir, "song2.mp3");
+    let file3 = create_dummy_audio_file(&temp_dir, "song3.mp3");
+
+    let files = vec![
+        create_file_to_save(file1, "Song One", "Artist", "Album", 2020, 1),
+        create_file_to_save(file2, "Song Two", "Artist", "Album", 2020, 2),
+        create_file_to_save(file3, "Song Three", "Artist", "Album", 2020, 3),
+    ];
+
+    let save_result = save_to_library(base_path.clone(), files).unwrap();
+    assert_eq!(save_result.songs_added, 3);
+
+    // Create a playlist with songs [0, 1, 2]
+    let playlist_result =
+        create_playlist(base_path.clone(), "My Playlist".to_string(), vec![0, 1, 2]).unwrap();
+    let playlist_id = playlist_result.playlist_id;
+
+    // Verify playlist has [0, 1, 2]
+    let playlist_before = load_playlist(base_path.clone(), playlist_id).unwrap();
+    assert_eq!(playlist_before.song_ids, vec![0, 1, 2]);
+
+    // Edit song 1 (Song Two) - this should create a new song ID (3) and remap playlist
+    let new_metadata = AudioMetadata {
+        title: Some("Song Two (Edited)".to_string()),
+        artist: Some("Artist".to_string()),
+        album: Some("Album".to_string()),
+        year: Some(2020),
+        track_number: Some(2),
+        duration_secs: Some(180),
+    };
+
+    let edit_result = edit_song_metadata(base_path.clone(), 1, new_metadata).unwrap();
+
+    // Should have created new song ID 3
+    assert_eq!(edit_result.new_song_id, 3, "New song should have ID 3");
+    // Should have updated 1 playlist
+    assert_eq!(edit_result.playlists_updated, 1, "Should update 1 playlist");
+
+    // Verify playlist now has [0, 3, 2] (1 replaced with 3)
+    let playlist_after = load_playlist(base_path.clone(), playlist_id).unwrap();
+    assert_eq!(
+        playlist_after.song_ids,
+        vec![0, 3, 2],
+        "Playlist should have remapped ID 1 to 3"
+    );
+
+    // Verify the library shows the edited song
+    let library = load_library(base_path).unwrap();
+    assert_eq!(library.songs.len(), 3, "Should have 3 active songs");
+
+    let edited_song = library
+        .songs
+        .iter()
+        .find(|s| s.id == 3)
+        .expect("Should find song with ID 3");
+    assert_eq!(edited_song.title, "Song Two (Edited)");
+}
+
+#[test]
+fn test_edit_song_no_playlists_affected() {
+    let (temp_dir, base_path) = setup_test_library();
+
+    // Add a song
+    let file = create_dummy_audio_file(&temp_dir, "test.mp3");
+    let files = vec![create_file_to_save(
+        file,
+        "Test Song",
+        "Artist",
+        "Album",
+        2020,
+        1,
+    )];
+    save_to_library(base_path.clone(), files).unwrap();
+
+    // Create a playlist with song ID 0
+    create_playlist(base_path.clone(), "Playlist".to_string(), vec![0]).unwrap();
+
+    // Add another song (ID 1)
+    let file2 = create_dummy_audio_file(&temp_dir, "test2.mp3");
+    let files2 = vec![create_file_to_save(
+        file2,
+        "Another Song",
+        "Artist",
+        "Album",
+        2020,
+        2,
+    )];
+    save_to_library(base_path.clone(), files2).unwrap();
+
+    // Edit song 1 (not in any playlist)
+    let new_metadata = AudioMetadata {
+        title: Some("Another Song (Edited)".to_string()),
+        artist: Some("Artist".to_string()),
+        album: Some("Album".to_string()),
+        year: Some(2020),
+        track_number: Some(2),
+        duration_secs: Some(180),
+    };
+
+    let edit_result = edit_song_metadata(base_path, 1, new_metadata).unwrap();
+
+    // No playlists should be updated
+    assert_eq!(
+        edit_result.playlists_updated, 0,
+        "No playlists should be updated"
+    );
 }

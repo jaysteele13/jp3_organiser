@@ -10,10 +10,10 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useLibraryConfig } from '../../hooks';
+import { useLibraryConfig, useToast } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
-import { deleteSongs } from '../../services/libraryService';
-import { LoadingState, ErrorState, EmptyState } from '../../components';
+import { deleteSongs, editSongMetadata } from '../../services/libraryService';
+import { LoadingState, ErrorState, EmptyState, Toast } from '../../components';
 import styles from './View.module.css';
 
 import { TABS, VIEW_TABS } from '../../utils/enums';
@@ -24,6 +24,7 @@ import StatsBar from './components/StatsBar/StatsBar';
 import TabSelector from './components/Tabs/TabSelector';
 import TabContent from './components/Tabs/TabContent';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
+import EditSongModal from './components/EditSongModal';
 
 export default function View() {
   const location = useLocation();
@@ -34,6 +35,9 @@ export default function View() {
   const [activeTab, setActiveTab] = useState(initialTab);
   
   const { library, isLoading, error, handleRefresh } = useLibrary(libraryPath);
+
+  // Toast notification for edit feedback
+  const toast = useToast();
 
   // Sync activeTab when navigation state changes (e.g., returning from PlaylistEdit)
   useEffect(() => {
@@ -46,6 +50,11 @@ export default function View() {
   const [songsToDelete, setSongsToDelete] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Edit modal state
+  const [songToEdit, setSongToEdit] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Stats for header
   const stats = useMemo(() => {
@@ -89,6 +98,46 @@ export default function View() {
     setSongsToDelete([]);
   };
 
+  // Handle edit request from SongView
+  const handleEditRequest = (song) => {
+    setSongToEdit(song);
+    setShowEditModal(true);
+  };
+
+  // Handle confirmed edit
+  const handleConfirmEdit = async (songId, metadata) => {
+    if (!libraryPath) return;
+
+    setIsSaving(true);
+    try {
+      const result = await editSongMetadata(libraryPath, songId, metadata);
+      setShowEditModal(false);
+      setSongToEdit(null);
+      handleRefresh();
+
+      // Show toast with edit result
+      const messages = ['Song updated'];
+      if (result.artistCreated) messages.push('new artist created');
+      if (result.albumCreated) messages.push('new album created');
+      if (result.playlistsUpdated > 0) {
+        messages.push(`${result.playlistsUpdated} playlist${result.playlistsUpdated > 1 ? 's' : ''} updated`);
+      }
+      toast.showToast(messages.join(', '), 'success');
+    } catch (err) {
+      console.error('Failed to edit song:', err);
+      toast.showToast('Failed to edit song', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    if (isSaving) return;
+    setShowEditModal(false);
+    setSongToEdit(null);
+  };
+
   if (configLoading) {
     return <LoadingState message="Loading configuration..." />;
   }
@@ -130,6 +179,7 @@ export default function View() {
               library={library}
               libraryPath={libraryPath}
               onDeleteSong={handleDeleteRequest}
+              onEditSong={handleEditRequest}
             />
           </div>
         </>
@@ -149,6 +199,23 @@ export default function View() {
           onCancel={handleCancelDelete}
           isDeleting={isDeleting}/>
       )}
+
+      {showEditModal && (
+        <EditSongModal
+          song={songToEdit}
+          libraryPath={libraryPath}
+          onSave={handleConfirmEdit}
+          onCancel={handleCancelEdit}
+          isSaving={isSaving}
+        />
+      )}
+
+      <Toast
+        message={toast.message}
+        variant={toast.variant}
+        visible={toast.visible}
+        onDismiss={toast.hideToast}
+      />
     </div>
   );
 }

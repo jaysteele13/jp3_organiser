@@ -1,11 +1,18 @@
 import { formatDuration } from '../../../../../utils/formatters';
 import styles from './SongView.module.css'
 
-export default function SongView({ library, onDeleteSong }) {
+export default function SongView({ library, onDeleteSong, onEditSong }) {
   const handleDeleteClick = (e, song) => {
     e.stopPropagation();
     if (onDeleteSong) {
       onDeleteSong(song);
+    }
+  };
+
+  const handleEditClick = (e, song) => {
+    e.stopPropagation();
+    if (onEditSong) {
+      onEditSong(song);
     }
   };
     
@@ -35,6 +42,13 @@ export default function SongView({ library, onDeleteSong }) {
               </td>
               <td className={styles.cellPath}>{song.path}</td>
               <td className={styles.cellActions}>
+                <button 
+                  className={styles.editBtn}
+                  onClick={(e) => handleEditClick(e, song)}
+                  title="Edit metadata"
+                >
+                  e
+                </button>
                 <button 
                   className={styles.deleteBtn}
                   onClick={(e) => handleDeleteClick(e, song)}

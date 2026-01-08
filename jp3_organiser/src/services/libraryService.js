@@ -184,6 +184,29 @@ export async function getLibraryStats(basePath) {
 }
 
 /**
+ * Edit a song's metadata.
+ * 
+ * This soft-deletes the old song entry and creates a new one with updated metadata.
+ * The audio file path is preserved. Use `compactLibrary` to clean up the old entry.
+ * 
+ * Note: If the song is in playlists, those playlists will reference the old (deleted) ID
+ * until compaction remaps them to the new ID.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {number} songId - ID of the song to edit
+ * @param {Object} metadata - New metadata object with title, artist, album, year (optional)
+ * @returns {Promise<EditSongResult>} Result with new song ID
+ * 
+ * @typedef {Object} EditSongResult
+ * @property {number} newSongId - The new song ID
+ * @property {boolean} artistCreated - Whether a new artist was created
+ * @property {boolean} albumCreated - Whether a new album was created
+ */
+export async function editSongMetadata(basePath, songId, metadata) {
+  return await invoke('edit_song_metadata', { basePath, songId, newMetadata: metadata });
+}
+
+/**
  * Compact the library by removing deleted entries and orphaned data.
  * 
  * This rebuilds the entire library.bin, removing:

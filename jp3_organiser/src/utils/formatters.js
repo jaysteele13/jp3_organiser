@@ -26,3 +26,26 @@ export function formatDuration(seconds) {
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
+
+/**
+ * Convert a ParsedSong from library to TrackedAudioFile format.
+ * This allows reusing MetadataForm for editing existing songs.
+ * 
+ * @param {Object} song - ParsedSong object from library
+ * @returns {Object} TrackedAudioFile-compatible object for MetadataForm
+ */
+export function parsedSongToTrackedFile(song) {
+  return {
+    trackingId: song.id.toString(),
+    fileName: song.title,
+    filePath: song.path,
+    metadata: {
+      title: song.title,
+      artist: song.artistName,
+      album: song.albumName,
+      year: song.year || null,
+      trackNumber: song.trackNumber,
+      durationSecs: song.durationSec,
+    }
+  };
+}

@@ -1,12 +1,8 @@
 import styles from './TabSelector.module.css'
-import {TABS, VIEW_TABS} from '../../../../utils/enums'
 
 export default function TabSelector({setActiveTab, activeTab, tabs }) {
 
-
     return (
-        // Have Check to See
-        
          <div className={styles.tabs}>
             {Object.entries(tabs).map(([key, value]) => (
                 <button
@@ -18,6 +14,5 @@ export default function TabSelector({setActiveTab, activeTab, tabs }) {
                 </button>
             ))}
         </div>
-        
     )
 }

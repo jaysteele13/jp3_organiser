@@ -426,6 +426,8 @@ pub struct EditSongResult {
     pub artist_created: bool,
     /// Whether a new album was created
     pub album_created: bool,
+    /// Number of playlists updated with the new song ID
+    pub playlists_updated: u32,
 }
 
 /// Library statistics for compaction decision.
