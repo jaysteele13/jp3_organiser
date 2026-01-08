@@ -66,6 +66,7 @@ export function PlayerProvider({ children }) {
     removeFromUserQueue,
     reorderUserQueue,
     toggleShuffle,
+    shuffleUserQueue,
     cycleRepeatMode,
   } = queueManager;
 
@@ -224,6 +225,7 @@ export function PlayerProvider({ children }) {
 
     // Options
     toggleShuffle,
+    shuffleUserQueue,
     cycleRepeatMode,
     setVolume,
     setLibraryPath,

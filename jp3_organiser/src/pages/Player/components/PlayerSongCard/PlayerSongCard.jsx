@@ -11,12 +11,14 @@
  * - onQueue: Callback when Queue button is clicked
  * - showTrackNumber: Prefix title with track number (for album context)
  * - subtitle: Custom subtitle string (defaults to "artist - album")
+ * 
+ * Memoized to prevent unnecessary re-renders in large lists.
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import styles from './PlayerSongCard.module.css';
 
-export default function PlayerSongCard({ 
+function PlayerSongCard({ 
   song, 
   isPlaying = false,
   onPlay, 
@@ -70,3 +72,5 @@ export default function PlayerSongCard({
     </div>
   );
 }
+
+export default memo(PlayerSongCard);

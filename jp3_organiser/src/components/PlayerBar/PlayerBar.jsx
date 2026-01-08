@@ -6,13 +6,24 @@
  * 
  * Always visible at the bottom of the app. Shows empty state
  * when no track is playing.
+ * 
+ * Keyboard shortcuts (global, when not in input):
+ * - Space: Play/Pause
+ * - Arrow Left/Right: Seek -/+ 5 seconds
+ * - Arrow Up/Down: Volume +/- 10%
+ * - N: Next track
+ * - P: Previous track
+ * - M: Mute/Unmute
+ * - S: Toggle shuffle
+ * - R: Cycle repeat mode
  */
 
 import React, { useState } from 'react';
-import { usePlayer } from '../../hooks';
+import { usePlayer, usePlayerKeyboardShortcuts } from '../../hooks';
 import TrackInfo from './TrackInfo';
 import PlaybackControls from './PlaybackControls';
 import ProgressSlider from './ProgressSlider';
+import VolumeControl from './VolumeControl';
 import QueueDrawer from '../QueueDrawer';
 import styles from './PlayerBar.module.css';
 
@@ -23,6 +34,7 @@ export default function PlayerBar() {
     isLoading,
     position,
     duration,
+    volume,
     hasNext,
     hasPrev,
     shuffle,
@@ -34,9 +46,26 @@ export default function PlayerBar() {
     prev,
     next,
     seek,
+    setVolume,
     toggleShuffle,
     cycleRepeatMode,
   } = usePlayer();
+
+  // Register global keyboard shortcuts
+  usePlayerKeyboardShortcuts({
+    isPlaying,
+    togglePlayPause,
+    seek,
+    position,
+    duration,
+    volume,
+    setVolume,
+    next,
+    prev,
+    toggleShuffle,
+    cycleRepeatMode,
+    currentTrack,
+  });
 
   const [isQueueOpen, setIsQueueOpen] = useState(false);
 
@@ -81,8 +110,13 @@ export default function PlayerBar() {
             />
           </div>
 
-          {/* Right: Queue Button */}
+          {/* Right: Volume + Queue Button */}
           <div className={styles.right}>
+            <VolumeControl
+              volume={volume}
+              onVolumeChange={setVolume}
+              disabled={!hasTrack}
+            />
             <button 
               className={`${styles.queueBtn} ${isQueueOpen ? styles.active : ''}`}
               onClick={handleToggleQueue}

@@ -16,6 +16,12 @@
   gap: 0.5rem;
 }
 
+/* Optimize rendering for large lists */
+.list > * {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 52px;
+}
+
 /* ========================================
    CARD GRID - For Albums, Artists, Playlists
    ======================================== */
@@ -24,6 +30,12 @@
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
+}
+
+/* Optimize rendering for large card grids */
+.cardGrid > * {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 180px;
 }
 
 .card {

@@ -15,6 +15,7 @@ import {
   removeSongsFromPlaylist,
   renamePlaylist,
 } from '../../services/libraryService';
+import { useDebounce } from '../../hooks';
 
 export default function usePlaylistEdit(libraryPath, playlistId) {
   const [playlist, setPlaylist] = useState(null);
@@ -23,6 +24,9 @@ export default function usePlaylistEdit(libraryPath, playlistId) {
   const [error, setError] = useState(null);
   const [selectedSongIds, setSelectedSongIds] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Debounce search query for filtering (300ms delay)
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   /**
    * Load playlist data on mount
@@ -183,6 +187,7 @@ export default function usePlaylistEdit(libraryPath, playlistId) {
     error,
     selectedSongIds,
     searchQuery,
+    debouncedSearchQuery,
     playlistSongIdSet,
 
     // Actions

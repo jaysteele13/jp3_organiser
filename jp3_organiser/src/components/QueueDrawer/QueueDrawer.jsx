@@ -31,6 +31,7 @@ export default function QueueDrawer({ isOpen, onClose }) {
     reorderUserQueue,
     clearUserQueue,
     clearQueue,
+    shuffleUserQueue,
   } = usePlayer();
 
   // Drag state for user queue
@@ -86,6 +87,10 @@ export default function QueueDrawer({ isOpen, onClose }) {
 
   const handleClearAll = () => {
     clearQueue();
+  };
+
+  const handleShuffleUserQueue = () => {
+    shuffleUserQueue();
   };
 
   if (!isOpen) return null;
@@ -154,12 +159,23 @@ export default function QueueDrawer({ isOpen, onClose }) {
                     <h4 className={styles.sectionTitle}>
                       Next in Queue ({userQueue.length})
                     </h4>
-                    <button 
-                      className={styles.clearSectionBtn}
-                      onClick={handleClearUserQueue}
-                    >
-                      Clear
-                    </button>
+                    <div className={styles.sectionActions}>
+                      {userQueue.length > 1 && (
+                        <button 
+                          className={styles.clearSectionBtn}
+                          onClick={handleShuffleUserQueue}
+                          title="Shuffle queue"
+                        >
+                          Shuffle
+                        </button>
+                      )}
+                      <button 
+                        className={styles.clearSectionBtn}
+                        onClick={handleClearUserQueue}
+                      >
+                        Clear
+                      </button>
+                    </div>
                   </div>
                   {(playingFromUserQueue ? userQueue.slice(1) : userQueue).map((track, index) => {
                     // Adjust index for display when playing from user queue

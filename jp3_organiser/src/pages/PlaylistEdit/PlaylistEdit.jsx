@@ -8,7 +8,7 @@
  * Route: /playlist/:id
  */
 
-import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useMemo, useState, useCallback, useEffect, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLibraryConfig } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
@@ -33,8 +33,9 @@ function buildSongLookup(library) {
 
 /**
  * CurrentSongRow - Song in playlist with remove button
+ * Memoized to prevent unnecessary re-renders in large lists.
  */
-function CurrentSongRow({ song, index, onRemove, isDisabled }) {
+const CurrentSongRow = memo(function CurrentSongRow({ song, index, onRemove, isDisabled }) {
   return (
     <tr className={styles.songRow}>
       <td className={styles.cellIndex}>{index + 1}</td>
@@ -52,12 +53,13 @@ function CurrentSongRow({ song, index, onRemove, isDisabled }) {
       </td>
     </tr>
   );
-}
+});
 
 /**
  * PickerSongRow - Song in the add picker with checkbox
+ * Memoized to prevent unnecessary re-renders in large lists.
  */
-function PickerSongRow({ song, isSelected, isInPlaylist, onToggle }) {
+const PickerSongRow = memo(function PickerSongRow({ song, isSelected, isInPlaylist, onToggle }) {
   const handleClick = () => {
     if (!isInPlaylist) {
       onToggle(song.id);
@@ -86,7 +88,7 @@ function PickerSongRow({ song, isSelected, isInPlaylist, onToggle }) {
       </td>
     </tr>
   );
-}
+});
 
 export default function PlaylistEdit() {
   const { id } = useParams();
@@ -104,6 +106,7 @@ export default function PlaylistEdit() {
     error,
     selectedSongIds,
     searchQuery,
+    debouncedSearchQuery,
     playlistSongIdSet,
     removeSong,
     addSelectedSongs,
@@ -116,18 +119,18 @@ export default function PlaylistEdit() {
   const songLookup = useMemo(() => buildSongLookup(library), [library]);
   const allSongs = library?.songs || [];
 
-  // Filter songs for picker based on search query
+  // Filter songs for picker based on debounced search query
   const filteredSongs = useMemo(() => {
-    if (!searchQuery.trim()) {
+    if (!debouncedSearchQuery.trim()) {
       return allSongs;
     }
-    const query = searchQuery.toLowerCase();
+    const query = debouncedSearchQuery.toLowerCase();
     return allSongs.filter(song => 
       song.title.toLowerCase().includes(query) ||
       song.artistName.toLowerCase().includes(query) ||
       song.albumName.toLowerCase().includes(query)
     );
-  }, [allSongs, searchQuery]);
+  }, [allSongs, debouncedSearchQuery]);
 
   // Get current playlist songs with details
   const currentSongs = useMemo(() => {

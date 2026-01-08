@@ -242,10 +242,46 @@ export function useQueueManager() {
 
   /**
    * Toggle shuffle mode.
+   * When enabling shuffle, immediately shuffles the remaining context.
+   * When disabling, maintains current position.
    */
   const toggleShuffle = useCallback(() => {
-    setShuffle(prev => !prev);
-  }, []);
+    setShuffle(prev => {
+      const newShuffle = !prev;
+      
+      if (newShuffle && context.length > 0 && contextIndex >= 0) {
+        // Shuffle the remaining context, keeping current track in place
+        const currentTrackItem = context[contextIndex];
+        const beforeCurrent = context.slice(0, contextIndex);
+        const afterCurrent = context.slice(contextIndex + 1);
+        
+        // Shuffle the remaining tracks
+        const shuffledRemaining = shuffleArray(afterCurrent);
+        
+        // Rebuild context: [before (unchanged)] + [current] + [shuffled remaining]
+        const newContext = [...beforeCurrent, currentTrackItem, ...shuffledRemaining];
+        setContext(newContext);
+      }
+      
+      return newShuffle;
+    });
+  }, [context, contextIndex]);
+
+  /**
+   * Shuffle the user queue (not the context).
+   */
+  const shuffleUserQueue = useCallback(() => {
+    if (userQueue.length <= 1) return;
+    
+    // If playing from user queue, keep current track at front
+    if (playingFromUserQueue) {
+      const current = userQueue[0];
+      const rest = userQueue.slice(1);
+      setUserQueue([current, ...shuffleArray(rest)]);
+    } else {
+      setUserQueue(shuffleArray(userQueue));
+    }
+  }, [userQueue, playingFromUserQueue]);
 
   /**
    * Cycle through repeat modes: OFF -> ALL -> ONE -> OFF
@@ -286,6 +322,7 @@ export function useQueueManager() {
     removeFromUserQueue,
     reorderUserQueue,
     toggleShuffle,
+    shuffleUserQueue,
     cycleRepeatMode,
   };
 }
