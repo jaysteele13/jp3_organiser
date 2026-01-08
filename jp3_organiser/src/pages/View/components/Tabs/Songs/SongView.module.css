@@ -35,55 +35,11 @@
 
 /* Actions column */
 .actionsHeader {
-  width: 100px;
-  text-align: center;
+  width: 60px;
 }
 
 .cellActions {
   text-align: center;
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-}
-
-.editBtn {
-  background-color: transparent;
-  border: 1px solid var(--secondary);
-  color: var(--secondary);
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  line-height: 1;
-  transition: all 0.2s ease;
-}
-
-.editBtn:hover {
-  background-color: var(--secondary);
-  color: #fff;
-}
-
-.deleteBtn {
-  background-color: transparent;
-  border: 1px solid var(--primary);
-  color: var(--primary);
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  line-height: 1;
-  transition: all 0.2s ease;
-}
-
-.deleteBtn:hover {
-  background-color: var(--primary);
-  color: #fff;
 }
 
 .emptyTable {

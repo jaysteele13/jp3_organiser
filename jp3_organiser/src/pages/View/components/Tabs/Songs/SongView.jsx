@@ -1,21 +1,8 @@
 import { formatDuration } from '../../../../../utils/formatters';
+import ActionMenu from './ActionMenu';
 import styles from './SongView.module.css'
 
 export default function SongView({ library, onDeleteSong, onEditSong }) {
-  const handleDeleteClick = (e, song) => {
-    e.stopPropagation();
-    if (onDeleteSong) {
-      onDeleteSong(song);
-    }
-  };
-
-  const handleEditClick = (e, song) => {
-    e.stopPropagation();
-    if (onEditSong) {
-      onEditSong(song);
-    }
-  };
-    
   return (
     <div className={styles.tableContainer}>
       <table className={styles.table}>
@@ -27,7 +14,7 @@ export default function SongView({ library, onDeleteSong, onEditSong }) {
             <th>Album</th>
             <th>Duration</th>
             <th>Path</th>
-            <th className={styles.actionsHeader}>Actions</th>
+            <th className={styles.actionsHeader}></th>
           </tr>
         </thead>
         <tbody>
@@ -42,20 +29,10 @@ export default function SongView({ library, onDeleteSong, onEditSong }) {
               </td>
               <td className={styles.cellPath}>{song.path}</td>
               <td className={styles.cellActions}>
-                <button 
-                  className={styles.editBtn}
-                  onClick={(e) => handleEditClick(e, song)}
-                  title="Edit metadata"
-                >
-                  e
-                </button>
-                <button 
-                  className={styles.deleteBtn}
-                  onClick={(e) => handleDeleteClick(e, song)}
-                  title="Delete song"
-                >
-                  x
-                </button>
+                <ActionMenu
+                  onEdit={() => onEditSong?.(song)}
+                  onDelete={() => onDeleteSong?.(song)}
+                />
               </td>
             </tr>
           ))}
