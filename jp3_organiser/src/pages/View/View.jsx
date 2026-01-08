@@ -114,7 +114,11 @@ export default function View() {
 
       {library && (
         <>
-          <StatsBar stats={stats}/>
+          <StatsBar 
+            stats={stats} 
+            libraryPath={libraryPath}
+            onCompacted={handleRefresh}
+          />
           <TabSelector 
             setActiveTab={setActiveTab}
             activeTab={activeTab}

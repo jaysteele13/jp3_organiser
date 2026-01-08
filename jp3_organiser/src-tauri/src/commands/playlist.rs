@@ -80,7 +80,7 @@ pub fn create_playlist(
 }
 
 /// Write a playlist binary file.
-fn write_playlist_file(path: &Path, name: &str, song_ids: &[u32]) -> Result<(), String> {
+pub fn write_playlist_file(path: &Path, name: &str, song_ids: &[u32]) -> Result<(), String> {
     let name_bytes = name.as_bytes();
     let header = PlaylistHeader::new(song_ids.len() as u32, name_bytes.len() as u16);
 
@@ -122,7 +122,7 @@ pub fn load_playlist(base_path: String, playlist_id: u32) -> Result<ParsedPlayli
 }
 
 /// Read and parse a playlist binary file.
-fn read_playlist_file(path: &Path, playlist_id: u32) -> Result<ParsedPlaylist, String> {
+pub fn read_playlist_file(path: &Path, playlist_id: u32) -> Result<ParsedPlaylist, String> {
     let mut file =
         fs::File::open(path).map_err(|e| format!("Failed to open playlist file: {}", e))?;
     let mut data = Vec::new();

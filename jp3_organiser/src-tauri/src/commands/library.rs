@@ -541,7 +541,7 @@ pub fn delete_songs(
     let mut not_found = Vec::new();
     let mut files_deleted = 0u32;
 
-    for song_id in song_ids {
+    for &song_id in &song_ids {
         if song_id >= header.song_count {
             not_found.push(song_id);
             continue;
@@ -582,6 +582,10 @@ pub fn delete_songs(
     // Ensure changes are flushed to disk
     file.sync_all()
         .map_err(|e| format!("Failed to sync changes: {}", e))?;
+
+    // Note: Playlists are NOT updated here to minimize SD card writes.
+    // Orphaned song IDs in playlists will be cleaned up during compact_library,
+    // which also remaps all song IDs. The frontend filters orphaned IDs when displaying.
 
     Ok(crate::models::DeleteSongsResult {
         songs_deleted,
@@ -898,7 +902,14 @@ pub fn compact_library(base_path: String) -> Result<crate::models::CompactResult
     }
 
     // Rebuild songs with remapped IDs
-    for song in active_songs {
+    // Also build a map from old song IDs to new song IDs for playlist remapping
+    let mut song_id_map: HashMap<u32, u32> = HashMap::new();
+    for (old_idx, song) in old_songs.iter().enumerate() {
+        // Skip deleted songs
+        if song.flags & song_flags::DELETED != 0 {
+            continue;
+        }
+
         let title = old_strings
             .get(song.title_string_id as usize)
             .cloned()
@@ -912,6 +923,9 @@ pub fn compact_library(base_path: String) -> Result<crate::models::CompactResult
         let path_string_id = new_string_table.add(&path);
         let new_artist_id = *artist_id_map.get(&song.artist_id).unwrap_or(&0);
         let new_album_id = *album_id_map.get(&song.album_id).unwrap_or(&0);
+
+        let new_song_id = new_songs.len() as u32;
+        song_id_map.insert(old_idx as u32, new_song_id);
 
         new_songs.push(SongEntry::new(
             title_string_id,
@@ -953,11 +967,59 @@ pub fn compact_library(base_path: String) -> Result<crate::models::CompactResult
         .map(|m| m.len())
         .unwrap_or(0);
 
+    // Remap song IDs in all playlists
+    // This removes orphaned IDs (deleted songs) and updates IDs to new values
+    let playlists_path = jp3_path.join(PLAYLISTS_DIR);
+    let mut playlists_updated = 0u32;
+
+    if playlists_path.exists() {
+        if let Ok(entries) = fs::read_dir(&playlists_path) {
+            for entry in entries.flatten() {
+                // Parse playlist ID from filename (e.g., "123.bin" -> 123)
+                let Some(playlist_id) = entry
+                    .file_name()
+                    .to_str()
+                    .and_then(|name| name.strip_suffix(".bin"))
+                    .and_then(|id_str| id_str.parse::<u32>().ok())
+                else {
+                    continue;
+                };
+
+                // Read the playlist
+                let Ok(playlist) =
+                    crate::commands::playlist::read_playlist_file(&entry.path(), playlist_id)
+                else {
+                    continue;
+                };
+
+                // Remap song IDs: keep only songs that exist in the new library
+                // and update their IDs to the new values
+                let remapped_ids: Vec<u32> = playlist
+                    .song_ids
+                    .iter()
+                    .filter_map(|old_id| song_id_map.get(old_id).copied())
+                    .collect();
+
+                // Always rewrite since IDs may have changed even if count is same
+                if crate::commands::playlist::write_playlist_file(
+                    &entry.path(),
+                    &playlist.name,
+                    &remapped_ids,
+                )
+                .is_ok()
+                {
+                    playlists_updated += 1;
+                }
+            }
+        }
+    }
+
     Ok(crate::models::CompactResult {
         songs_removed,
         artists_removed,
         albums_removed,
         strings_removed,
+        playlists_updated,
         old_size_bytes,
         new_size_bytes,
         bytes_saved: old_size_bytes.saturating_sub(new_size_bytes),
