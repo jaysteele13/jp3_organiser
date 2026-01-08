@@ -21,6 +21,10 @@
   margin-left: 60px;
 }
 
+.hasPlayerBar {
+  padding-bottom: 100px; /* Space for fixed PlayerBar (80px + buffer) */
+}
+
 .row {
   display: flex;
   justify-content: center;

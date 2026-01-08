@@ -1,0 +1,311 @@
+/**
+ * DetailView Styles
+ * 
+ * Spotify-inspired detail page layout with header, cover art, and song list.
+ * Uses type-specific color schemes matching the card colors.
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding: 1rem;
+}
+
+/* Back Button */
+.backBtn {
+  align-self: flex-start;
+  padding: 0.5rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  background-color: transparent;
+  color: #ccc;
+  border: 1px solid #666;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.backBtn:hover {
+  border-color: #888;
+  color: #fff;
+}
+
+/* Header Section */
+.header {
+  display: flex;
+  gap: 2rem;
+  padding: 2rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+/* Type-specific header colors */
+.header.album {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+}
+
+.header.artist {
+  background: linear-gradient(135deg, var(--quaternary) 0%, var(--quaternary-hover) 100%);
+}
+
+.header.playlist {
+  background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-hover) 100%);
+}
+
+/* Cover Art Placeholder */
+.coverArt {
+  width: 180px;
+  height: 180px;
+  min-width: 180px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.icon {
+  font-size: 4rem;
+  opacity: 0.8;
+}
+
+/* Info Section */
+.info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.typeLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.8;
+}
+
+/* Default text colors for album/artist (light text on dark bg) */
+.header.album .typeLabel,
+.header.artist .typeLabel {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.header.album .title,
+.header.artist .title {
+  color: #fff;
+}
+
+.header.album .subtitle,
+.header.artist .subtitle,
+.header.album .meta,
+.header.artist .meta {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Playlist uses dark text on lime bg */
+.header.playlist .typeLabel {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.header.playlist .title {
+  color: #000;
+}
+
+.header.playlist .subtitle,
+.header.playlist .meta {
+  color: rgba(0, 0, 0, 0.8);
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtitle {
+  font-size: 1rem;
+  margin: 0;
+  opacity: 0.9;
+}
+
+.meta {
+  font-size: 0.85rem;
+  margin: 0;
+  opacity: 0.7;
+}
+
+/* Action Buttons */
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.actionBtn {
+  padding: 0.6rem 1.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.actionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Primary button - solid dark */
+.actionBtn.primary {
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #fff;
+}
+
+.actionBtn.primary:hover:not(:disabled) {
+  background-color: #000;
+  transform: scale(1.05);
+}
+
+/* Playlist uses light button on lime bg */
+.header.playlist .actionBtn.primary {
+  background-color: rgba(0, 0, 0, 0.9);
+  color: #fff;
+}
+
+/* Secondary button - semi-transparent */
+.actionBtn.secondary {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.header.playlist .actionBtn.secondary {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: #000;
+}
+
+.actionBtn.secondary:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.header.playlist .actionBtn.secondary:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Outline button */
+.actionBtn.outline {
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+
+.header.playlist .actionBtn.outline {
+  border-color: rgba(0, 0, 0, 0.3);
+  color: #000;
+}
+
+.actionBtn.outline:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.header.playlist .actionBtn.outline:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Songs Section */
+.songsSection {
+  flex: 1;
+}
+
+.songsHeader {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #000;
+  margin: 0 0 1rem 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.songCount {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #666;
+}
+
+.songsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.empty {
+  color: #888;
+  font-style: italic;
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1.5rem;
+    gap: 1.5rem;
+  }
+
+  .coverArt {
+    width: 150px;
+    height: 150px;
+    min-width: 150px;
+  }
+
+  .icon {
+    font-size: 3rem;
+  }
+
+  .title {
+    font-size: 1.75rem;
+  }
+
+  .info {
+    align-items: center;
+  }
+
+  .actions {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .actionBtn {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0.5rem;
+  }
+
+  .coverArt {
+    width: 120px;
+    height: 120px;
+    min-width: 120px;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+}

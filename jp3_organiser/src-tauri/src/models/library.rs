@@ -464,6 +464,8 @@ pub struct CompactResult {
     pub albums_removed: u32,
     /// Orphaned strings removed
     pub strings_removed: u32,
+    /// Playlists updated (song IDs remapped)
+    pub playlists_updated: u32,
     /// Old file size
     pub old_size_bytes: u64,
     /// New file size

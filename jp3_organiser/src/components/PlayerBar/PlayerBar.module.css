@@ -1,0 +1,350 @@
+/**
+ * PlayerBar Styles
+ * 
+ * Fixed bottom bar with track info, controls, and progress.
+ * Uses CSS variables from global.css for consistent theming.
+ */
+
+/* ============================================
+   MAIN CONTAINER
+   ============================================ */
+
+.playerBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background-color: var(--quaternary);
+  border-top: 2px solid var(--quaternary-hover);
+  z-index: 1000;
+  padding: 0 1rem;
+}
+
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  gap: 1rem;
+}
+
+/* ============================================
+   TRACK INFO (Left)
+   ============================================ */
+
+.trackInfo {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 180px;
+  max-width: 250px;
+  overflow: hidden;
+}
+
+.trackTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trackArtist {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trackAlbum {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.noTrack {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}
+
+/* ============================================
+   CENTER (Controls + Progress)
+   ============================================ */
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  max-width: 600px;
+  gap: 0.25rem;
+}
+
+/* ============================================
+   PLAYBACK CONTROLS
+   ============================================ */
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.controlBtn {
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: none;
+}
+
+.controlBtn:hover:not(:disabled) {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.controlBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.controlBtn.active {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.smallBtn {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.7rem;
+}
+
+.playBtn {
+  background-color: var(--secondary);
+  border-color: var(--secondary);
+  padding: 0.5rem 1.2rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.playBtn:hover:not(:disabled) {
+  background-color: var(--secondary-hover);
+  border-color: var(--secondary-hover);
+}
+
+/* ============================================
+   PROGRESS SLIDER
+   ============================================ */
+
+.progress {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 0.5rem;
+}
+
+.time {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.7);
+  min-width: 40px;
+  text-align: center;
+}
+
+.slider {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--secondary);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--secondary);
+  cursor: pointer;
+  border: none;
+}
+
+.slider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   RIGHT SECTION (Volume + Queue Button)
+   ============================================ */
+
+.right {
+  min-width: 220px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* ============================================
+   VOLUME CONTROL
+   ============================================ */
+
+.volumeControl {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.volumeBtn {
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.65rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 40px;
+}
+
+.volumeBtn:hover:not(:disabled) {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.volumeBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.volumeBtn.muted {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.volumeSlider {
+  width: 80px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.volumeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--secondary);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.volumeSlider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.volumeSlider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--secondary);
+  cursor: pointer;
+  border: none;
+}
+
+.volumeSlider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.queueBtn {
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.queueBtn:hover {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.queueBtn.active {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .playerBar {
+    height: 100px;
+    padding: 0.5rem;
+  }
+
+  .container {
+    flex-wrap: wrap;
+  }
+
+  .trackInfo {
+    min-width: 100%;
+    max-width: 100%;
+    order: 1;
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+
+  .center {
+    order: 2;
+    max-width: 100%;
+  }
+
+  .right {
+    display: none;
+  }
+
+  .volumeControl {
+    display: none;
+  }
+}

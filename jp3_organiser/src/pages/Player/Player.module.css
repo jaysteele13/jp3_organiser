@@ -1,0 +1,43 @@
+/**
+ * Player Page Styles
+ * 
+ * Player page uses full available space to maximize song visibility.
+ * Overrides App-level centering and padding for this page only.
+ */
+
+.container {
+  /* Reset App-level centering */
+  text-align: left;
+  
+  /* Minimal padding for Player - maximize content space */
+  padding: 1rem;
+  padding-top: 0;
+  
+  /* Use full width */
+  max-width: none;
+  width: 100%;
+  
+  /* Fill available height and align to top */
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  
+  /* Pull content up to counteract App's padding-top */
+  margin-top: -8vh;
+}
+
+/* Content area - fill remaining space */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 0.5rem;
+    margin-top: -5vh;
+  }
+}

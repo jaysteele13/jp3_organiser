@@ -16,7 +16,7 @@ import { deleteSongs } from '../../services/libraryService';
 import { LoadingState, ErrorState, EmptyState } from '../../components';
 import styles from './View.module.css';
 
-import { TABS } from '../../utils/enums';
+import { TABS, VIEW_TABS } from '../../utils/enums';
 
 // Custom Components
 import ViewHeader from './components/ViewHeader';
@@ -114,10 +114,15 @@ export default function View() {
 
       {library && (
         <>
-          <StatsBar stats={stats}/>
+          <StatsBar 
+            stats={stats} 
+            libraryPath={libraryPath}
+            onCompacted={handleRefresh}
+          />
           <TabSelector 
             setActiveTab={setActiveTab}
             activeTab={activeTab}
+            tabs={VIEW_TABS}
           />
           <div className={styles.content}>
             <TabContent 

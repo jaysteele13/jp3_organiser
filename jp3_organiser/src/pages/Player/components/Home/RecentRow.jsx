@@ -1,0 +1,150 @@
+/**
+ * RecentRow Component
+ * 
+ * Horizontal scrollable carousel showing recently played content.
+ * Supports songs, albums, artists, and playlists with distinct styling.
+ * 
+ * Props:
+ * - items: array - recently played items { type, item, playedAt }
+ * - onPlaySong: function - play a song
+ * - onPlayAlbum: function - play an album
+ * - onPlayArtist: function - play an artist
+ * - onPlayPlaylist: function - play a playlist
+ * - onNavigate: function - navigate to detail view (album, artist, playlist)
+ */
+
+import React from 'react';
+import { RECENT_TYPE } from '../../../../hooks/useRecents';
+import styles from './RecentRow.module.css';
+
+// Icons per content type
+const TYPE_ICONS = {
+  [RECENT_TYPE.SONG]: '🎵',
+  [RECENT_TYPE.ALBUM]: '💿',
+  [RECENT_TYPE.ARTIST]: '🎤',
+  [RECENT_TYPE.PLAYLIST]: '📋',
+};
+
+// Get card style class based on type
+function getCardClass(type) {
+  switch (type) {
+    case RECENT_TYPE.ALBUM:
+      return styles.cardAlbum;
+    case RECENT_TYPE.ARTIST:
+      return styles.cardArtist;
+    case RECENT_TYPE.PLAYLIST:
+      return styles.cardPlaylist;
+    default:
+      return styles.cardSong;
+  }
+}
+
+// Get display info for each item type
+function getDisplayInfo(type, item) {
+  switch (type) {
+    case RECENT_TYPE.SONG:
+      return {
+        title: item.title,
+        subtitle: item.artistName || 'Unknown Artist',
+        typeLabel: 'Song',
+      };
+    case RECENT_TYPE.ALBUM:
+      return {
+        title: item.name,
+        subtitle: item.artistName || 'Unknown Artist',
+        typeLabel: 'Album',
+      };
+    case RECENT_TYPE.ARTIST:
+      return {
+        title: item.name,
+        subtitle: `${item.songCount || 0} songs`,
+        typeLabel: 'Artist',
+      };
+    case RECENT_TYPE.PLAYLIST:
+      return {
+        title: item.name,
+        subtitle: `${item.songCount || 0} songs`,
+        typeLabel: 'Playlist',
+      };
+    default:
+      return {
+        title: 'Unknown',
+        subtitle: '',
+        typeLabel: '',
+      };
+  }
+}
+
+export default function RecentRow({
+  items = [],
+  onPlaySong,
+  onPlayAlbum,
+  onPlayArtist,
+  onPlayPlaylist,
+  onNavigate,
+}) {
+  if (items.length === 0) {
+    return null;
+  }
+
+  const handlePlay = (e, type, item) => {
+    e.stopPropagation();
+    switch (type) {
+      case RECENT_TYPE.SONG:
+        onPlaySong?.(item);
+        break;
+      case RECENT_TYPE.ALBUM:
+        onPlayAlbum?.(item);
+        break;
+      case RECENT_TYPE.ARTIST:
+        onPlayArtist?.(item);
+        break;
+      case RECENT_TYPE.PLAYLIST:
+        onPlayPlaylist?.(item);
+        break;
+    }
+  };
+
+  const handleCardClick = (type, item) => {
+    // Songs play directly, others navigate to detail view
+    if (type === RECENT_TYPE.SONG) {
+      onPlaySong?.(item);
+    } else {
+      onNavigate?.(type, item);
+    }
+  };
+
+  return (
+    <div className={styles.container}>
+      <div className={styles.scrollContainer}>
+        {items.map(({ type, item, playedAt }) => {
+          const { title, subtitle, typeLabel } = getDisplayInfo(type, item);
+          const cardClass = getCardClass(type);
+          const icon = TYPE_ICONS[type] || '🎵';
+          
+          return (
+            <div
+              key={`${type}-${item.id}`}
+              className={`${styles.card} ${cardClass}`}
+              onClick={() => handleCardClick(type, item)}
+            >
+              <div className={styles.cardIcon}>{icon}</div>
+              <div className={styles.cardInfo}>
+                <span className={styles.typeLabel}>{typeLabel}</span>
+                <span className={styles.title}>{title}</span>
+                <span className={styles.subtitle}>{subtitle}</span>
+              </div>
+              <button
+                className={styles.playBtn}
+                onClick={(e) => handlePlay(e, type, item)}
+                title="Play"
+              >
+                ▶
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

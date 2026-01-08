@@ -1,0 +1,49 @@
+/**
+ * SectionHeader Styles
+ */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.titleGroup {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #000;
+  margin: 0;
+}
+
+.count {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: #888;
+}
+
+.seeAllBtn {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: transparent;
+  border: 1px solid #999;
+  color: #555;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.seeAllBtn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-color: #666;
+  color: #000;
+}

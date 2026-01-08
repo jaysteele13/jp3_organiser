@@ -1,0 +1,93 @@
+/**
+ * AlbumList Component
+ * 
+ * Displays albums as cards in a flex grid layout.
+ * Clicking a card navigates to the album detail page.
+ * Uses primary (rose) color scheme.
+ */
+
+import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { usePlayer } from '../../../hooks';
+import { addToRecents, RECENT_TYPE } from '../../../services/recentsService';
+import styles from './ListStyles.module.css';
+
+export default function AlbumList({ albums, songs }) {
+  const navigate = useNavigate();
+  const { playTrack, addToQueue } = usePlayer();
+
+  // Group songs by album for song count
+  const albumSongsMap = useMemo(() => {
+    const map = {};
+    songs.forEach(song => {
+      if (!map[song.albumId]) {
+        map[song.albumId] = [];
+      }
+      map[song.albumId].push(song);
+    });
+    // Sort each album's songs by track number
+    Object.keys(map).forEach(albumId => {
+      map[albumId].sort((a, b) => (a.trackNumber || 0) - (b.trackNumber || 0));
+    });
+    return map;
+  }, [songs]);
+
+  if (albums.length === 0) {
+    return <div className={styles.empty}>No albums in library</div>;
+  }
+
+  const handleCardClick = (album) => {
+    navigate(`/player/album/${album.id}`);
+  };
+
+  const handlePlayAlbum = (album, e) => {
+    e.stopPropagation();
+    const albumSongs = albumSongsMap[album.id] || [];
+    if (albumSongs.length > 0) {
+      playTrack(albumSongs[0], albumSongs);
+      addToRecents(RECENT_TYPE.ALBUM, album.id);
+    }
+  };
+
+  const handleQueueAlbum = (album, e) => {
+    e.stopPropagation();
+    const albumSongs = albumSongsMap[album.id] || [];
+    addToQueue(albumSongs);
+  };
+
+  return (
+    <div className={styles.cardGrid}>
+      {albums.map((album) => {
+        const albumSongs = albumSongsMap[album.id] || [];
+
+        return (
+          <div
+            key={album.id}
+            className={`${styles.card} ${styles.albumCard}`}
+            onClick={() => handleCardClick(album)}
+          >
+            <span className={styles.cardTitle}>{album.name}</span>
+            <span className={styles.cardSubtitle}>{album.artistName}</span>
+            <span className={styles.cardMeta}>
+              {album.year ? `${album.year} - ` : ''}{albumSongs.length} songs
+            </span>
+            <div className={styles.cardActions}>
+              <button
+                className={styles.cardBtn}
+                onClick={(e) => handlePlayAlbum(album, e)}
+              >
+                Play
+              </button>
+              <button
+                className={`${styles.cardBtn} ${styles.queue}`}
+                onClick={(e) => handleQueueAlbum(album, e)}
+              >
+                Queue
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

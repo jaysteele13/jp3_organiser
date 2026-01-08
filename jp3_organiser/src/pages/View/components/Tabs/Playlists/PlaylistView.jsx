@@ -35,6 +35,7 @@ function buildSongLookup(library) {
  * 
  * Individual playlist card with expandable song list.
  * Fetches full playlist data (including songIds) when expanded.
+ * Filters out orphaned song IDs (deleted songs not yet cleaned by compaction).
  */
 function PlaylistCard({ playlist, songLookup, libraryPath, onManage }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -73,6 +74,15 @@ function PlaylistCard({ playlist, songLookup, libraryPath, onManage }) {
     setSongIds(null);
   }, [playlist.songCount]);
 
+  // Filter out orphaned song IDs (songs that have been deleted but playlist not yet compacted)
+  const validSongIds = useMemo(() => {
+    if (!songIds) return null;
+    return songIds.filter(id => songLookup.has(id));
+  }, [songIds, songLookup]);
+
+  // Calculate actual song count (excluding orphaned IDs)
+  const actualSongCount = validSongIds?.length ?? playlist.songCount;
+
   return (
     <div className={styles.card}>
       <div className={styles.cardHeader}>
@@ -81,7 +91,7 @@ function PlaylistCard({ playlist, songLookup, libraryPath, onManage }) {
           <div className={styles.cardText}>
             <span className={styles.cardTitle}>{playlist.name}</span>
             <span className={styles.cardMeta}>
-              {playlist.songCount} song{playlist.songCount !== 1 ? 's' : ''}
+              {actualSongCount} song{actualSongCount !== 1 ? 's' : ''}
             </span>
           </div>
         </div>
@@ -98,18 +108,10 @@ function PlaylistCard({ playlist, songLookup, libraryPath, onManage }) {
         <div className={styles.songList}>
           {isLoading ? (
             <p className={styles.loadingText}>Loading songs...</p>
-          ) : songIds && songIds.length > 0 ? (
+          ) : validSongIds && validSongIds.length > 0 ? (
             <ul className={styles.songs}>
-              {songIds.map((songId, index) => {
+              {validSongIds.map((songId, index) => {
                 const song = songLookup.get(songId);
-                if (!song) {
-                  return (
-                    <li key={songId} className={styles.songItem}>
-                      <span className={styles.songIndex}>{index + 1}</span>
-                      <span className={styles.songTitle}>Unknown Song (ID: {songId})</span>
-                    </li>
-                  );
-                }
                 return (
                   <li key={songId} className={styles.songItem}>
                     <span className={styles.songIndex}>{index + 1}</span>
@@ -122,7 +124,7 @@ function PlaylistCard({ playlist, songLookup, libraryPath, onManage }) {
                 );
               })}
             </ul>
-          ) : songIds && songIds.length === 0 ? (
+          ) : validSongIds && validSongIds.length === 0 ? (
             <p className={styles.noSongs}>This playlist is empty.</p>
           ) : (
             <p className={styles.noSongs}>
