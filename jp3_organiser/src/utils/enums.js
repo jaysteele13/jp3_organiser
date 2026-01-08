@@ -6,6 +6,12 @@ export const TABS = {
   PLAYLISTS: 'playlists',
 };
 
+export const VIEW_TABS = {
+  SONGS: TABS.SONGS,
+  ALBUMS: TABS.ALBUMS,
+  ARTISTS: TABS.ARTISTS,
+  PLAYLISTS: TABS.PLAYLISTS
+}
 /**
  * Upload mode determines what context the user provides upfront
  * and how AcousticID results are applied.

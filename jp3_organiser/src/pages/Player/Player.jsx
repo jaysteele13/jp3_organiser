@@ -90,6 +90,7 @@ export default function Player() {
           <TabSelector 
             activeTab={activeTab}
             setActiveTab={handleTabChange}
+            tabs={TABS}
           />
 
           <div className={styles.content}>

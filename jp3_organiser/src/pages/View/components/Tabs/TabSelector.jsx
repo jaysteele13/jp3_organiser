@@ -1,12 +1,14 @@
 import styles from './TabSelector.module.css'
-import {TABS } from '../../../../utils/enums'
+import {TABS, VIEW_TABS} from '../../../../utils/enums'
 
-export default function TabSelector({setActiveTab, activeTab}) {
+export default function TabSelector({setActiveTab, activeTab, tabs }) {
+
 
     return (
+        // Have Check to See
         
          <div className={styles.tabs}>
-            {Object.entries(TABS).map(([key, value]) => (
+            {Object.entries(tabs).map(([key, value]) => (
                 <button
                 key={value}
                 className={`${styles.tab} ${activeTab === value ? styles.tabActive : ''}`}
