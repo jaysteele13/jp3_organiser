@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useLibraryConfig, usePlayer } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
 import { LoadingState, ErrorState, EmptyState } from '../../components';
@@ -18,10 +19,30 @@ import { TABS } from '../../utils/enums';
 import TabSelector from '../View/components/Tabs/TabSelector';
 import TabContent from './components/TabContent';
 
+// Valid tab values for URL parameter validation
+const VALID_TABS = Object.values(TABS);
+
 export default function Player() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { libraryPath, isLoading: configLoading } = useLibraryConfig();
   const { setLibraryPath } = usePlayer();
-  const [activeTab, setActiveTab] = useState(TABS.HOME);
+  
+  // Read tab from URL, default to HOME if invalid or missing
+  const tabParam = searchParams.get('tab');
+  const initialTab = VALID_TABS.includes(tabParam) ? tabParam : TABS.HOME;
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  // Sync tab state with URL parameter
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === TABS.HOME) {
+      // Remove tab param for home (clean URL)
+      searchParams.delete('tab');
+      setSearchParams(searchParams, { replace: true });
+    } else {
+      setSearchParams({ tab }, { replace: true });
+    }
+  };
   
   const { library, isLoading, error, handleRefresh } = useLibrary(libraryPath);
 
@@ -68,7 +89,7 @@ export default function Player() {
 
           <TabSelector 
             activeTab={activeTab}
-            setActiveTab={setActiveTab}
+            setActiveTab={handleTabChange}
           />
 
           <div className={styles.content}>

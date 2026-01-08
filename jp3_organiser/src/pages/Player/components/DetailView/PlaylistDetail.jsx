@@ -12,6 +12,7 @@ import { useLibrary } from '../../../../hooks/useLibrary';
 import { LoadingState, ErrorState, EmptyState } from '../../../../components';
 import DetailView from '../DetailView';
 import { formatDuration } from '../../../../utils/formatters';
+import { TABS } from '../../../../utils/enums';
 
 export default function PlaylistDetail() {
   const { id } = useParams();
@@ -53,7 +54,7 @@ export default function PlaylistDetail() {
   }, [playlistSongs]);
 
   const handleBack = () => {
-    navigate('/player');
+    navigate(`/player?tab=${TABS.PLAYLISTS}`);
   };
 
   if (isLoading) {

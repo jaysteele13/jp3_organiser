@@ -54,6 +54,7 @@ jp3_organiser/
 │   │   ├── useDebounce.js          # Debounced value hook
 │   │   ├── useAutoSuggest.js       # Fuzzy-match autosuggest hook
 │   │   ├── useToast.js             # Toast notification state management
+│   │   ├── useRecents.js           # Recently played items hook (resolves to full objects)
 │   │   ├── useUploadModeSelector.js # Upload mode selection logic
 │   │   ├── useUploadStageLogic.js  # Display state & review navigation
 │   │   └── usePlayerContext.jsx    # Global audio player context
@@ -68,7 +69,8 @@ jp3_organiser/
 │   │   └── PlaylistEdit/     # Full-page playlist editor
 │   ├── services/             # API services, Tauri command wrappers
 │   │   ├── audioService.js   # Audio file processing & metadata
-│   │   └── libraryService.js # Library CRUD operations
+│   │   ├── libraryService.js # Library CRUD operations
+│   │   └── recentsService.js # Recently played items persistence
 │   ├── styles/               # Global styles
 │   │   └── global.css        # Color palette, fonts, base styles
 │   ├── utils/                # Utility/helper functions
@@ -130,6 +132,9 @@ jp3_organiser/
 22. **Desktop Music Player** - Full-featured audio playback with queue management
 23. **Queue Drawer** - Slide-out panel to view, reorder, and manage playback queue
 24. **Persistent PlayerBar** - Always-visible bottom bar with playback controls
+25. **Home Tab** - Default Player tab with Recently Played and Recently Added sections
+26. **Recently Played Tracking** - Tracks songs, albums, artists, playlists via persistent store
+27. **Click-to-Play Song Rows** - Click anywhere on a song row to play (Queue button preserved)
 
 ### Planned
 - SD Card export workflow
@@ -324,8 +329,16 @@ Models are in `src-tauri/src/models/`:
 - `API_RATE_LIMIT_DELAY` - 500ms rate limit for AcoustID calls
 - `processSingleAudioFile(filePath)` - Process one file with fingerprinting
 - `processAudioFilesIncremental(filePaths, callbacks)` - Process files one-by-one with rate limiting
-- `processAudioFiles(filePaths)` - Legacy batch processing
-- `getAudioMetadata(filePath)` - Get ID3 metadata only (no AcoustID)
+
+### recentsService.js
+- `RECENT_TYPE` enum - SONG, ALBUM, ARTIST, PLAYLIST
+- `MAX_RECENTS` - Maximum 20 items stored
+- `RECENTS_UPDATED_EVENT` - Custom event name for updates
+- `addToRecents(type, id)` - Add item to recents (deduplicates, emits event)
+- `getRecents()` - Get all recent items as `{ type, id, playedAt }[]`
+- `clearRecents()` - Clear all recents
+
+**Persistence:** Uses `@tauri-apps/plugin-store` to persist recents in `recents.json`.
 
 ### libraryService.js
 - `getLibraryPath()` - Get saved library path
@@ -350,7 +363,10 @@ Models are in `src-tauri/src/models/`:
 ## Enums
 
 ### TABS (`src/utils/enums.js`)
-- `SONGS`, `ALBUMS`, `ARTISTS`, `PLAYLISTS` - View page tab identifiers
+- `HOME`, `SONGS`, `ALBUMS`, `ARTISTS`, `PLAYLISTS` - Player page tab identifiers (HOME is default)
+
+### RECENT_TYPE (`src/services/recentsService.js`)
+- `SONG`, `ALBUM`, `ARTIST`, `PLAYLIST` - Types for recently played items
 
 ### UPLOAD_MODE (`src/utils/enums.js`)
 - `SONGS` - Auto-detect everything via AcousticID
@@ -382,6 +398,7 @@ Models are in `src-tauri/src/models/`:
 | `useWorkflowMachine()` | State machine for upload workflow stages (PROCESS -> REVIEW -> READY_TO_SAVE) |
 | `useDebounce(value, delay)` | Debounce a value for delayed updates (used in search inputs) |
 | `useAutoSuggest(inputValue, items, key)` | Fuzzy-match suggestions from a list based on input (artist/album autosuggest) |
+| `useRecents(library)` | Resolves recent items to full objects from library, returns `{ recentItems, hasRecents }` |
 | `useToast(duration?)` | Toast notification state management with auto-dismiss (default 5s) |
 | `useUploadModeSelector()` | Upload mode selection logic - handles mode transitions, context form, and navigation state for pre-set playlist context |
 | `useUploadStageLogic(cache, workflow, modeSelector)` | Consolidates display state conditions and review navigation utilities |
@@ -508,17 +525,32 @@ The Player page (`src/pages/Player/`) provides a Spotify-like music browsing and
 | Component | Purpose |
 |-----------|---------|
 | `Player.jsx` | Main page with library loading, stats, and tabbed browsing |
-| `TabSelector.jsx` | Tab buttons for Songs/Albums/Artists/Playlists |
+| `TabSelector.jsx` | Tab buttons for Home/Songs/Albums/Artists/Playlists |
 | `TabContent.jsx` | Switches content based on active tab |
-| `SongList.jsx` | Song list with Play/Queue buttons |
+| `SongList.jsx` | Song list - click row to play, Queue button to add to queue |
 | `AlbumList.jsx` | Expandable album list with album-level Play/Queue |
 | `ArtistList.jsx` | Expandable artist list with artist-level Play All/Queue |
 | `PlaylistList.jsx` | Expandable playlist list with Play/Queue |
+| `PlayerSongCard.jsx` | Reusable song row - click to play, Queue button preserved |
+
+### Home Tab Components (`src/pages/Player/components/Home/`)
+
+| Component | Purpose |
+|-----------|---------|
+| `HomeView.jsx` | Main home view with Recently Played and Recently Added sections |
+| `SectionHeader.jsx` | Section title with count (internal component) |
+| `RecentRow.jsx` | Horizontal scrollable carousel for recently played items (internal) |
+| `SongPreview.jsx` | Song list preview using PlayerSongCard (internal) |
+
+**Note:** Only `HomeView` is exported from `index.js` - other components are internal implementation details.
 
 **Features:**
+- **Home tab** is the default tab when opening Player
+- **Recently Played** - Shows last 6 songs, albums, artists, or playlists played (horizontal carousel)
+- **Recently Added** - Shows 8 newest songs by ID (vertical list)
 - Browse library by Songs, Albums, Artists, or Playlists
-- Play individual tracks or entire albums/artists/playlists
-- Add to queue functionality
+- Click song row to play (Play button removed for cleaner UX)
+- Queue button preserved for adding to queue
 - Current track highlighting in lists
 - Expandable groups (albums show their songs when clicked)
 
@@ -623,7 +655,7 @@ const REPEAT_MODE = {
 - `tauri-plugin-dialog` - Native file picker dialogs
 - `tauri-plugin-upload` - File upload handling
 - `tauri-plugin-opener` - Open files/URLs with default apps
-- `tauri-plugin-store` - Persistent key-value storage
+- `tauri-plugin-store` - Persistent key-value storage (used for recents.json)
 
 ## Development
 
