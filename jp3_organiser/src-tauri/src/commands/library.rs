@@ -1141,6 +1141,116 @@ fn write_library_bin(
     Ok(())
 }
 
+/// Delete all songs belonging to an album.
+///
+/// This finds all songs with the given album_id and soft-deletes them,
+/// also deleting their audio files from music/.
+/// Use `compact_library` to clean up orphaned albums/artists afterward.
+#[tauri::command]
+pub fn delete_album(
+    base_path: String,
+    album_id: u32,
+) -> Result<crate::models::DeleteAlbumResult, String> {
+    // First load the library to find all songs in this album
+    let library = load_library(base_path.clone())?;
+
+    // Find the album to get its name
+    let album = library
+        .albums
+        .iter()
+        .find(|a| a.id == album_id)
+        .ok_or_else(|| format!("Album with ID {} not found", album_id))?;
+
+    let album_name = album.name.clone();
+    let artist_name = album.artist_name.clone();
+
+    // Find all songs in this album
+    let song_ids: Vec<u32> = library
+        .songs
+        .iter()
+        .filter(|s| s.album_id == album_id)
+        .map(|s| s.id)
+        .collect();
+
+    if song_ids.is_empty() {
+        return Ok(crate::models::DeleteAlbumResult {
+            songs_deleted: 0,
+            files_deleted: 0,
+            album_name,
+            artist_name,
+        });
+    }
+
+    // Delete the songs using existing function
+    let delete_result = delete_songs(base_path, song_ids)?;
+
+    Ok(crate::models::DeleteAlbumResult {
+        songs_deleted: delete_result.songs_deleted,
+        files_deleted: delete_result.files_deleted,
+        album_name,
+        artist_name,
+    })
+}
+
+/// Delete all songs belonging to an artist.
+///
+/// This finds all songs with the given artist_id and soft-deletes them,
+/// also deleting their audio files from music/.
+/// Use `compact_library` to clean up orphaned albums/artists afterward.
+#[tauri::command]
+pub fn delete_artist(
+    base_path: String,
+    artist_id: u32,
+) -> Result<crate::models::DeleteArtistResult, String> {
+    // First load the library to find all songs by this artist
+    let library = load_library(base_path.clone())?;
+
+    // Find the artist to get their name
+    let artist = library
+        .artists
+        .iter()
+        .find(|a| a.id == artist_id)
+        .ok_or_else(|| format!("Artist with ID {} not found", artist_id))?;
+
+    let artist_name = artist.name.clone();
+
+    // Find all songs by this artist
+    let song_ids: Vec<u32> = library
+        .songs
+        .iter()
+        .filter(|s| s.artist_id == artist_id)
+        .map(|s| s.id)
+        .collect();
+
+    // Count unique albums affected
+    let albums_affected: u32 = library
+        .songs
+        .iter()
+        .filter(|s| s.artist_id == artist_id)
+        .map(|s| s.album_id)
+        .collect::<std::collections::HashSet<_>>()
+        .len() as u32;
+
+    if song_ids.is_empty() {
+        return Ok(crate::models::DeleteArtistResult {
+            songs_deleted: 0,
+            files_deleted: 0,
+            albums_affected: 0,
+            artist_name,
+        });
+    }
+
+    // Delete the songs using existing function
+    let delete_result = delete_songs(base_path, song_ids)?;
+
+    Ok(crate::models::DeleteArtistResult {
+        songs_deleted: delete_result.songs_deleted,
+        files_deleted: delete_result.files_deleted,
+        albums_affected,
+        artist_name,
+    })
+}
+
 /// Get the current bucket index and file count.
 fn get_current_bucket(music_path: &Path) -> Result<(u32, usize), String> {
     if !music_path.exists() {

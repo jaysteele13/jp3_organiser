@@ -32,7 +32,7 @@
   border-radius: 6px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   z-index: 1000;
-  min-width: 100px;
+  min-width: 120px;
   overflow: hidden;
 }
 
@@ -62,11 +62,15 @@
   border-radius: 0 0 6px 6px;
 }
 
-.deleteItem {
+.menuItem:only-child {
+  border-radius: 6px;
+}
+
+.dangerItem {
   color: var(--primary);
 }
 
-.deleteItem:hover {
+.dangerItem:hover {
   background-color: var(--primary);
   color: #fff;
 }

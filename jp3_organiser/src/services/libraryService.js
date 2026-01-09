@@ -161,6 +161,46 @@ export async function deleteSongs(basePath, songIds) {
 }
 
 /**
+ * Delete all songs belonging to an album.
+ * 
+ * This soft-deletes all songs in the album AND deletes their audio files.
+ * Use `compactLibrary` to clean up orphaned albums/artists afterward.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {number} albumId - Album ID to delete
+ * @returns {Promise<DeleteAlbumResult>} Result with deletion counts
+ * 
+ * @typedef {Object} DeleteAlbumResult
+ * @property {number} songsDeleted - Number of songs deleted
+ * @property {number} filesDeleted - Number of audio files deleted
+ * @property {string} albumName - Name of the deleted album
+ * @property {string} artistName - Name of the album's artist
+ */
+export async function deleteAlbum(basePath, albumId) {
+  return await invoke('delete_album', { basePath, albumId });
+}
+
+/**
+ * Delete all songs belonging to an artist.
+ * 
+ * This soft-deletes all songs by the artist AND deletes their audio files.
+ * Use `compactLibrary` to clean up orphaned albums/artists afterward.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {number} artistId - Artist ID to delete
+ * @returns {Promise<DeleteArtistResult>} Result with deletion counts
+ * 
+ * @typedef {Object} DeleteArtistResult
+ * @property {number} songsDeleted - Number of songs deleted
+ * @property {number} filesDeleted - Number of audio files deleted
+ * @property {number} albumsAffected - Number of albums affected
+ * @property {string} artistName - Name of the deleted artist
+ */
+export async function deleteArtist(basePath, artistId) {
+  return await invoke('delete_artist', { basePath, artistId });
+}
+
+/**
  * Get library statistics including deleted song count.
  * 
  * Use this to determine if compaction is needed.

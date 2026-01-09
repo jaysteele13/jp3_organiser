@@ -33,6 +33,8 @@ use commands::{
     set_library_path,
     // Library commands
     compact_library,
+    delete_album,
+    delete_artist,
     delete_songs,
     edit_song_metadata,
     get_library_info,
@@ -80,6 +82,8 @@ pub fn run() {
             save_to_library,
             load_library,
             delete_songs,
+            delete_album,
+            delete_artist,
             edit_song_metadata,
             get_library_stats,
             compact_library,

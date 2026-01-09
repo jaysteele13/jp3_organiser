@@ -475,3 +475,31 @@ pub struct CompactResult {
     /// Bytes saved
     pub bytes_saved: u64,
 }
+
+/// Result returned after deleting an album from the library.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteAlbumResult {
+    /// Number of songs deleted
+    pub songs_deleted: u32,
+    /// Number of audio files deleted
+    pub files_deleted: u32,
+    /// Name of the deleted album
+    pub album_name: String,
+    /// Name of the album's artist
+    pub artist_name: String,
+}
+
+/// Result returned after deleting an artist from the library.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteArtistResult {
+    /// Number of songs deleted
+    pub songs_deleted: u32,
+    /// Number of audio files deleted
+    pub files_deleted: u32,
+    /// Number of albums affected (songs deleted from)
+    pub albums_affected: u32,
+    /// Name of the deleted artist
+    pub artist_name: String,
+}

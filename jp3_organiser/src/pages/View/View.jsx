@@ -12,8 +12,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useLibraryConfig, useToast } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
-import { deleteSongs, editSongMetadata } from '../../services/libraryService';
-import { LoadingState, ErrorState, EmptyState, Toast } from '../../components';
+import { deleteSongs, deleteAlbum, deleteArtist, editSongMetadata } from '../../services/libraryService';
+import { LoadingState, ErrorState, EmptyState, Toast, ConfirmModal } from '../../components';
 import styles from './View.module.css';
 
 import { TABS, VIEW_TABS } from '../../utils/enums';
@@ -36,7 +36,7 @@ export default function View() {
   
   const { library, isLoading, error, handleRefresh } = useLibrary(libraryPath);
 
-  // Toast notification for edit feedback
+  // Toast notification for feedback
   const toast = useToast();
 
   // Sync activeTab when navigation state changes (e.g., returning from PlaylistEdit)
@@ -46,10 +46,18 @@ export default function View() {
     }
   }, [location.state?.tab]);
 
-  // Delete modal state
+  // Delete song modal state
   const [songsToDelete, setSongsToDelete] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Delete album modal state
+  const [albumToDelete, setAlbumToDelete] = useState(null);
+  const [showDeleteAlbumModal, setShowDeleteAlbumModal] = useState(false);
+
+  // Delete artist modal state
+  const [artistToDelete, setArtistToDelete] = useState(null);
+  const [showDeleteArtistModal, setShowDeleteArtistModal] = useState(false);
 
   // Edit modal state
   const [songToEdit, setSongToEdit] = useState(null);
@@ -67,14 +75,26 @@ export default function View() {
     };
   }, [library]);
 
-  // Handle delete request from SongView
-  const handleDeleteRequest = (song) => {
+  // Get song count for album/artist
+  const getAlbumSongCount = (albumId) => {
+    return library?.songs?.filter(s => s.albumId === albumId).length ?? 0;
+  };
+
+  const getArtistSongCount = (artistId) => {
+    return library?.songs?.filter(s => s.artistId === artistId).length ?? 0;
+  };
+
+  const getArtistAlbumCount = (artistId) => {
+    return library?.albums?.filter(a => a.artistId === artistId).length ?? 0;
+  };
+
+  // ============ SONG DELETE HANDLERS ============
+  const handleDeleteSongRequest = (song) => {
     setSongsToDelete([song]);
     setShowDeleteModal(true);
   };
 
-  // Handle confirmed delete
-  const handleConfirmDelete = async () => {
+  const handleConfirmDeleteSong = async () => {
     if (songsToDelete.length === 0 || !libraryPath) return;
 
     setIsDeleting(true);
@@ -86,25 +106,90 @@ export default function View() {
       handleRefresh();
     } catch (err) {
       console.error('Failed to delete songs:', err);
+      toast.showToast('Failed to delete song', 'error');
     } finally {
       setIsDeleting(false);
     }
   };
 
-  // Handle cancel delete
-  const handleCancelDelete = () => {
+  const handleCancelDeleteSong = () => {
     if (isDeleting) return;
     setShowDeleteModal(false);
     setSongsToDelete([]);
   };
 
-  // Handle edit request from SongView
+  // ============ ALBUM DELETE HANDLERS ============
+  const handleDeleteAlbumRequest = (album) => {
+    setAlbumToDelete(album);
+    setShowDeleteAlbumModal(true);
+  };
+
+  const handleConfirmDeleteAlbum = async () => {
+    if (!albumToDelete || !libraryPath) return;
+
+    setIsDeleting(true);
+    try {
+      const result = await deleteAlbum(libraryPath, albumToDelete.id);
+      setShowDeleteAlbumModal(false);
+      setAlbumToDelete(null);
+      handleRefresh();
+      toast.showToast(
+        `Deleted album "${result.albumName}" (${result.songsDeleted} song${result.songsDeleted !== 1 ? 's' : ''})`,
+        'success'
+      );
+    } catch (err) {
+      console.error('Failed to delete album:', err);
+      toast.showToast('Failed to delete album', 'error');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCancelDeleteAlbum = () => {
+    if (isDeleting) return;
+    setShowDeleteAlbumModal(false);
+    setAlbumToDelete(null);
+  };
+
+  // ============ ARTIST DELETE HANDLERS ============
+  const handleDeleteArtistRequest = (artist) => {
+    setArtistToDelete(artist);
+    setShowDeleteArtistModal(true);
+  };
+
+  const handleConfirmDeleteArtist = async () => {
+    if (!artistToDelete || !libraryPath) return;
+
+    setIsDeleting(true);
+    try {
+      const result = await deleteArtist(libraryPath, artistToDelete.id);
+      setShowDeleteArtistModal(false);
+      setArtistToDelete(null);
+      handleRefresh();
+      toast.showToast(
+        `Deleted artist "${result.artistName}" (${result.songsDeleted} song${result.songsDeleted !== 1 ? 's' : ''}, ${result.albumsAffected} album${result.albumsAffected !== 1 ? 's' : ''})`,
+        'success'
+      );
+    } catch (err) {
+      console.error('Failed to delete artist:', err);
+      toast.showToast('Failed to delete artist', 'error');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCancelDeleteArtist = () => {
+    if (isDeleting) return;
+    setShowDeleteArtistModal(false);
+    setArtistToDelete(null);
+  };
+
+  // ============ EDIT HANDLERS ============
   const handleEditRequest = (song) => {
     setSongToEdit(song);
     setShowEditModal(true);
   };
 
-  // Handle confirmed edit
   const handleConfirmEdit = async (songId, metadata) => {
     if (!libraryPath) return;
 
@@ -131,7 +216,6 @@ export default function View() {
     }
   };
 
-  // Handle cancel edit
   const handleCancelEdit = () => {
     if (isSaving) return;
     setShowEditModal(false);
@@ -178,8 +262,10 @@ export default function View() {
               activeTab={activeTab} 
               library={library}
               libraryPath={libraryPath}
-              onDeleteSong={handleDeleteRequest}
+              onDeleteSong={handleDeleteSongRequest}
               onEditSong={handleEditRequest}
+              onDeleteAlbum={handleDeleteAlbumRequest}
+              onDeleteArtist={handleDeleteArtistRequest}
             />
           </div>
         </>
@@ -192,12 +278,49 @@ export default function View() {
         />
       )}
 
+      {/* Delete Song Modal */}
       {showDeleteModal && (
         <DeleteConfirmModal
           songs={songsToDelete}
-          onConfirm={handleConfirmDelete}
-          onCancel={handleCancelDelete}
-          isDeleting={isDeleting}/>
+          onConfirm={handleConfirmDeleteSong}
+          onCancel={handleCancelDeleteSong}
+          isDeleting={isDeleting}
+        />
+      )}
+
+      {/* Delete Album Modal */}
+      {showDeleteAlbumModal && albumToDelete && (
+        <ConfirmModal
+          title="Delete Album?"
+          message={`This will permanently delete all ${getAlbumSongCount(albumToDelete.id)} song(s) from this album. The audio files will be removed from disk.`}
+          confirmLabel="Delete Album"
+          variant="danger"
+          onConfirm={handleConfirmDeleteAlbum}
+          onCancel={handleCancelDeleteAlbum}
+          isLoading={isDeleting}
+        >
+          <div className={styles.deleteInfo}>
+            <div className={styles.deleteInfoTitle}>{albumToDelete.name}</div>
+            <div className={styles.deleteInfoSubtitle}>by {albumToDelete.artistName}</div>
+          </div>
+        </ConfirmModal>
+      )}
+
+      {/* Delete Artist Modal */}
+      {showDeleteArtistModal && artistToDelete && (
+        <ConfirmModal
+          title="Delete Artist?"
+          message={`This will permanently delete all ${getArtistSongCount(artistToDelete.id)} song(s) across ${getArtistAlbumCount(artistToDelete.id)} album(s) by this artist. The audio files will be removed from disk.`}
+          confirmLabel="Delete Artist"
+          variant="danger"
+          onConfirm={handleConfirmDeleteArtist}
+          onCancel={handleCancelDeleteArtist}
+          isLoading={isDeleting}
+        >
+          <div className={styles.deleteInfo}>
+            <div className={styles.deleteInfoTitle}>{artistToDelete.name}</div>
+          </div>
+        </ConfirmModal>
       )}
 
       {showEditModal && (

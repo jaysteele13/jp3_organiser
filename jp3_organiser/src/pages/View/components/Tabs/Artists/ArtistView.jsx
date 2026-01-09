@@ -1,6 +1,7 @@
+import { ActionMenu } from '../../../../../components';
 import styles from './ArtistView.module.css'
 
-export default function ArtistView({ library }) {
+export default function ArtistView({ library, onDeleteArtist }) {
     return (
        <div className={styles.cardGrid}>
             {library.artists.map((artist) => {
@@ -8,7 +9,16 @@ export default function ArtistView({ library }) {
                 const artistAlbums = library.albums.filter(a => a.artistId === artist.id);
                 return (
                 <div key={artist.id} className={styles.card}>
-                    <div className={styles.cardTitle}>{artist.name}</div>
+                    <div className={styles.cardHeader}>
+                        <div className={styles.cardInfo}>
+                            <div className={styles.cardTitle}>{artist.name}</div>
+                        </div>
+                        <ActionMenu
+                            items={[
+                                { label: 'Delete Artist', onClick: () => onDeleteArtist?.(artist), variant: 'danger' },
+                            ]}
+                        />
+                    </div>
                     <div className={styles.cardMeta}>
                     <span>{artistAlbums.length} album(s)</span>
                     <span>{artistSongs.length} song(s)</span>

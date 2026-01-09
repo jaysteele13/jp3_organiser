@@ -1,5 +1,5 @@
 import { formatDuration } from '../../../../../utils/formatters';
-import ActionMenu from './ActionMenu';
+import { ActionMenu } from '../../../../../components';
 import styles from './SongView.module.css'
 
 export default function SongView({ library, onDeleteSong, onEditSong }) {
@@ -30,8 +30,10 @@ export default function SongView({ library, onDeleteSong, onEditSong }) {
               <td className={styles.cellPath}>{song.path}</td>
               <td className={styles.cellActions}>
                 <ActionMenu
-                  onEdit={() => onEditSong?.(song)}
-                  onDelete={() => onDeleteSong?.(song)}
+                  items={[
+                    { label: 'Edit', onClick: () => onEditSong?.(song) },
+                    { label: 'Delete', onClick: () => onDeleteSong?.(song), variant: 'danger' },
+                  ]}
                 />
               </td>
             </tr>
