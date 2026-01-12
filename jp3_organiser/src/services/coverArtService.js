@@ -30,20 +30,6 @@ export async function fetchAlbumCover(basePath, albumId, mbid) {
 }
 
 /**
- * Get the cached cover path for an album
- * 
- * Returns the path if the cover exists in cache, null otherwise.
- * Does NOT fetch from the network - use fetchAlbumCover for that.
- * 
- * @param {string} basePath - Library base path
- * @param {number} albumId - Album ID
- * @returns {Promise<{exists: boolean, path?: string}>}
- */
-export async function getAlbumCoverPath(basePath, albumId) {
-  return await invoke('get_album_cover_path', { basePath, albumId });
-}
-
-/**
  * Read cover image bytes for displaying in frontend
  * 
  * Useful when you need raw image data for blob URLs.
@@ -70,9 +56,7 @@ export async function readAlbumCover(basePath, albumId) {
  */
 export async function getCoverBlobUrl(basePath, albumId) {
   try {
-    console.log(`[coverArtService] Reading cover for album ${albumId}...`);
     const bytes = await readAlbumCover(basePath, albumId);
-    console.log(`[coverArtService] Got bytes:`, typeof bytes, bytes?.length || bytes?.byteLength || 'unknown length');
     
     // Tauri returns an array of numbers, need to convert to Uint8Array
     let uint8Array;
@@ -81,18 +65,13 @@ export async function getCoverBlobUrl(basePath, albumId) {
     } else if (Array.isArray(bytes)) {
       uint8Array = new Uint8Array(bytes);
     } else {
-      console.error(`[coverArtService] Unexpected bytes type:`, typeof bytes);
       return null;
     }
     
-    console.log(`[coverArtService] Uint8Array length: ${uint8Array.length}`);
-    
     const blob = new Blob([uint8Array], { type: 'image/jpeg' });
-    const url = URL.createObjectURL(blob);
-    console.log(`[coverArtService] Created blob URL: ${url}`);
-    return url;
-  } catch (err) {
-    console.error(`[coverArtService] Failed to get cover:`, err);
+    return URL.createObjectURL(blob);
+  } catch {
+    // Cover not found or read error - this is expected for albums without covers
     return null;
   }
 }

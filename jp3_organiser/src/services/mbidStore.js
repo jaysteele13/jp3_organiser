@@ -83,7 +83,6 @@ export async function setMbid(albumId, mbid) {
     if (!mbids[albumId]) {
       mbids[albumId] = mbid;
       await store.set(MBIDS_KEY, mbids);
-      console.log(`[mbidStore] Stored MBID for album ${albumId}: ${mbid}`);
     }
   } catch (error) {
     console.error('[mbidStore] Failed to set MBID:', error);
@@ -113,7 +112,6 @@ export async function setMbids(entries) {
     
     if (added > 0) {
       await store.set(MBIDS_KEY, mbids);
-      console.log(`[mbidStore] Stored ${added} new MBIDs`);
     }
   } catch (error) {
     console.error('[mbidStore] Failed to set MBIDs:', error);
@@ -144,7 +142,6 @@ export async function clearMbids() {
   try {
     const store = await getStore();
     await store.set(MBIDS_KEY, {});
-    console.log('[mbidStore] Cleared all MBIDs');
   } catch (error) {
     console.error('[mbidStore] Failed to clear MBIDs:', error);
   }

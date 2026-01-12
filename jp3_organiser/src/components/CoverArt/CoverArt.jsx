@@ -36,9 +36,6 @@ const CoverArt = memo(function CoverArt({
   className = '',
   fallbackIcon = '💿',
 }) {
-  // DEBUG: Log on every render to confirm new code is loaded
-  console.log(`[CoverArt] RENDER - albumId=${albumId}, libraryPath=${libraryPath?.substring(0, 30)}...`);
-  
   const [imageUrl, setImageUrl] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -49,11 +46,8 @@ const CoverArt = memo(function CoverArt({
     let isMounted = true;
 
     async function loadCover() {
-      console.log(`[CoverArt] Loading cover for albumId=${albumId}, libraryPath=${libraryPath}`);
-      
       // Check for missing props - albumId can be 0 which is valid, so use explicit check
       if (!libraryPath || albumId === undefined || albumId === null) {
-        console.log(`[CoverArt] Missing required props - libraryPath: ${!!libraryPath}, albumId: ${albumId}`);
         setIsLoading(false);
         setHasError(true);
         return;
@@ -66,7 +60,6 @@ const CoverArt = memo(function CoverArt({
         const cachedUrl = blobUrlCache.get(cacheKey);
         // Only use cache if it has a valid URL (not null)
         if (cachedUrl) {
-          console.log(`[CoverArt] Found in memory cache: has URL`);
           if (isMounted) {
             setImageUrl(cachedUrl);
             setIsLoading(false);
@@ -74,8 +67,7 @@ const CoverArt = memo(function CoverArt({
           }
           return;
         }
-        // If cached as null, check if we now have an MBID before giving up
-        console.log(`[CoverArt] Cache has null, checking if MBID now available...`);
+        // If cached as null, proceed to check if we now have an MBID
       }
 
       setIsLoading(true);
@@ -83,26 +75,18 @@ const CoverArt = memo(function CoverArt({
 
       try {
         // First try to get from local cache (file on disk)
-        console.log(`[CoverArt] Checking disk cache...`);
         let blobUrl = await getCoverBlobUrl(libraryPath, albumId);
-        console.log(`[CoverArt] Disk cache result: ${blobUrl ? 'found' : 'not found'}`);
 
         // If not cached, look up MBID from store and try to fetch
         if (!blobUrl) {
           const mbid = await getMbid(albumId);
-          console.log(`[CoverArt] MBID from store: ${mbid || 'not found'}`);
           
           if (mbid) {
-            console.log(`[CoverArt] Fetching from Cover Art Archive with MBID: ${mbid}`);
             const result = await fetchAlbumCover(libraryPath, albumId, mbid);
-            console.log(`[CoverArt] Fetch result:`, result);
             if (result.success) {
               // Now try to get the blob URL again
               blobUrl = await getCoverBlobUrl(libraryPath, albumId);
-              console.log(`[CoverArt] After fetch, blob URL: ${blobUrl ? 'created' : 'failed'}`);
             }
-          } else {
-            console.log(`[CoverArt] No MBID in store for album ${albumId}, cannot fetch cover art`);
           }
         }
 
