@@ -1,0 +1,442 @@
+/**
+ * SongTable Component Styles
+ * 
+ * Styles for both table and card variants, search bar, and pagination.
+ */
+
+/* ========================================
+   Container
+   ======================================== */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+/* ========================================
+   Controls Bar (Search + Results Count)
+   ======================================== */
+
+.controlsBar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.searchContainer {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+  max-width: 400px;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.65rem 2.5rem 0.65rem 0.85rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background-color: var(--tertiary);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  color: #000;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(182, 73, 99, 0.15);
+}
+
+.searchInput::placeholder {
+  color: #666;
+}
+
+.clearBtn {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #666;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.clearBtn:hover {
+  color: #000;
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+.controlsRight {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.resultsCount {
+  font-size: 0.85rem;
+  color: #555;
+  white-space: nowrap;
+}
+
+/* ========================================
+   Empty State
+   ======================================== */
+
+.emptyState {
+  padding: 3rem 2rem;
+  text-align: center;
+  color: #666;
+  font-size: 0.95rem;
+  background-color: var(--tertiary);
+  border-radius: 8px;
+}
+
+/* ========================================
+   Table Variant
+   ======================================== */
+
+.tableContainer {
+  overflow-x: auto;
+  background-color: var(--tertiary);
+  border-radius: 8px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table thead {
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+.table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  color: #000;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  color: #000;
+}
+
+/* Table rows */
+.tableRow {
+  transition: background-color 0.15s ease;
+}
+
+.tableRow:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.tableRow.clickable {
+  cursor: pointer;
+}
+
+.tableRow.clickable:focus {
+  outline: none;
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+.tableRow.highlighted {
+  background-color: var(--quaternary);
+}
+
+.tableRow.highlighted:hover {
+  background-color: var(--quaternary-hover);
+}
+
+/* Column-specific styles */
+.thIndex {
+  width: 50px;
+  text-align: center;
+}
+
+.cellIndex {
+  text-align: center;
+  color: #666;
+  width: 50px;
+}
+
+.cellTitle {
+  font-weight: 500;
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cellArtist,
+.cellAlbum {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.thDuration {
+  width: 80px;
+  text-align: right;
+}
+
+.cellDuration {
+  width: 80px;
+  text-align: right;
+  color: #555;
+  font-variant-numeric: tabular-nums;
+}
+
+.cellPath {
+  font-size: 0.8rem;
+  color: #666;
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.thActions {
+  width: 60px;
+}
+
+.cellActions {
+  text-align: center;
+}
+
+/* ========================================
+   Card Variant
+   ======================================== */
+
+.cardList {
+  display: flex;
+  flex-direction: column;
+}
+
+.cardPadding {
+  padding: 0.25rem 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background-color: var(--tertiary);
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+
+.cardClickable {
+  cursor: pointer;
+}
+
+.card:hover {
+  background-color: var(--tertiary-hover);
+}
+
+.cardClickable:focus {
+  outline: none;
+  background-color: var(--tertiary-hover);
+}
+
+.cardHighlighted {
+  background-color: var(--quaternary);
+}
+
+.cardHighlighted:hover,
+.cardHighlighted:focus {
+  background-color: var(--quaternary-hover);
+}
+
+.cardInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.cardTitle {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardSubtitle {
+  font-size: 0.75rem;
+  color: #444;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* ========================================
+   Pagination
+   ======================================== */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.paginationLeft,
+.paginationRight {
+  flex: 1;
+}
+
+.paginationRight {
+  text-align: right;
+}
+
+.paginationCenter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pageSizeLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.pageSizeSelect {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  background-color: var(--tertiary);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  color: #000;
+  cursor: pointer;
+}
+
+.pageSizeSelect:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.pageBtn {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #000;
+  background-color: var(--tertiary);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pageBtn:hover:not(:disabled) {
+  background-color: var(--tertiary-hover);
+  border-color: rgba(0, 0, 0, 0.25);
+}
+
+.pageBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pageInfo {
+  font-size: 0.85rem;
+  color: #333;
+  min-width: 100px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.pageNumber {
+  font-size: 0.85rem;
+  color: #555;
+  white-space: nowrap;
+}
+
+/* ========================================
+   Responsive
+   ======================================== */
+
+@media (max-width: 768px) {
+  .controlsBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .searchContainer {
+    max-width: none;
+  }
+
+  .controlsRight {
+    justify-content: flex-end;
+  }
+
+  .pagination {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .paginationLeft,
+  .paginationRight {
+    text-align: center;
+    flex: none;
+  }
+
+  .paginationCenter {
+    order: -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .card {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .cardActions {
+    order: 4;
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

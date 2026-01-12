@@ -7,6 +7,7 @@ export { default as ConfirmModal } from './ConfirmModal';
 export { default as Toast } from './Toast';
 export { default as PlaylistComboBox } from './PlaylistComboBox';
 export { default as QueueDrawer } from './QueueDrawer';
+export { default as SongTable } from './SongTable';
 
 // Layout Components
 export { default as Header } from './Header';
