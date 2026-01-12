@@ -1,4 +1,11 @@
-.cardGrid {
+/**
+ * CardList Component Styles
+ * 
+ * Grid-based card layout for entities (albums, artists, etc.)
+ */
+
+/* Card grid - responsive multi-column layout */
+.cardList {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1rem;
@@ -47,16 +54,6 @@
   85%, 100% { transform: translateX(calc(-100% + 120px)); }
 }
 
-.cardTitle {
-  font-weight: 600;
-  font-size: 1rem;
-  margin-bottom: 0.25rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: #000;
-}
-
 /* Clickable title link */
 .cardTitleLink {
   font-weight: 600;
@@ -77,15 +74,6 @@
   outline: none;
   text-decoration: underline;
   font-weight: 700;
-}
-
-.cardSubtitle {
-  font-size: 0.85rem;
-  opacity: 0.8;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: #000;
 }
 
 /* Clickable subtitle link */
@@ -119,7 +107,7 @@
   color: #000;
 }
 
-.emptyTable {
+.emptyState {
   text-align: center;
   padding: 2rem;
   opacity: 0.6;
