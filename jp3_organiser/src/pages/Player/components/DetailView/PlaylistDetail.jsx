@@ -3,10 +3,13 @@
  * 
  * Displays playlist details using the reusable DetailView component.
  * Fetches playlist data based on URL parameter.
+ * 
+ * Back navigation uses browser history to return to the previous page,
+ * with a fallback to the Playlists tab if accessed directly.
  */
 
-import React, { useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useMemo, useCallback } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useLibraryConfig } from '../../../../hooks';
 import { useLibrary } from '../../../../hooks/useLibrary';
 import { LoadingState, ErrorState, EmptyState } from '../../../../components';
@@ -17,6 +20,7 @@ import { TABS } from '../../../../utils/enums';
 export default function PlaylistDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { libraryPath } = useLibraryConfig();
   const { library, isLoading, error } = useLibrary(libraryPath);
 
@@ -53,9 +57,15 @@ export default function PlaylistDetail() {
     return totalSecs > 0 ? formatDuration(totalSecs) : null;
   }, [playlistSongs]);
 
-  const handleBack = () => {
-    navigate(`/player?tab=${TABS.PLAYLISTS}`);
-  };
+  const handleBack = useCallback(() => {
+    // If we have navigation history from within the app, go back
+    // Otherwise fall back to the Playlists tab
+    if (location.key !== 'default') {
+      navigate(-1);
+    } else {
+      navigate(`/player?tab=${TABS.PLAYLISTS}`);
+    }
+  }, [navigate, location.key]);
 
   if (isLoading) {
     return <LoadingState message="Loading playlist..." />;

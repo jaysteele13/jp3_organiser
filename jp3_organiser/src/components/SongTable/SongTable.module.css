@@ -22,15 +22,15 @@
 .controlsBar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
 }
 
 .searchContainer {
   position: relative;
-  flex: 1;
+  flex: 0 1 400px;
   min-width: 200px;
-  max-width: 400px;
 }
 
 .searchInput {
@@ -120,6 +120,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
+  table-layout: fixed;
 }
 
 .table thead {
@@ -176,20 +177,34 @@
 .cellIndex {
   text-align: center;
   color: #666;
-  width: 50px;
+}
+
+.thTitle {
+  width: 25%;
 }
 
 .cellTitle {
   font-weight: 500;
-  max-width: 300px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.cellArtist,
+.thArtist {
+  width: 20%;
+}
+
+.cellArtist {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.thAlbum {
+  width: 20%;
+}
+
 .cellAlbum {
-  max-width: 200px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -201,16 +216,18 @@
 }
 
 .cellDuration {
-  width: 80px;
   text-align: right;
   color: #555;
   font-variant-numeric: tabular-nums;
 }
 
+.thPath {
+  width: 15%;
+}
+
 .cellPath {
   font-size: 0.8rem;
   color: #666;
-  max-width: 150px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -293,6 +310,37 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+}
+
+.subtitleLink {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-size: 0.75rem;
+  color: #444;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.subtitleLink:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.subtitleLink:focus {
+  outline: none;
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.subtitleSeparator {
+  color: #666;
+  flex-shrink: 0;
 }
 
 .cardActions {

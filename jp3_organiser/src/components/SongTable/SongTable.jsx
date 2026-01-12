@@ -10,6 +10,7 @@
  * - State persistence via onStateChange callback
  * - Memoized rows for performance
  * - Keyboard accessible
+ * - Clickable artist/album links in card variant
  * 
  * Props:
  * - songs: Array of song objects (required)
@@ -23,11 +24,14 @@
  * - columns: Columns to show in table variant (default: ['title', 'artist', 'album', 'duration'])
  * - renderActions: (song) => ReactNode - Custom actions per row
  * - onRowClick: (song) => void - Row click handler
+ * - onArtistClick: (artistId, artistName) => void - Artist link click (card variant)
+ * - onAlbumClick: (albumId, albumName) => void - Album link click (card variant)
  * - highlightId: Song ID to highlight (e.g., current playing track)
  * - initialState: Initial search/pagination state (for persistence)
  * - onStateChange: Callback when state changes (for persistence)
  * - showTrackNumber: Show track number in card variant
- * - cardSubtitle: Custom subtitle for card variant
+ * - cardSubtitle: Custom subtitle for card variant (disables artist/album links)
+ * - renderCard: Custom card component for card variant - (song, props) => ReactNode
  */
 
 import React, { useCallback } from 'react';
@@ -61,11 +65,14 @@ export default function SongTable({
   columns = DEFAULT_COLUMNS,
   renderActions,
   onRowClick,
+  onArtistClick,
+  onAlbumClick,
   highlightId,
   initialState,
   onStateChange,
   showTrackNumber = false,
   cardSubtitle,
+  renderCard,
 }) {
   const state = useSongTableState({
     songs,
@@ -163,13 +170,13 @@ export default function SongTable({
             <thead>
               <tr>
                 <th className={styles.thIndex}>#</th>
-                {columns.includes('title') && <th>{COLUMN_LABELS.title}</th>}
-                {columns.includes('artist') && <th>{COLUMN_LABELS.artist}</th>}
-                {columns.includes('album') && <th>{COLUMN_LABELS.album}</th>}
+                {columns.includes('title') && <th className={styles.thTitle}>{COLUMN_LABELS.title}</th>}
+                {columns.includes('artist') && <th className={styles.thArtist}>{COLUMN_LABELS.artist}</th>}
+                {columns.includes('album') && <th className={styles.thAlbum}>{COLUMN_LABELS.album}</th>}
                 {columns.includes('duration') && (
                   <th className={styles.thDuration}>{COLUMN_LABELS.duration}</th>
                 )}
-                {columns.includes('path') && <th>{COLUMN_LABELS.path}</th>}
+                {columns.includes('path') && <th className={styles.thPath}>{COLUMN_LABELS.path}</th>}
                 {renderActions && <th className={styles.thActions}></th>}
               </tr>
             </thead>
@@ -192,15 +199,29 @@ export default function SongTable({
         /* Card Variant */
         <div className={styles.cardList}>
           {paginatedSongs.map((song) => (
-            <SongTableCard
-              key={song.id}
-              song={song}
-              isHighlighted={highlightId === song.id}
-              onRowClick={onRowClick}
-              renderActions={renderActions}
-              showTrackNumber={showTrackNumber}
-              subtitle={cardSubtitle}
-            />
+            renderCard ? (
+              // Custom card component provided
+              <React.Fragment key={song.id}>
+                {renderCard(song, {
+                  isHighlighted: highlightId === song.id,
+                  onRowClick,
+                  showTrackNumber,
+                })}
+              </React.Fragment>
+            ) : (
+              // Default SongTableCard
+              <SongTableCard
+                key={song.id}
+                song={song}
+                isHighlighted={highlightId === song.id}
+                onRowClick={onRowClick}
+                onArtistClick={onArtistClick}
+                onAlbumClick={onAlbumClick}
+                renderActions={renderActions}
+                showTrackNumber={showTrackNumber}
+                subtitle={cardSubtitle}
+              />
+            )
           ))}
         </div>
       )}

@@ -55,6 +55,19 @@
   text-overflow: ellipsis;
 }
 
+.subtitleLink {
+  cursor: pointer;
+  transition: text-decoration 0.15s ease;
+}
+
+.subtitleLink:hover {
+  text-decoration: underline;
+}
+
+.subtitleSeparator {
+  color: #666;
+}
+
 /* Action buttons */
 .actions {
   display: flex;
