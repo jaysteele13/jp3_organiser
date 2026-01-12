@@ -36,6 +36,8 @@ use commands::{
     delete_album,
     delete_artist,
     delete_songs,
+    edit_album,
+    edit_artist,
     edit_song_metadata,
     get_library_info,
     get_library_stats,
@@ -85,6 +87,8 @@ pub fn run() {
             delete_album,
             delete_artist,
             edit_song_metadata,
+            edit_album,
+            edit_artist,
             get_library_stats,
             compact_library,
             // Playlist commands

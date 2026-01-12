@@ -12,7 +12,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useLibraryConfig, useToast } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
-import { deleteSongs, deleteAlbum, deleteArtist, editSongMetadata } from '../../services/libraryService';
+import { deleteSongs, deleteAlbum, deleteArtist, editSongMetadata, editAlbum, editArtist } from '../../services/libraryService';
 import { LoadingState, ErrorState, EmptyState, Toast, ConfirmModal } from '../../components';
 import styles from './View.module.css';
 
@@ -25,6 +25,8 @@ import TabSelector from './components/Tabs/TabSelector';
 import TabContent from './components/Tabs/TabContent';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
 import EditSongModal from './components/EditSongModal';
+import EditAlbumModal from './components/EditAlbumModal';
+import EditArtistModal from './components/EditArtistModal';
 
 export default function View() {
   const location = useLocation();
@@ -63,6 +65,14 @@ export default function View() {
   const [songToEdit, setSongToEdit] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Edit album modal state
+  const [albumToEdit, setAlbumToEdit] = useState(null);
+  const [showEditAlbumModal, setShowEditAlbumModal] = useState(false);
+
+  // Edit artist modal state
+  const [artistToEdit, setArtistToEdit] = useState(null);
+  const [showEditArtistModal, setShowEditArtistModal] = useState(false);
 
   // Stats for header
   const stats = useMemo(() => {
@@ -222,6 +232,76 @@ export default function View() {
     setSongToEdit(null);
   };
 
+  // ============ EDIT ALBUM HANDLERS ============
+  const handleEditAlbumRequest = (album) => {
+    setAlbumToEdit(album);
+    setShowEditAlbumModal(true);
+  };
+
+  const handleConfirmEditAlbum = async (albumId, newName, newArtistName, newYear) => {
+    if (!libraryPath) return;
+
+    setIsSaving(true);
+    try {
+      const result = await editAlbum(libraryPath, albumId, newName, newArtistName, newYear);
+      setShowEditAlbumModal(false);
+      setAlbumToEdit(null);
+      handleRefresh();
+
+      // Show toast with edit result
+      const messages = [`Album updated: "${result.oldName}" → "${result.newName}"`];
+      if (result.artistCreated) messages.push('new artist created');
+      messages.push(`${result.songsUpdated} song${result.songsUpdated !== 1 ? 's' : ''} updated`);
+      toast.showToast(messages.join(', '), 'success');
+    } catch (err) {
+      console.error('Failed to edit album:', err);
+      toast.showToast(err.toString() || 'Failed to edit album', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEditAlbum = () => {
+    if (isSaving) return;
+    setShowEditAlbumModal(false);
+    setAlbumToEdit(null);
+  };
+
+  // ============ EDIT ARTIST HANDLERS ============
+  const handleEditArtistRequest = (artist) => {
+    setArtistToEdit(artist);
+    setShowEditArtistModal(true);
+  };
+
+  const handleConfirmEditArtist = async (artistId, newName) => {
+    if (!libraryPath) return;
+
+    setIsSaving(true);
+    try {
+      const result = await editArtist(libraryPath, artistId, newName);
+      setShowEditArtistModal(false);
+      setArtistToEdit(null);
+      handleRefresh();
+
+      // Show toast with edit result
+      toast.showToast(
+        `Artist updated: "${result.oldName}" → "${result.newName}" (${result.songsAffected} song${result.songsAffected !== 1 ? 's' : ''}, ${result.albumsAffected} album${result.albumsAffected !== 1 ? 's' : ''})`,
+        'success'
+      );
+    } catch (err) {
+      console.error('Failed to edit artist:', err);
+      toast.showToast(err.toString() || 'Failed to edit artist', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEditArtist = () => {
+    if (isSaving) return;
+    setShowEditArtistModal(false);
+    setArtistToEdit(null);
+  };
+
   if (configLoading) {
     return <LoadingState message="Loading configuration..." />;
   }
@@ -265,7 +345,9 @@ export default function View() {
               onDeleteSong={handleDeleteSongRequest}
               onEditSong={handleEditRequest}
               onDeleteAlbum={handleDeleteAlbumRequest}
+              onEditAlbum={handleEditAlbumRequest}
               onDeleteArtist={handleDeleteArtistRequest}
+              onEditArtist={handleEditArtistRequest}
             />
           </div>
         </>
@@ -329,6 +411,26 @@ export default function View() {
           libraryPath={libraryPath}
           onSave={handleConfirmEdit}
           onCancel={handleCancelEdit}
+          isSaving={isSaving}
+        />
+      )}
+
+      {/* Edit Album Modal */}
+      {showEditAlbumModal && (
+        <EditAlbumModal
+          album={albumToEdit}
+          onSave={handleConfirmEditAlbum}
+          onCancel={handleCancelEditAlbum}
+          isSaving={isSaving}
+        />
+      )}
+
+      {/* Edit Artist Modal */}
+      {showEditArtistModal && (
+        <EditArtistModal
+          artist={artistToEdit}
+          onSave={handleConfirmEditArtist}
+          onCancel={handleCancelEditArtist}
           isSaving={isSaving}
         />
       )}

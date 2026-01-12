@@ -247,6 +247,50 @@ export async function editSongMetadata(basePath, songId, metadata) {
 }
 
 /**
+ * Edit an album's metadata (name, artist, year).
+ * 
+ * This updates the album entry and all songs in the album to reflect the changes.
+ * If the artist changes, a new artist entry is created if needed.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {number} albumId - ID of the album to edit
+ * @param {string} newName - New album name
+ * @param {string} newArtistName - New artist name
+ * @param {number|null} newYear - New year (optional)
+ * @returns {Promise<EditAlbumResult>} Result with update info
+ * 
+ * @typedef {Object} EditAlbumResult
+ * @property {number} songsUpdated - Number of songs updated
+ * @property {boolean} artistCreated - Whether a new artist was created
+ * @property {string} oldName - Previous album name
+ * @property {string} newName - New album name
+ */
+export async function editAlbum(basePath, albumId, newName, newArtistName, newYear = null) {
+  return await invoke('edit_album', { basePath, albumId, newName, newArtistName, newYear });
+}
+
+/**
+ * Edit an artist's metadata (name only).
+ * 
+ * This updates the artist's name. All songs and albums by this artist
+ * will automatically reflect the change since they reference artist by ID.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {number} artistId - ID of the artist to edit
+ * @param {string} newName - New artist name
+ * @returns {Promise<EditArtistResult>} Result with update info
+ * 
+ * @typedef {Object} EditArtistResult
+ * @property {number} songsAffected - Number of songs affected
+ * @property {number} albumsAffected - Number of albums affected
+ * @property {string} oldName - Previous artist name
+ * @property {string} newName - New artist name
+ */
+export async function editArtist(basePath, artistId, newName) {
+  return await invoke('edit_artist', { basePath, artistId, newName });
+}
+
+/**
  * Compact the library by removing deleted entries and orphaned data.
  * 
  * This rebuilds the entire library.bin, removing:

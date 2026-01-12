@@ -1,7 +1,7 @@
 import { ActionMenu } from '../../../../../components';
 import styles from './AlbumView.module.css'
 
-export default function AlbumView({ library, onDeleteAlbum }) {
+export default function AlbumView({ library, onDeleteAlbum, onEditAlbum }) {
     
     return (
        <div className={styles.cardGrid}>
@@ -16,6 +16,7 @@ export default function AlbumView({ library, onDeleteAlbum }) {
                         </div>
                         <ActionMenu
                             items={[
+                                { label: 'Edit Album', onClick: () => onEditAlbum?.(album) },
                                 { label: 'Delete Album', onClick: () => onDeleteAlbum?.(album), variant: 'danger' },
                             ]}
                         />

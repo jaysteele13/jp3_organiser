@@ -1,7 +1,7 @@
 import { ActionMenu } from '../../../../../components';
 import styles from './ArtistView.module.css'
 
-export default function ArtistView({ library, onDeleteArtist }) {
+export default function ArtistView({ library, onDeleteArtist, onEditArtist }) {
     return (
        <div className={styles.cardGrid}>
             {library.artists.map((artist) => {
@@ -15,6 +15,7 @@ export default function ArtistView({ library, onDeleteArtist }) {
                         </div>
                         <ActionMenu
                             items={[
+                                { label: 'Edit Artist', onClick: () => onEditArtist?.(artist) },
                                 { label: 'Delete Artist', onClick: () => onDeleteArtist?.(artist), variant: 'danger' },
                             ]}
                         />

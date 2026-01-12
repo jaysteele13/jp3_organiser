@@ -503,3 +503,31 @@ pub struct DeleteArtistResult {
     /// Name of the deleted artist
     pub artist_name: String,
 }
+
+/// Result returned after editing an album's metadata.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EditAlbumResult {
+    /// Number of songs updated
+    pub songs_updated: u32,
+    /// Whether a new artist was created (if artist name changed)
+    pub artist_created: bool,
+    /// The old album name
+    pub old_name: String,
+    /// The new album name
+    pub new_name: String,
+}
+
+/// Result returned after editing an artist's metadata.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EditArtistResult {
+    /// Number of songs affected
+    pub songs_affected: u32,
+    /// Number of albums affected
+    pub albums_affected: u32,
+    /// The old artist name
+    pub old_name: String,
+    /// The new artist name
+    pub new_name: String,
+}

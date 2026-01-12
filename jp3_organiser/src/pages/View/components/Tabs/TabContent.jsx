@@ -19,7 +19,9 @@ export default React.memo(function TabContent({
   onDeleteSong, 
   onEditSong,
   onDeleteAlbum,
+  onEditAlbum,
   onDeleteArtist,
+  onEditArtist,
 }) {
   const Component = tabComponents[activeTab];
   
@@ -36,11 +38,11 @@ export default React.memo(function TabContent({
   }
 
   if (activeTab === TABS.ALBUMS) {
-    return <Component library={library} onDeleteAlbum={onDeleteAlbum} />;
+    return <Component library={library} onDeleteAlbum={onDeleteAlbum} onEditAlbum={onEditAlbum} />;
   }
 
   if (activeTab === TABS.ARTISTS) {
-    return <Component library={library} onDeleteArtist={onDeleteArtist} />;
+    return <Component library={library} onDeleteArtist={onDeleteArtist} onEditArtist={onEditArtist} />;
   }
 
   return <Component library={library} />;
