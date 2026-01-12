@@ -30,6 +30,22 @@
   min-width: 0;
 }
 
+/* Scroll container for overflow text */
+.scrollContainer {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.scrollContainer:hover .cardTitleLink {
+  animation: scroll-text 4s linear infinite;
+}
+
+@keyframes scroll-text {
+  0%, 15% { transform: translateX(0); }
+  85%, 100% { transform: translateX(calc(-100% + 120px)); }
+}
+
 .cardTitle {
   font-weight: 600;
   font-size: 1rem;
@@ -38,6 +54,28 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: #000;
+}
+
+/* Clickable title link */
+.cardTitleLink {
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  color: #000;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.cardTitleLink:hover {
+  text-decoration: underline;
+  font-weight: 700;
+}
+
+.cardTitleLink:focus {
+  outline: none;
+  text-decoration: underline;
+  font-weight: 700;
 }
 
 .cardSubtitle {

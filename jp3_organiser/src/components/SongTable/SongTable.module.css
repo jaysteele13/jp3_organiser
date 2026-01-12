@@ -210,6 +210,23 @@
   text-overflow: ellipsis;
 }
 
+/* Clickable cell links (artist/album names) */
+.cellLink {
+  color: inherit;
+  cursor: pointer;
+}
+
+.cellLink:hover {
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.cellLink:focus {
+  outline: none;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
 .thDuration {
   width: 80px;
   text-align: right;

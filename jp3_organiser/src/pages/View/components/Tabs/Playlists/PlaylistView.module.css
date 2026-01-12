@@ -92,6 +92,25 @@
   color: #000;
 }
 
+/* Clickable title link */
+.cardTitleLink {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #000;
+  cursor: pointer;
+}
+
+.cardTitleLink:hover {
+  text-decoration: underline;
+  font-weight: 700;
+}
+
+.cardTitleLink:focus {
+  outline: none;
+  text-decoration: underline;
+  font-weight: 700;
+}
+
 .cardMeta {
   font-size: 0.8rem;
   opacity: 0.6;

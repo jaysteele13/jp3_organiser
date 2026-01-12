@@ -3,13 +3,17 @@
  * 
  * Memoized table row for SongTable table variant.
  * Displays song info in a traditional table layout.
+ * Title, artist, and album names can be clickable links that navigate to detail pages.
  * 
  * Props:
- * - song: Song object
+ * - song: Song object with title, artistName, albumName, artistId, albumId
  * - index: Row index (for display number)
  * - isHighlighted: Whether this row should be highlighted
  * - columns: Array of column keys to display
  * - onRowClick: Optional click handler for the row
+ * - onTitleClick: Optional callback when song title is clicked
+ * - onArtistClick: Optional callback when artist name is clicked
+ * - onAlbumClick: Optional callback when album name is clicked
  * - renderActions: Function to render action buttons
  */
 
@@ -23,6 +27,9 @@ function SongTableRow({
   isHighlighted = false,
   columns = ['title', 'artist', 'album', 'duration'],
   onRowClick,
+  onTitleClick,
+  onArtistClick,
+  onAlbumClick,
   renderActions,
 }) {
   const handleClick = () => {
@@ -37,7 +44,32 @@ function SongTableRow({
     }
   };
 
+  const handleTitleClick = (e) => {
+    e.stopPropagation();
+    if (onTitleClick) {
+      onTitleClick(song);
+    }
+  };
+
+  const handleArtistClick = (e) => {
+    e.stopPropagation();
+    if (onArtistClick && song.artistId) {
+      onArtistClick(song.artistId, song.artistName);
+    }
+  };
+
+  const handleAlbumClick = (e) => {
+    e.stopPropagation();
+    if (onAlbumClick && song.albumId) {
+      onAlbumClick(song.albumId, song.albumName);
+    }
+  };
+
   const isClickable = Boolean(onRowClick);
+  const hasTitleLink = Boolean(onTitleClick);
+  // Check for undefined/null, but allow 0 as a valid ID
+  const hasArtistLink = Boolean(onArtistClick) && song.artistId !== undefined && song.artistId !== null;
+  const hasAlbumLink = Boolean(onAlbumClick) && song.albumId !== undefined && song.albumId !== null;
 
   return (
     <tr
@@ -50,15 +82,57 @@ function SongTableRow({
       <td className={styles.cellIndex}>{index + 1}</td>
       
       {columns.includes('title') && (
-        <td className={styles.cellTitle}>{song.title || 'Unknown'}</td>
+        <td className={styles.cellTitle}>
+          {hasTitleLink ? (
+            <span
+              className={styles.cellLink}
+              onClick={handleTitleClick}
+              onKeyDown={(e) => e.key === 'Enter' && handleTitleClick(e)}
+              role="link"
+              tabIndex={0}
+            >
+              {song.title || 'Unknown'}
+            </span>
+          ) : (
+            song.title || 'Unknown'
+          )}
+        </td>
       )}
       
       {columns.includes('artist') && (
-        <td className={styles.cellArtist}>{song.artistName || 'Unknown'}</td>
+        <td className={styles.cellArtist}>
+          {hasArtistLink ? (
+            <span
+              className={styles.cellLink}
+              onClick={handleArtistClick}
+              onKeyDown={(e) => e.key === 'Enter' && handleArtistClick(e)}
+              role="link"
+              tabIndex={0}
+            >
+              {song.artistName || 'Unknown'}
+            </span>
+          ) : (
+            song.artistName || 'Unknown'
+          )}
+        </td>
       )}
       
       {columns.includes('album') && (
-        <td className={styles.cellAlbum}>{song.albumName || 'Unknown'}</td>
+        <td className={styles.cellAlbum}>
+          {hasAlbumLink ? (
+            <span
+              className={styles.cellLink}
+              onClick={handleAlbumClick}
+              onKeyDown={(e) => e.key === 'Enter' && handleAlbumClick(e)}
+              role="link"
+              tabIndex={0}
+            >
+              {song.albumName || 'Unknown'}
+            </span>
+          ) : (
+            song.albumName || 'Unknown'
+          )}
+        </td>
       )}
       
       {columns.includes('duration') && (

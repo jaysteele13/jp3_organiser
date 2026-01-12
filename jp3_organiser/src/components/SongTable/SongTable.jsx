@@ -24,6 +24,7 @@
  * - columns: Columns to show in table variant (default: ['title', 'artist', 'album', 'duration'])
  * - renderActions: (song) => ReactNode - Custom actions per row
  * - onRowClick: (song) => void - Row click handler
+ * - onTitleClick: (song) => void - Title click handler (table variant)
  * - onArtistClick: (artistId, artistName) => void - Artist link click (card variant)
  * - onAlbumClick: (albumId, albumName) => void - Album link click (card variant)
  * - highlightId: Song ID to highlight (e.g., current playing track)
@@ -65,6 +66,7 @@ export default function SongTable({
   columns = DEFAULT_COLUMNS,
   renderActions,
   onRowClick,
+  onTitleClick,
   onArtistClick,
   onAlbumClick,
   highlightId,
@@ -189,6 +191,9 @@ export default function SongTable({
                   isHighlighted={highlightId === song.id}
                   columns={columns}
                   onRowClick={onRowClick}
+                  onTitleClick={onTitleClick}
+                  onArtistClick={onArtistClick}
+                  onAlbumClick={onAlbumClick}
                   renderActions={renderActions}
                 />
               ))}
