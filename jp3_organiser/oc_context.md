@@ -30,6 +30,7 @@ jp3_organiser/
 ├── src/                      # React frontend
 │   ├── assets/               # Static assets (fonts, images, test files)
 │   ├── components/           # Shared/reusable components
+│   │   ├── ActionMenu/       # Reusable dropdown action menu for items
 │   │   ├── ConfirmModal/     # Reusable confirmation dialog with variants and custom content via children prop
 │   │   ├── EmptyState/       # Reusable empty state message
 │   │   ├── ErrorState/       # Reusable error display
@@ -117,24 +118,25 @@ jp3_organiser/
 7. **Library Viewer** - Browse library by Songs, Albums, Artists, Playlists (tabs)
 8. **Directory Configuration** - Set and persist library output directory
 9. **Song Deletion** - Soft-delete songs with audio file removal
-10. **Song Editing** - Edit metadata for existing songs
-11. **Library Compaction** - Remove deleted entries and orphaned data
-12. **Upload Caching** - Persist upload state across navigation
-13. **Workflow State Machine** - Explicit state transitions for upload flow (PROCESS → REVIEW → READY_TO_SAVE)
-14. **Smart Review Navigation** - Automatically navigate to first unconfirmed file when entering review
-15. **Swipe Animations** - Slide animations when navigating between files in review mode
-16. **Upload Mode Selection** - Choose between Add Songs, Add Album, Add Artist, or Add Playlist modes
-17. **Playlist Creation** - Create playlists with songs (saves songs to library + creates playlist file)
-18. **Playlist Management** - Add/remove songs from existing playlists via PlaylistEdit page
-19. **Upload to Existing Playlist** - Navigate from PlaylistEdit to Upload with pre-set playlist context
-20. **Duplicate Song Handling** - When uploading songs already in library, their IDs are reused for playlist inclusion
-21. **Playlist Rename** - Rename playlists with duplicate name validation
-22. **Desktop Music Player** - Full-featured audio playback with queue management
-23. **Queue Drawer** - Slide-out panel to view, reorder, and manage playback queue
-24. **Persistent PlayerBar** - Always-visible bottom bar with playback controls
-25. **Home Tab** - Default Player tab with Recently Played and Recently Added sections
-26. **Recently Played Tracking** - Tracks songs, albums, artists, playlists via persistent store
-27. **Click-to-Play Song Rows** - Click anywhere on a song row to play (Queue button preserved)
+10. **Album/Artist Deletion** - Delete all songs in an album or by an artist
+11. **Song Editing** - Edit metadata for existing songs
+12. **Library Compaction** - Remove deleted entries and orphaned data
+13. **Upload Caching** - Persist upload state across navigation
+14. **Workflow State Machine** - Explicit state transitions for upload flow (PROCESS → REVIEW → READY_TO_SAVE)
+15. **Smart Review Navigation** - Automatically navigate to first unconfirmed file when entering review
+16. **Swipe Animations** - Slide animations when navigating between files in review mode
+17. **Upload Mode Selection** - Choose between Add Songs, Add Album, Add Artist, or Add Playlist modes
+18. **Playlist Creation** - Create playlists with songs (saves songs to library + creates playlist file)
+19. **Playlist Management** - Add/remove songs from existing playlists via PlaylistEdit page
+20. **Upload to Existing Playlist** - Navigate from PlaylistEdit to Upload with pre-set playlist context
+21. **Duplicate Song Handling** - When uploading songs already in library, their IDs are reused for playlist inclusion
+22. **Playlist Rename** - Rename playlists with duplicate name validation
+23. **Desktop Music Player** - Full-featured audio playback with queue management
+24. **Queue Drawer** - Slide-out panel to view, reorder, and manage playback queue
+25. **Persistent PlayerBar** - Always-visible bottom bar with playback controls
+26. **Home Tab** - Default Player tab with Recently Played and Recently Added sections
+27. **Recently Played Tracking** - Tracks songs, albums, artists, playlists via persistent store
+28. **Click-to-Play Song Rows** - Click anywhere on a song row to play (Queue button preserved)
 
 ### Planned
 - SD Card export workflow
@@ -206,7 +208,7 @@ Commands are organized into modules under `src-tauri/src/commands/`:
 |--------|----------|
 | `audio.rs` | `process_audio_files`, `process_single_audio_file`, `get_audio_metadata`, `get_audio_metadata_from_acoustic_id` |
 | `config.rs` | `get_library_path`, `set_library_path`, `clear_library_path` |
-| `library.rs` | `initialize_library`, `get_library_info`, `save_to_library`, `load_library`, `delete_songs`, `edit_song_metadata`, `get_library_stats`, `compact_library` |
+| `library.rs` | `initialize_library`, `get_library_info`, `save_to_library`, `load_library`, `delete_songs`, `delete_album`, `delete_artist`, `edit_song_metadata`, `get_library_stats`, `compact_library` |
 | `playlist.rs` | `create_playlist`, `load_playlist`, `list_playlists`, `delete_playlist_by_name`, `rename_playlist`, `save_to_playlist`, `add_songs_to_playlist`, `remove_songs_from_playlist` |
 
 ```rust
@@ -303,6 +305,8 @@ Models are in `src-tauri/src/models/`:
 | `LibraryStats` | totalSongs, activeSongs, deletedSongs, shouldCompact, fileSizeBytes |
 | `SaveToLibraryResult` | filesSaved, artistsAdded, albumsAdded, songsAdded, duplicatesSkipped, songIds, duplicateSongIds |
 | `DeleteSongsResult` | songsDeleted, notFound, filesDeleted |
+| `DeleteAlbumResult` | songsDeleted, filesDeleted, albumName, artistName |
+| `DeleteArtistResult` | songsDeleted, filesDeleted, albumsAffected, artistName |
 | `EditSongResult` | newSongId, artistCreated, albumCreated |
 | `CompactResult` | songsRemoved, artistsRemoved, albumsRemoved, stringsRemoved, bytesSaved |
 
@@ -349,6 +353,8 @@ Models are in `src-tauri/src/models/`:
 - `saveToLibrary(basePath, files)` - Save files to library
 - `loadLibrary(basePath)` - Load and parse library.bin
 - `deleteSongs(basePath, songIds)` - Soft-delete songs
+- `deleteAlbum(basePath, albumId)` - Delete all songs in an album
+- `deleteArtist(basePath, artistId)` - Delete all songs by an artist
 - `getLibraryStats(basePath)` - Get stats including compaction recommendation
 - `compactLibrary(basePath)` - Remove deleted entries
 - `createPlaylist(basePath, name, songIds)` - Create playlist with existing songs

@@ -10,10 +10,10 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useLibraryConfig } from '../../hooks';
+import { useLibraryConfig, useToast } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
-import { deleteSongs } from '../../services/libraryService';
-import { LoadingState, ErrorState, EmptyState } from '../../components';
+import { deleteSongs, deleteAlbum, deleteArtist, editSongMetadata, editAlbum, editArtist } from '../../services/libraryService';
+import { LoadingState, ErrorState, EmptyState, Toast, ConfirmModal } from '../../components';
 import styles from './View.module.css';
 
 import { TABS, VIEW_TABS } from '../../utils/enums';
@@ -24,6 +24,9 @@ import StatsBar from './components/StatsBar/StatsBar';
 import TabSelector from './components/Tabs/TabSelector';
 import TabContent from './components/Tabs/TabContent';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
+import EditSongModal from './components/EditSongModal';
+import EditAlbumModal from './components/EditAlbumModal';
+import EditArtistModal from './components/EditArtistModal';
 
 export default function View() {
   const location = useLocation();
@@ -35,6 +38,9 @@ export default function View() {
   
   const { library, isLoading, error, handleRefresh } = useLibrary(libraryPath);
 
+  // Toast notification for feedback
+  const toast = useToast();
+
   // Sync activeTab when navigation state changes (e.g., returning from PlaylistEdit)
   useEffect(() => {
     if (location.state?.tab) {
@@ -42,10 +48,31 @@ export default function View() {
     }
   }, [location.state?.tab]);
 
-  // Delete modal state
+  // Delete song modal state
   const [songsToDelete, setSongsToDelete] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Delete album modal state
+  const [albumToDelete, setAlbumToDelete] = useState(null);
+  const [showDeleteAlbumModal, setShowDeleteAlbumModal] = useState(false);
+
+  // Delete artist modal state
+  const [artistToDelete, setArtistToDelete] = useState(null);
+  const [showDeleteArtistModal, setShowDeleteArtistModal] = useState(false);
+
+  // Edit modal state
+  const [songToEdit, setSongToEdit] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Edit album modal state
+  const [albumToEdit, setAlbumToEdit] = useState(null);
+  const [showEditAlbumModal, setShowEditAlbumModal] = useState(false);
+
+  // Edit artist modal state
+  const [artistToEdit, setArtistToEdit] = useState(null);
+  const [showEditArtistModal, setShowEditArtistModal] = useState(false);
 
   // Stats for header
   const stats = useMemo(() => {
@@ -58,14 +85,26 @@ export default function View() {
     };
   }, [library]);
 
-  // Handle delete request from SongView
-  const handleDeleteRequest = (song) => {
+  // Get song count for album/artist
+  const getAlbumSongCount = (albumId) => {
+    return library?.songs?.filter(s => s.albumId === albumId).length ?? 0;
+  };
+
+  const getArtistSongCount = (artistId) => {
+    return library?.songs?.filter(s => s.artistId === artistId).length ?? 0;
+  };
+
+  const getArtistAlbumCount = (artistId) => {
+    return library?.albums?.filter(a => a.artistId === artistId).length ?? 0;
+  };
+
+  // ============ SONG DELETE HANDLERS ============
+  const handleDeleteSongRequest = (song) => {
     setSongsToDelete([song]);
     setShowDeleteModal(true);
   };
 
-  // Handle confirmed delete
-  const handleConfirmDelete = async () => {
+  const handleConfirmDeleteSong = async () => {
     if (songsToDelete.length === 0 || !libraryPath) return;
 
     setIsDeleting(true);
@@ -77,16 +116,190 @@ export default function View() {
       handleRefresh();
     } catch (err) {
       console.error('Failed to delete songs:', err);
+      toast.showToast('Failed to delete song', 'error');
     } finally {
       setIsDeleting(false);
     }
   };
 
-  // Handle cancel delete
-  const handleCancelDelete = () => {
+  const handleCancelDeleteSong = () => {
     if (isDeleting) return;
     setShowDeleteModal(false);
     setSongsToDelete([]);
+  };
+
+  // ============ ALBUM DELETE HANDLERS ============
+  const handleDeleteAlbumRequest = (album) => {
+    setAlbumToDelete(album);
+    setShowDeleteAlbumModal(true);
+  };
+
+  const handleConfirmDeleteAlbum = async () => {
+    if (!albumToDelete || !libraryPath) return;
+
+    setIsDeleting(true);
+    try {
+      const result = await deleteAlbum(libraryPath, albumToDelete.id);
+      setShowDeleteAlbumModal(false);
+      setAlbumToDelete(null);
+      handleRefresh();
+      toast.showToast(
+        `Deleted album "${result.albumName}" (${result.songsDeleted} song${result.songsDeleted !== 1 ? 's' : ''})`,
+        'success'
+      );
+    } catch (err) {
+      console.error('Failed to delete album:', err);
+      toast.showToast('Failed to delete album', 'error');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCancelDeleteAlbum = () => {
+    if (isDeleting) return;
+    setShowDeleteAlbumModal(false);
+    setAlbumToDelete(null);
+  };
+
+  // ============ ARTIST DELETE HANDLERS ============
+  const handleDeleteArtistRequest = (artist) => {
+    setArtistToDelete(artist);
+    setShowDeleteArtistModal(true);
+  };
+
+  const handleConfirmDeleteArtist = async () => {
+    if (!artistToDelete || !libraryPath) return;
+
+    setIsDeleting(true);
+    try {
+      const result = await deleteArtist(libraryPath, artistToDelete.id);
+      setShowDeleteArtistModal(false);
+      setArtistToDelete(null);
+      handleRefresh();
+      toast.showToast(
+        `Deleted artist "${result.artistName}" (${result.songsDeleted} song${result.songsDeleted !== 1 ? 's' : ''}, ${result.albumsAffected} album${result.albumsAffected !== 1 ? 's' : ''})`,
+        'success'
+      );
+    } catch (err) {
+      console.error('Failed to delete artist:', err);
+      toast.showToast('Failed to delete artist', 'error');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCancelDeleteArtist = () => {
+    if (isDeleting) return;
+    setShowDeleteArtistModal(false);
+    setArtistToDelete(null);
+  };
+
+  // ============ EDIT HANDLERS ============
+  const handleEditRequest = (song) => {
+    setSongToEdit(song);
+    setShowEditModal(true);
+  };
+
+  const handleConfirmEdit = async (songId, metadata) => {
+    if (!libraryPath) return;
+
+    setIsSaving(true);
+    try {
+      const result = await editSongMetadata(libraryPath, songId, metadata);
+      setShowEditModal(false);
+      setSongToEdit(null);
+      handleRefresh();
+
+      // Show toast with edit result
+      const messages = ['Song updated'];
+      if (result.artistCreated) messages.push('new artist created');
+      if (result.albumCreated) messages.push('new album created');
+      if (result.playlistsUpdated > 0) {
+        messages.push(`${result.playlistsUpdated} playlist${result.playlistsUpdated > 1 ? 's' : ''} updated`);
+      }
+      toast.showToast(messages.join(', '), 'success');
+    } catch (err) {
+      console.error('Failed to edit song:', err);
+      toast.showToast('Failed to edit song', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    if (isSaving) return;
+    setShowEditModal(false);
+    setSongToEdit(null);
+  };
+
+  // ============ EDIT ALBUM HANDLERS ============
+  const handleEditAlbumRequest = (album) => {
+    setAlbumToEdit(album);
+    setShowEditAlbumModal(true);
+  };
+
+  const handleConfirmEditAlbum = async (albumId, newName, newArtistName, newYear) => {
+    if (!libraryPath) return;
+
+    setIsSaving(true);
+    try {
+      const result = await editAlbum(libraryPath, albumId, newName, newArtistName, newYear);
+      setShowEditAlbumModal(false);
+      setAlbumToEdit(null);
+      handleRefresh();
+
+      // Show toast with edit result
+      const messages = [`Album updated: "${result.oldName}" → "${result.newName}"`];
+      if (result.artistCreated) messages.push('new artist created');
+      messages.push(`${result.songsUpdated} song${result.songsUpdated !== 1 ? 's' : ''} updated`);
+      toast.showToast(messages.join(', '), 'success');
+    } catch (err) {
+      console.error('Failed to edit album:', err);
+      toast.showToast(err.toString() || 'Failed to edit album', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEditAlbum = () => {
+    if (isSaving) return;
+    setShowEditAlbumModal(false);
+    setAlbumToEdit(null);
+  };
+
+  // ============ EDIT ARTIST HANDLERS ============
+  const handleEditArtistRequest = (artist) => {
+    setArtistToEdit(artist);
+    setShowEditArtistModal(true);
+  };
+
+  const handleConfirmEditArtist = async (artistId, newName) => {
+    if (!libraryPath) return;
+
+    setIsSaving(true);
+    try {
+      const result = await editArtist(libraryPath, artistId, newName);
+      setShowEditArtistModal(false);
+      setArtistToEdit(null);
+      handleRefresh();
+
+      // Show toast with edit result
+      toast.showToast(
+        `Artist updated: "${result.oldName}" → "${result.newName}" (${result.songsAffected} song${result.songsAffected !== 1 ? 's' : ''}, ${result.albumsAffected} album${result.albumsAffected !== 1 ? 's' : ''})`,
+        'success'
+      );
+    } catch (err) {
+      console.error('Failed to edit artist:', err);
+      toast.showToast(err.toString() || 'Failed to edit artist', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEditArtist = () => {
+    if (isSaving) return;
+    setShowEditArtistModal(false);
+    setArtistToEdit(null);
   };
 
   if (configLoading) {
@@ -129,7 +342,12 @@ export default function View() {
               activeTab={activeTab} 
               library={library}
               libraryPath={libraryPath}
-              onDeleteSong={handleDeleteRequest}
+              onDeleteSong={handleDeleteSongRequest}
+              onEditSong={handleEditRequest}
+              onDeleteAlbum={handleDeleteAlbumRequest}
+              onEditAlbum={handleEditAlbumRequest}
+              onDeleteArtist={handleDeleteArtistRequest}
+              onEditArtist={handleEditArtistRequest}
             />
           </div>
         </>
@@ -142,13 +360,87 @@ export default function View() {
         />
       )}
 
+      {/* Delete Song Modal */}
       {showDeleteModal && (
         <DeleteConfirmModal
           songs={songsToDelete}
-          onConfirm={handleConfirmDelete}
-          onCancel={handleCancelDelete}
-          isDeleting={isDeleting}/>
+          onConfirm={handleConfirmDeleteSong}
+          onCancel={handleCancelDeleteSong}
+          isDeleting={isDeleting}
+        />
       )}
+
+      {/* Delete Album Modal */}
+      {showDeleteAlbumModal && albumToDelete && (
+        <ConfirmModal
+          title="Delete Album?"
+          message={`This will permanently delete all ${getAlbumSongCount(albumToDelete.id)} song(s) from this album. The audio files will be removed from disk.`}
+          confirmLabel="Delete Album"
+          variant="danger"
+          onConfirm={handleConfirmDeleteAlbum}
+          onCancel={handleCancelDeleteAlbum}
+          isLoading={isDeleting}
+        >
+          <div className={styles.deleteInfo}>
+            <div className={styles.deleteInfoTitle}>{albumToDelete.name}</div>
+            <div className={styles.deleteInfoSubtitle}>by {albumToDelete.artistName}</div>
+          </div>
+        </ConfirmModal>
+      )}
+
+      {/* Delete Artist Modal */}
+      {showDeleteArtistModal && artistToDelete && (
+        <ConfirmModal
+          title="Delete Artist?"
+          message={`This will permanently delete all ${getArtistSongCount(artistToDelete.id)} song(s) across ${getArtistAlbumCount(artistToDelete.id)} album(s) by this artist. The audio files will be removed from disk.`}
+          confirmLabel="Delete Artist"
+          variant="danger"
+          onConfirm={handleConfirmDeleteArtist}
+          onCancel={handleCancelDeleteArtist}
+          isLoading={isDeleting}
+        >
+          <div className={styles.deleteInfo}>
+            <div className={styles.deleteInfoTitle}>{artistToDelete.name}</div>
+          </div>
+        </ConfirmModal>
+      )}
+
+      {showEditModal && (
+        <EditSongModal
+          song={songToEdit}
+          libraryPath={libraryPath}
+          onSave={handleConfirmEdit}
+          onCancel={handleCancelEdit}
+          isSaving={isSaving}
+        />
+      )}
+
+      {/* Edit Album Modal */}
+      {showEditAlbumModal && (
+        <EditAlbumModal
+          album={albumToEdit}
+          onSave={handleConfirmEditAlbum}
+          onCancel={handleCancelEditAlbum}
+          isSaving={isSaving}
+        />
+      )}
+
+      {/* Edit Artist Modal */}
+      {showEditArtistModal && (
+        <EditArtistModal
+          artist={artistToEdit}
+          onSave={handleConfirmEditArtist}
+          onCancel={handleCancelEditArtist}
+          isSaving={isSaving}
+        />
+      )}
+
+      <Toast
+        message={toast.message}
+        variant={toast.variant}
+        visible={toast.visible}
+        onDismiss={toast.hideToast}
+      />
     </div>
   );
 }

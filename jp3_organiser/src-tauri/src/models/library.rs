@@ -426,6 +426,8 @@ pub struct EditSongResult {
     pub artist_created: bool,
     /// Whether a new album was created
     pub album_created: bool,
+    /// Number of playlists updated with the new song ID
+    pub playlists_updated: u32,
 }
 
 /// Library statistics for compaction decision.
@@ -472,4 +474,60 @@ pub struct CompactResult {
     pub new_size_bytes: u64,
     /// Bytes saved
     pub bytes_saved: u64,
+}
+
+/// Result returned after deleting an album from the library.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteAlbumResult {
+    /// Number of songs deleted
+    pub songs_deleted: u32,
+    /// Number of audio files deleted
+    pub files_deleted: u32,
+    /// Name of the deleted album
+    pub album_name: String,
+    /// Name of the album's artist
+    pub artist_name: String,
+}
+
+/// Result returned after deleting an artist from the library.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteArtistResult {
+    /// Number of songs deleted
+    pub songs_deleted: u32,
+    /// Number of audio files deleted
+    pub files_deleted: u32,
+    /// Number of albums affected (songs deleted from)
+    pub albums_affected: u32,
+    /// Name of the deleted artist
+    pub artist_name: String,
+}
+
+/// Result returned after editing an album's metadata.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EditAlbumResult {
+    /// Number of songs updated
+    pub songs_updated: u32,
+    /// Whether a new artist was created (if artist name changed)
+    pub artist_created: bool,
+    /// The old album name
+    pub old_name: String,
+    /// The new album name
+    pub new_name: String,
+}
+
+/// Result returned after editing an artist's metadata.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EditArtistResult {
+    /// Number of songs affected
+    pub songs_affected: u32,
+    /// Number of albums affected
+    pub albums_affected: u32,
+    /// The old artist name
+    pub old_name: String,
+    /// The new artist name
+    pub new_name: String,
 }

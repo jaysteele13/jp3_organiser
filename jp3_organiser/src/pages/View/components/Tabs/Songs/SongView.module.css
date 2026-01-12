@@ -35,32 +35,11 @@
 
 /* Actions column */
 .actionsHeader {
-  width: 80px;
-  text-align: center;
+  width: 60px;
 }
 
 .cellActions {
   text-align: center;
-}
-
-.deleteBtn {
-  background-color: transparent;
-  border: 1px solid var(--primary);
-  color: var(--primary);
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  line-height: 1;
-  transition: all 0.2s ease;
-}
-
-.deleteBtn:hover {
-  background-color: var(--primary);
-  color: #fff;
 }
 
 .emptyTable {

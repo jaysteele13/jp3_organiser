@@ -161,6 +161,46 @@ export async function deleteSongs(basePath, songIds) {
 }
 
 /**
+ * Delete all songs belonging to an album.
+ * 
+ * This soft-deletes all songs in the album AND deletes their audio files.
+ * Use `compactLibrary` to clean up orphaned albums/artists afterward.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {number} albumId - Album ID to delete
+ * @returns {Promise<DeleteAlbumResult>} Result with deletion counts
+ * 
+ * @typedef {Object} DeleteAlbumResult
+ * @property {number} songsDeleted - Number of songs deleted
+ * @property {number} filesDeleted - Number of audio files deleted
+ * @property {string} albumName - Name of the deleted album
+ * @property {string} artistName - Name of the album's artist
+ */
+export async function deleteAlbum(basePath, albumId) {
+  return await invoke('delete_album', { basePath, albumId });
+}
+
+/**
+ * Delete all songs belonging to an artist.
+ * 
+ * This soft-deletes all songs by the artist AND deletes their audio files.
+ * Use `compactLibrary` to clean up orphaned albums/artists afterward.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {number} artistId - Artist ID to delete
+ * @returns {Promise<DeleteArtistResult>} Result with deletion counts
+ * 
+ * @typedef {Object} DeleteArtistResult
+ * @property {number} songsDeleted - Number of songs deleted
+ * @property {number} filesDeleted - Number of audio files deleted
+ * @property {number} albumsAffected - Number of albums affected
+ * @property {string} artistName - Name of the deleted artist
+ */
+export async function deleteArtist(basePath, artistId) {
+  return await invoke('delete_artist', { basePath, artistId });
+}
+
+/**
  * Get library statistics including deleted song count.
  * 
  * Use this to determine if compaction is needed.
@@ -181,6 +221,73 @@ export async function deleteSongs(basePath, songIds) {
  */
 export async function getLibraryStats(basePath) {
   return await invoke('get_library_stats', { basePath });
+}
+
+/**
+ * Edit a song's metadata.
+ * 
+ * This soft-deletes the old song entry and creates a new one with updated metadata.
+ * The audio file path is preserved. Use `compactLibrary` to clean up the old entry.
+ * 
+ * Note: If the song is in playlists, those playlists will reference the old (deleted) ID
+ * until compaction remaps them to the new ID.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {number} songId - ID of the song to edit
+ * @param {Object} metadata - New metadata object with title, artist, album, year (optional)
+ * @returns {Promise<EditSongResult>} Result with new song ID
+ * 
+ * @typedef {Object} EditSongResult
+ * @property {number} newSongId - The new song ID
+ * @property {boolean} artistCreated - Whether a new artist was created
+ * @property {boolean} albumCreated - Whether a new album was created
+ */
+export async function editSongMetadata(basePath, songId, metadata) {
+  return await invoke('edit_song_metadata', { basePath, songId, newMetadata: metadata });
+}
+
+/**
+ * Edit an album's metadata (name, artist, year).
+ * 
+ * This updates the album entry and all songs in the album to reflect the changes.
+ * If the artist changes, a new artist entry is created if needed.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {number} albumId - ID of the album to edit
+ * @param {string} newName - New album name
+ * @param {string} newArtistName - New artist name
+ * @param {number|null} newYear - New year (optional)
+ * @returns {Promise<EditAlbumResult>} Result with update info
+ * 
+ * @typedef {Object} EditAlbumResult
+ * @property {number} songsUpdated - Number of songs updated
+ * @property {boolean} artistCreated - Whether a new artist was created
+ * @property {string} oldName - Previous album name
+ * @property {string} newName - New album name
+ */
+export async function editAlbum(basePath, albumId, newName, newArtistName, newYear = null) {
+  return await invoke('edit_album', { basePath, albumId, newName, newArtistName, newYear });
+}
+
+/**
+ * Edit an artist's metadata (name only).
+ * 
+ * This updates the artist's name. All songs and albums by this artist
+ * will automatically reflect the change since they reference artist by ID.
+ * 
+ * @param {string} basePath - The base library directory path
+ * @param {number} artistId - ID of the artist to edit
+ * @param {string} newName - New artist name
+ * @returns {Promise<EditArtistResult>} Result with update info
+ * 
+ * @typedef {Object} EditArtistResult
+ * @property {number} songsAffected - Number of songs affected
+ * @property {number} albumsAffected - Number of albums affected
+ * @property {string} oldName - Previous artist name
+ * @property {string} newName - New artist name
+ */
+export async function editArtist(basePath, artistId, newName) {
+  return await invoke('edit_artist', { basePath, artistId, newName });
 }
 
 /**

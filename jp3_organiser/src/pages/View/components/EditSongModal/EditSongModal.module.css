@@ -1,0 +1,71 @@
+/* EditSongModal styles */
+
+/* Modal overlay - covers entire screen */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Modal card */
+.modal {
+  background-color: #1a1a1a;
+  border-radius: 12px;
+  padding: 1.5rem;
+  min-width: 400px;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--secondary);
+  position: relative;
+}
+
+/* Modal title */
+.title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  color: var(--secondary);
+}
+
+/* Info message */
+.info {
+  margin: 0 0 1rem 0;
+  color: #aaa;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* Form wrapper - overrides MetadataForm container styles */
+.formWrapper {
+  /* Remove margin from MetadataForm's formContainer */
+}
+
+.formWrapper > div {
+  margin-top: 0;
+  background-color: transparent;
+  padding: 0;
+}
+
+/* Saving overlay */
+.savingOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 1rem;
+}

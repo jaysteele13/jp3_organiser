@@ -594,6 +594,69 @@ pub fn delete_songs(
     })
 }
 
+/// Remap a song ID in all playlists.
+///
+/// Scans all playlist files and replaces occurrences of `old_id` with `new_id`.
+/// Returns the number of playlists that were updated.
+fn remap_song_id_in_playlists(jp3_path: &Path, old_id: u32, new_id: u32) -> Result<u32, String> {
+    use crate::commands::playlist::{read_playlist_file, write_playlist_file};
+
+    let playlists_path = jp3_path.join(PLAYLISTS_DIR);
+
+    if !playlists_path.exists() {
+        return Ok(0);
+    }
+
+    let entries = fs::read_dir(&playlists_path)
+        .map_err(|e| format!("Failed to read playlists directory: {}", e))?;
+
+    let mut playlists_updated = 0u32;
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+
+        // Skip non-.bin files
+        if path.extension().and_then(|e| e.to_str()) != Some("bin") {
+            continue;
+        }
+
+        // Extract playlist ID from filename
+        let playlist_id = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .and_then(|s| s.parse::<u32>().ok());
+
+        let playlist_id = match playlist_id {
+            Some(id) => id,
+            None => continue,
+        };
+
+        // Read playlist
+        let playlist = match read_playlist_file(&path, playlist_id) {
+            Ok(p) => p,
+            Err(_) => continue, // Skip corrupted playlists
+        };
+
+        // Check if this playlist contains the old ID
+        if !playlist.song_ids.contains(&old_id) {
+            continue;
+        }
+
+        // Remap old_id to new_id
+        let updated_song_ids: Vec<u32> = playlist
+            .song_ids
+            .iter()
+            .map(|&id| if id == old_id { new_id } else { id })
+            .collect();
+
+        // Write updated playlist
+        write_playlist_file(&path, &playlist.name, &updated_song_ids)?;
+        playlists_updated += 1;
+    }
+
+    Ok(playlists_updated)
+}
+
 /// Edit a song's metadata by soft-deleting the old entry and appending a new one.
 ///
 /// This approach minimizes write cycles by:
@@ -711,10 +774,14 @@ pub fn edit_song_metadata(
     // Rebuild and write library.bin
     write_library_bin(&library_bin_path, &string_table, &artists, &albums, &songs)?;
 
+    // Remap old song ID to new song ID in all playlists
+    let playlists_updated = remap_song_id_in_playlists(&jp3_path, song_id, new_song_id)?;
+
     Ok(crate::models::EditSongResult {
         new_song_id,
         artist_created: artists.len() > old_artist_count,
         album_created: albums.len() > old_album_count,
+        playlists_updated,
     })
 }
 
@@ -1072,6 +1139,302 @@ fn write_library_bin(
         .map_err(|e| format!("Failed to sync: {}", e))?;
 
     Ok(())
+}
+
+/// Delete all songs belonging to an album.
+///
+/// This finds all songs with the given album_id and soft-deletes them,
+/// also deleting their audio files from music/.
+/// Use `compact_library` to clean up orphaned albums/artists afterward.
+#[tauri::command]
+pub fn delete_album(
+    base_path: String,
+    album_id: u32,
+) -> Result<crate::models::DeleteAlbumResult, String> {
+    // First load the library to find all songs in this album
+    let library = load_library(base_path.clone())?;
+
+    // Find the album to get its name
+    let album = library
+        .albums
+        .iter()
+        .find(|a| a.id == album_id)
+        .ok_or_else(|| format!("Album with ID {} not found", album_id))?;
+
+    let album_name = album.name.clone();
+    let artist_name = album.artist_name.clone();
+
+    // Find all songs in this album
+    let song_ids: Vec<u32> = library
+        .songs
+        .iter()
+        .filter(|s| s.album_id == album_id)
+        .map(|s| s.id)
+        .collect();
+
+    if song_ids.is_empty() {
+        return Ok(crate::models::DeleteAlbumResult {
+            songs_deleted: 0,
+            files_deleted: 0,
+            album_name,
+            artist_name,
+        });
+    }
+
+    // Delete the songs using existing function
+    let delete_result = delete_songs(base_path, song_ids)?;
+
+    Ok(crate::models::DeleteAlbumResult {
+        songs_deleted: delete_result.songs_deleted,
+        files_deleted: delete_result.files_deleted,
+        album_name,
+        artist_name,
+    })
+}
+
+/// Delete all songs belonging to an artist.
+///
+/// This finds all songs with the given artist_id and soft-deletes them,
+/// also deleting their audio files from music/.
+/// Use `compact_library` to clean up orphaned albums/artists afterward.
+#[tauri::command]
+pub fn delete_artist(
+    base_path: String,
+    artist_id: u32,
+) -> Result<crate::models::DeleteArtistResult, String> {
+    // First load the library to find all songs by this artist
+    let library = load_library(base_path.clone())?;
+
+    // Find the artist to get their name
+    let artist = library
+        .artists
+        .iter()
+        .find(|a| a.id == artist_id)
+        .ok_or_else(|| format!("Artist with ID {} not found", artist_id))?;
+
+    let artist_name = artist.name.clone();
+
+    // Find all songs by this artist
+    let song_ids: Vec<u32> = library
+        .songs
+        .iter()
+        .filter(|s| s.artist_id == artist_id)
+        .map(|s| s.id)
+        .collect();
+
+    // Count unique albums affected
+    let albums_affected: u32 = library
+        .songs
+        .iter()
+        .filter(|s| s.artist_id == artist_id)
+        .map(|s| s.album_id)
+        .collect::<std::collections::HashSet<_>>()
+        .len() as u32;
+
+    if song_ids.is_empty() {
+        return Ok(crate::models::DeleteArtistResult {
+            songs_deleted: 0,
+            files_deleted: 0,
+            albums_affected: 0,
+            artist_name,
+        });
+    }
+
+    // Delete the songs using existing function
+    let delete_result = delete_songs(base_path, song_ids)?;
+
+    Ok(crate::models::DeleteArtistResult {
+        songs_deleted: delete_result.songs_deleted,
+        files_deleted: delete_result.files_deleted,
+        albums_affected,
+        artist_name,
+    })
+}
+
+/// Edit an album's metadata (name, year, or artist).
+///
+/// This updates all songs in the album to reflect the new album metadata.
+/// If the artist changes, a new artist entry is created if needed.
+/// This requires a full library rewrite.
+#[tauri::command]
+pub fn edit_album(
+    base_path: String,
+    album_id: u32,
+    new_name: String,
+    new_artist_name: String,
+    new_year: Option<u16>,
+) -> Result<crate::models::EditAlbumResult, String> {
+    let base = Path::new(&base_path);
+    let jp3_path = base.join(JP3_DIR);
+    let metadata_path = jp3_path.join(METADATA_DIR);
+    let library_bin_path = metadata_path.join(LIBRARY_BIN);
+
+    if !library_bin_path.exists() {
+        return Err("Library not found".to_string());
+    }
+
+    // Load existing library data
+    let existing = load_existing_library_data(&library_bin_path)?
+        .ok_or("Failed to load existing library data")?;
+
+    let mut string_table = existing.string_table;
+    let mut artists = existing.artists;
+    let mut albums = existing.albums;
+    let songs = existing.songs;
+    let mut artist_map = existing.artist_map;
+    let mut album_map = existing.album_map;
+
+    // Find the album
+    if album_id as usize >= albums.len() {
+        return Err(format!("Album with ID {} not found", album_id));
+    }
+
+    // Get old album info for result
+    let old_name_string_id = albums[album_id as usize].name_string_id;
+    let old_name = string_table
+        .get(old_name_string_id)
+        .map(|s| s.to_string())
+        .unwrap_or_default();
+    let old_artist_id = albums[album_id as usize].artist_id;
+
+    // Get or create the new artist
+    let artist_created;
+    let new_artist_id = if let Some(&id) = artist_map.get(&new_artist_name) {
+        artist_created = false;
+        id
+    } else {
+        artist_created = true;
+        let id = artists.len() as u32;
+        let name_string_id = string_table.add(&new_artist_name);
+        artists.push(ArtistEntry { name_string_id });
+        artist_map.insert(new_artist_name.clone(), id);
+        id
+    };
+
+    // Remove old album key and add new one
+    let old_album_key = format!("{}:{}", old_artist_id, old_name);
+    album_map.remove(&old_album_key);
+
+    let new_album_key = format!("{}:{}", new_artist_id, new_name);
+    album_map.insert(new_album_key, album_id);
+
+    // Update the album entry
+    let new_name_string_id = string_table.add(&new_name);
+    albums[album_id as usize] = AlbumEntry {
+        name_string_id: new_name_string_id,
+        artist_id: new_artist_id,
+        year: new_year.unwrap_or(albums[album_id as usize].year),
+    };
+
+    // Update all songs in this album to point to the new artist
+    let mut songs_updated = 0u32;
+    let updated_songs: Vec<SongEntry> = songs
+        .into_iter()
+        .map(|mut song| {
+            if song.album_id == album_id && song.flags & song_flags::DELETED == 0 {
+                song.artist_id = new_artist_id;
+                songs_updated += 1;
+            }
+            song
+        })
+        .collect();
+
+    // Write updated library
+    write_library_bin(
+        &library_bin_path,
+        &string_table,
+        &artists,
+        &albums,
+        &updated_songs,
+    )?;
+
+    Ok(crate::models::EditAlbumResult {
+        songs_updated,
+        artist_created,
+        old_name,
+        new_name,
+    })
+}
+
+/// Edit an artist's metadata (name only).
+///
+/// This updates the artist's name in the string table.
+/// All songs and albums by this artist will automatically reflect the change
+/// since they reference the artist by ID.
+#[tauri::command]
+pub fn edit_artist(
+    base_path: String,
+    artist_id: u32,
+    new_name: String,
+) -> Result<crate::models::EditArtistResult, String> {
+    let base = Path::new(&base_path);
+    let jp3_path = base.join(JP3_DIR);
+    let metadata_path = jp3_path.join(METADATA_DIR);
+    let library_bin_path = metadata_path.join(LIBRARY_BIN);
+
+    if !library_bin_path.exists() {
+        return Err("Library not found".to_string());
+    }
+
+    // Load existing library data
+    let existing = load_existing_library_data(&library_bin_path)?
+        .ok_or("Failed to load existing library data")?;
+
+    let mut string_table = existing.string_table;
+    let mut artists = existing.artists;
+    let albums = existing.albums;
+    let songs = existing.songs;
+    let mut artist_map = existing.artist_map;
+
+    // Find the artist
+    if artist_id as usize >= artists.len() {
+        return Err(format!("Artist with ID {} not found", artist_id));
+    }
+
+    // Get old artist name for result
+    let old_name_string_id = artists[artist_id as usize].name_string_id;
+    let old_name = string_table
+        .get(old_name_string_id)
+        .map(|s| s.to_string())
+        .unwrap_or_default();
+
+    // Check if new name already exists (would cause a conflict)
+    if let Some(&existing_id) = artist_map.get(&new_name) {
+        if existing_id != artist_id {
+            return Err(format!(
+                "An artist named '{}' already exists. Cannot rename.",
+                new_name
+            ));
+        }
+    }
+
+    // Update the artist map
+    artist_map.remove(&old_name);
+    artist_map.insert(new_name.clone(), artist_id);
+
+    // Update the artist entry with new name
+    let new_name_string_id = string_table.add(&new_name);
+    artists[artist_id as usize] = ArtistEntry {
+        name_string_id: new_name_string_id,
+    };
+
+    // Count affected songs and albums
+    let songs_affected = songs
+        .iter()
+        .filter(|s| s.artist_id == artist_id && s.flags & song_flags::DELETED == 0)
+        .count() as u32;
+
+    let albums_affected = albums.iter().filter(|a| a.artist_id == artist_id).count() as u32;
+
+    // Write updated library
+    write_library_bin(&library_bin_path, &string_table, &artists, &albums, &songs)?;
+
+    Ok(crate::models::EditArtistResult {
+        songs_affected,
+        albums_affected,
+        old_name,
+        new_name,
+    })
 }
 
 /// Get the current bucket index and file count.
