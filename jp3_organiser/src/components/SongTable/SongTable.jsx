@@ -3,37 +3,7 @@
  * 
  * Reusable song list component with search and pagination.
  * Supports two display variants: 'table' (traditional rows) and 'card' (Spotify-style).
- * 
- * Features:
- * - Debounced search across title, artist, album
- * - Pagination with configurable page size
- * - State persistence via onStateChange callback
- * - Memoized rows for performance
- * - Keyboard accessible
- * - Clickable artist/album links in card variant
- * 
- * Props:
- * - songs: Array of song objects (required)
- * - variant: 'table' | 'card' (default: 'table')
- * - pageSize: Items per page (default: 25)
- * - pageSizeOptions: Array of page size options (default: [10, 25, 50, 100])
- * - searchable: Show search bar (default: true)
- * - searchPlaceholder: Search input placeholder
- * - emptyMessage: Message when no songs
- * - noResultsMessage: Message when search yields no results
- * - columns: Columns to show in table variant (default: ['title', 'artist', 'album', 'duration'])
- * - renderActions: (song) => ReactNode - Custom actions per row
- * - onRowClick: (song) => void - Row click handler
- * - onTitleClick: (song) => void - Title click handler (table variant)
- * - onArtistClick: (artistId, artistName) => void - Artist link click (card variant)
- * - onAlbumClick: (albumId, albumName) => void - Album link click (card variant)
- * - highlightId: Song ID to highlight (e.g., current playing track)
- * - initialState: Initial search/pagination state (for persistence)
- * - onStateChange: Callback when state changes (for persistence)
- * - showTrackNumber: Show track number in card variant
- * - cardSubtitle: Custom subtitle for card variant (disables artist/album links)
- * - renderCard: Custom card component for card variant - (song, props) => ReactNode
- */
+**/
 
 import React, { useCallback } from 'react';
 import { useSongTableState } from './useSongTableState';
