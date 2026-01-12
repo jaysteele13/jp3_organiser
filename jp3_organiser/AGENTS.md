@@ -346,8 +346,6 @@ jp3_organiser/
 
 ### Planned
 - SD Card export workflow
-- Keyboard shortcuts (space=play/pause, arrows for next/prev)
-- Volume control slider
 
 ## Coding Standards
 

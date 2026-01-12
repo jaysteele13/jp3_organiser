@@ -1,0 +1,114 @@
+/**
+ * CardList Component Styles
+ * 
+ * Grid-based card layout for entities (albums, artists, etc.)
+ */
+
+/* Card grid - responsive multi-column layout */
+.cardList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background-color: var(--tertiary);
+  border-radius: 8px;
+  padding: 1rem;
+  color: #000;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.cardInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Scroll container for overflow text */
+.scrollContainer {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.scrollContainer:hover .cardTitleLink,
+.scrollContainer:hover .cardSubtitleLink {
+  animation: scroll-text 4s linear infinite;
+}
+
+@keyframes scroll-text {
+  0%, 15% { transform: translateX(0); }
+  85%, 100% { transform: translateX(calc(-100% + 120px)); }
+}
+
+/* Clickable title link */
+.cardTitleLink {
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  color: #000;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.cardTitleLink:hover {
+  text-decoration: underline;
+  font-weight: 700;
+}
+
+.cardTitleLink:focus {
+  outline: none;
+  text-decoration: underline;
+  font-weight: 700;
+}
+
+/* Clickable subtitle link */
+.cardSubtitleLink {
+  font-size: 0.85rem;
+  opacity: 0.8;
+  white-space: nowrap;
+  color: #000;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.cardSubtitleLink:hover {
+  opacity: 1;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.cardSubtitleLink:focus {
+  outline: none;
+  opacity: 1;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.cardMeta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.75rem;
+  opacity: 0.6;
+  color: #000;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 2rem;
+  opacity: 0.6;
+}

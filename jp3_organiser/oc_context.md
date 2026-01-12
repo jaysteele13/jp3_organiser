@@ -31,6 +31,7 @@ jp3_organiser/
 │   ├── assets/               # Static assets (fonts, images, test files)
 │   ├── components/           # Shared/reusable components
 │   │   ├── ActionMenu/       # Reusable dropdown action menu for items
+│   │   ├── CardList/         # Reusable grid-based card list for entities (albums, artists)
 │   │   ├── ConfirmModal/     # Reusable confirmation dialog with variants and custom content via children prop
 │   │   ├── EmptyState/       # Reusable empty state message
 │   │   ├── ErrorState/       # Reusable error display
@@ -40,6 +41,7 @@ jp3_organiser/
 │   │   ├── PlayerBar/        # Persistent bottom audio player bar
 │   │   ├── PlaylistComboBox/ # Searchable dropdown for playlist selection
 │   │   ├── QueueDrawer/      # Slide-out queue management panel
+│   │   ├── SongTable/        # Reusable song list with search/pagination (table and card variants)
 │   │   └── Toast/            # Dismissible notification popup
 │   ├── hooks/                # Custom React hooks
 │   │   ├── player/           # Audio player hooks
@@ -137,11 +139,12 @@ jp3_organiser/
 26. **Home Tab** - Default Player tab with Recently Played and Recently Added sections
 27. **Recently Played Tracking** - Tracks songs, albums, artists, playlists via persistent store
 28. **Click-to-Play Song Rows** - Click anywhere on a song row to play (Queue button preserved)
+29. **Keyboard Shortcuts** - Global player shortcuts (Space, arrows, M, N, P, S, R)
+30. **Volume Control Slider** - Volume slider with mute toggle in PlayerBar
+31. **CardList Component** - Shared grid-based card list for albums/artists views
 
 ### Planned
 - SD Card export workflow
-- Keyboard shortcuts (space=play/pause, arrows for next/prev)
-- Volume control slider
 
 ## Coding Standards
 

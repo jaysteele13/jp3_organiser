@@ -5,10 +5,14 @@
  * Shows tabs for Songs, Albums, Artists, and Playlists with play/queue actions.
  * 
  * Similar structure to View page but focused on playback rather than management.
+ * 
+ * Supports navigation state for triggering playback:
+ * - state.playSong: Song object to play immediately
+ * - state.playContext: Array of songs for next/prev navigation
  */
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { useLibraryConfig, usePlayer } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
 import { LoadingState, ErrorState, EmptyState } from '../../components';
@@ -24,8 +28,10 @@ const VALID_TABS = Object.values(TABS);
 
 export default function Player() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const { libraryPath, isLoading: configLoading } = useLibraryConfig();
-  const { setLibraryPath } = usePlayer();
+  const { setLibraryPath, playTrack } = usePlayer();
+  const hasTriggeredPlayback = useRef(false);
   
   // Read tab from URL, default to HOME if invalid or missing
   const tabParam = searchParams.get('tab');
@@ -52,6 +58,19 @@ export default function Player() {
       setLibraryPath(libraryPath);
     }
   }, [libraryPath, setLibraryPath]);
+
+  // Handle navigation state for triggering playback (e.g., from View page)
+  useEffect(() => {
+    if (location.state?.playSong && !hasTriggeredPlayback.current) {
+      hasTriggeredPlayback.current = true;
+      const song = location.state.playSong;
+      const context = location.state.playContext || [song];
+      playTrack(song, context);
+      
+      // Clear the state to prevent replay on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, playTrack]);
 
   // Stats for display
   const stats = useMemo(() => {

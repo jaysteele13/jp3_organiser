@@ -1,36 +1,62 @@
-import { ActionMenu } from '../../../../../components';
-import styles from './AlbumView.module.css'
+/**
+ * AlbumView Component
+ * 
+ * Displays albums in a full-width card list format.
+ * Album names are clickable links that navigate to the Player album detail page.
+ * Artist names are also clickable links that navigate to the Player artist detail page.
+ */
+
+import { useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { CardList } from '../../../../../components';
 
 export default function AlbumView({ library, onDeleteAlbum, onEditAlbum }) {
-    
-    return (
-       <div className={styles.cardGrid}>
-            {library.albums.map((album) => {
-                const albumSongs = library.songs.filter(s => s.albumId === album.id);
-                return (
-                <div key={album.id} className={styles.card}>
-                    <div className={styles.cardHeader}>
-                        <div className={styles.cardInfo}>
-                            <div className={styles.cardTitle}>{album.name}</div>
-                            <div className={styles.cardSubtitle}>{album.artistName}</div>
-                        </div>
-                        <ActionMenu
-                            items={[
-                                { label: 'Edit Album', onClick: () => onEditAlbum?.(album) },
-                                { label: 'Delete Album', onClick: () => onDeleteAlbum?.(album), variant: 'danger' },
-                            ]}
-                        />
-                    </div>
-                    <div className={styles.cardMeta}>
-                    {album.year > 0 && <span>{album.year}</span>}
-                    <span>{albumSongs.length} song(s)</span>
-                    </div>
-                </div>
-                );
-            })}
-            {library.albums.length === 0 && (
-                <div className={styles.emptyTable}>No albums in library</div>
-            )}
-        </div>
-    )
+  const navigate = useNavigate();
+
+  // Pre-compute song counts for each album
+  const albumSongCounts = useMemo(() => {
+    const counts = {};
+    library.songs.forEach(song => {
+      counts[song.albumId] = (counts[song.albumId] || 0) + 1;
+    });
+    return counts;
+  }, [library.songs]);
+
+  const handleTitleClick = useCallback((album) => {
+    navigate(`/player/album/${album.id}`);
+  }, [navigate]);
+
+  const handleSubtitleClick = useCallback((album, e) => {
+    e.stopPropagation();
+    navigate(`/player/artist/${album.artistId}`);
+  }, [navigate]);
+
+  const getTitle = useCallback((album) => album.name, []);
+  
+  const getSubtitle = useCallback((album) => album.artistName, []);
+  
+  const getMeta = useCallback((album) => {
+    const meta = [];
+    if (album.year > 0) meta.push(album.year.toString());
+    meta.push(`${albumSongCounts[album.id] || 0} song(s)`);
+    return meta;
+  }, [albumSongCounts]);
+
+  const getActions = useCallback((album) => [
+    { label: 'Edit Album', onClick: () => onEditAlbum?.(album) },
+    { label: 'Delete Album', onClick: () => onDeleteAlbum?.(album), variant: 'danger' },
+  ], [onEditAlbum, onDeleteAlbum]);
+
+  return (
+    <CardList
+      items={library.albums}
+      getTitle={getTitle}
+      getSubtitle={getSubtitle}
+      getMeta={getMeta}
+      onTitleClick={handleTitleClick}
+      onSubtitleClick={handleSubtitleClick}
+      getActions={getActions}
+      emptyMessage="No albums in library"
+    />
+  );
 }

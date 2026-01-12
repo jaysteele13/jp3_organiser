@@ -1,35 +1,63 @@
-import { ActionMenu } from '../../../../../components';
-import styles from './ArtistView.module.css'
+/**
+ * ArtistView Component
+ * 
+ * Displays artists in a full-width card list format.
+ * Artist names are clickable links that navigate to the Player artist detail page.
+ */
+
+import { useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { CardList } from '../../../../../components';
 
 export default function ArtistView({ library, onDeleteArtist, onEditArtist }) {
-    return (
-       <div className={styles.cardGrid}>
-            {library.artists.map((artist) => {
-                const artistSongs = library.songs.filter(s => s.artistId === artist.id);
-                const artistAlbums = library.albums.filter(a => a.artistId === artist.id);
-                return (
-                <div key={artist.id} className={styles.card}>
-                    <div className={styles.cardHeader}>
-                        <div className={styles.cardInfo}>
-                            <div className={styles.cardTitle}>{artist.name}</div>
-                        </div>
-                        <ActionMenu
-                            items={[
-                                { label: 'Edit Artist', onClick: () => onEditArtist?.(artist) },
-                                { label: 'Delete Artist', onClick: () => onDeleteArtist?.(artist), variant: 'danger' },
-                            ]}
-                        />
-                    </div>
-                    <div className={styles.cardMeta}>
-                    <span>{artistAlbums.length} album(s)</span>
-                    <span>{artistSongs.length} song(s)</span>
-                    </div>
-                </div>
-                );
-            })}
-            {library.artists.length === 0 && (
-                <div className={styles.emptyTable}>No artists in library</div>
-            )}
-        </div>
-    )
+  const navigate = useNavigate();
+
+  // Pre-compute song and album counts for each artist
+  const artistCounts = useMemo(() => {
+    const counts = {};
+    library.artists.forEach(artist => {
+      counts[artist.id] = { songs: 0, albums: 0 };
+    });
+    library.songs.forEach(song => {
+      if (counts[song.artistId]) {
+        counts[song.artistId].songs++;
+      }
+    });
+    library.albums.forEach(album => {
+      if (counts[album.artistId]) {
+        counts[album.artistId].albums++;
+      }
+    });
+    return counts;
+  }, [library.artists, library.songs, library.albums]);
+
+  const handleTitleClick = useCallback((artist) => {
+    navigate(`/player/artist/${artist.id}`);
+  }, [navigate]);
+
+  const getTitle = useCallback((artist) => artist.name, []);
+  
+  const getMeta = useCallback((artist) => {
+    const counts = artistCounts[artist.id] || { songs: 0, albums: 0 };
+    return [
+      `${counts.albums} album(s)`,
+      `${counts.songs} song(s)`,
+    ];
+  }, [artistCounts]);
+
+  const getActions = useCallback((artist) => [
+    { label: 'Edit Artist', onClick: () => onEditArtist?.(artist) },
+    { label: 'Delete Artist', onClick: () => onDeleteArtist?.(artist), variant: 'danger' },
+  ], [onEditArtist, onDeleteArtist]);
+
+  return (
+    <CardList
+      items={library.artists}
+      getTitle={getTitle}
+      getMeta={getMeta}
+      onTitleClick={handleTitleClick}
+      getActions={getActions}
+      emptyMessage="No artists in library"
+    />
+  );
 }

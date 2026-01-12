@@ -4,6 +4,7 @@
  * Displays playlists in a card grid format.
  * Each card shows playlist name and song count.
  * Cards are expandable to show the list of songs.
+ * Playlist names are clickable links that navigate to the Player playlist detail page.
  * "Manage" button navigates to the PlaylistEdit page.
  * 
  * @param {Object} props
@@ -14,7 +15,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loadPlaylist } from '../../../../../services/libraryService';
-import { formatDuration } from '../../../../../utils/formatters';
 import styles from './PlaylistView.module.css';
 
 /**
@@ -36,8 +36,9 @@ function buildSongLookup(library) {
  * Individual playlist card with expandable song list.
  * Fetches full playlist data (including songIds) when expanded.
  * Filters out orphaned song IDs (deleted songs not yet cleaned by compaction).
+ * Playlist name is a clickable link that navigates to the Player playlist detail page.
  */
-function PlaylistCard({ playlist, songLookup, libraryPath, onManage }) {
+function PlaylistCard({ playlist, songLookup, libraryPath, onManage, onPlaylistClick }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [songIds, setSongIds] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,6 +51,11 @@ function PlaylistCard({ playlist, songLookup, libraryPath, onManage }) {
     e.stopPropagation();
     onManage(playlist.id);
   }, [playlist.id, onManage]);
+
+  const handlePlaylistNameClick = useCallback((e) => {
+    e.stopPropagation();
+    onPlaylistClick(playlist.id);
+  }, [playlist.id, onPlaylistClick]);
 
   // Fetch full playlist data when expanded
   useEffect(() => {
@@ -89,7 +95,15 @@ function PlaylistCard({ playlist, songLookup, libraryPath, onManage }) {
         <div className={styles.cardInfo} onClick={toggleExpand}>
           <span className={styles.cardIcon}>☰</span>
           <div className={styles.cardText}>
-            <span className={styles.cardTitle}>{playlist.name}</span>
+            <span
+              className={styles.cardTitleLink}
+              onClick={handlePlaylistNameClick}
+              onKeyDown={(e) => e.key === 'Enter' && handlePlaylistNameClick(e)}
+              role="link"
+              tabIndex={0}
+            >
+              {playlist.name}
+            </span>
             <span className={styles.cardMeta}>
               {actualSongCount} song{actualSongCount !== 1 ? 's' : ''}
             </span>
@@ -146,6 +160,10 @@ export default function PlaylistView({ library, libraryPath }) {
     navigate(`/playlist/${playlistId}`);
   }, [navigate]);
 
+  const handlePlaylistClick = useCallback((playlistId) => {
+    navigate(`/player/playlist/${playlistId}`);
+  }, [navigate]);
+
   if (playlists.length === 0) {
     return (
       <div className={styles.emptyState}>
@@ -164,6 +182,7 @@ export default function PlaylistView({ library, libraryPath }) {
           songLookup={songLookup}
           libraryPath={libraryPath}
           onManage={handleManage}
+          onPlaylistClick={handlePlaylistClick}
         />
       ))}
     </div>
