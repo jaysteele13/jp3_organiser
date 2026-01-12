@@ -20,7 +20,7 @@ import RecentRow from './RecentRow';
 import styles from './HomeView.module.css';
 
 // Number of items to show in each section
-const RECENTLY_PLAYED_LIMIT = 6;
+const RECENTLY_PLAYED_LIMIT = 5;
 const RECENTLY_ADDED_LIMIT = 8;
 
 export default function HomeView({ library }) {
