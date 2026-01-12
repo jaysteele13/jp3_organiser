@@ -8,9 +8,9 @@
 
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CardList } from '../../../../../components';
+import { CardList, CoverArt } from '../../../../../components';
 
-export default function AlbumView({ library, onDeleteAlbum, onEditAlbum }) {
+export default function AlbumView({ library, libraryPath, onDeleteAlbum, onEditAlbum }) {
   const navigate = useNavigate();
 
   // Pre-compute song counts for each album
@@ -47,6 +47,14 @@ export default function AlbumView({ library, onDeleteAlbum, onEditAlbum }) {
     { label: 'Delete Album', onClick: () => onDeleteAlbum?.(album), variant: 'danger' },
   ], [onEditAlbum, onDeleteAlbum]);
 
+  const renderThumbnail = useCallback((album) => (
+    <CoverArt
+      albumId={album.id}
+      libraryPath={libraryPath}
+      size="small"
+    />
+  ), [libraryPath]);
+
   return (
     <CardList
       items={library.albums}
@@ -56,6 +64,7 @@ export default function AlbumView({ library, onDeleteAlbum, onEditAlbum }) {
       onTitleClick={handleTitleClick}
       onSubtitleClick={handleSubtitleClick}
       getActions={getActions}
+      renderThumbnail={renderThumbnail}
       emptyMessage="No albums in library"
     />
   );

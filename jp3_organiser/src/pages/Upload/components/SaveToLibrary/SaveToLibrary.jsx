@@ -17,7 +17,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { saveToLibrary, saveToPlaylist, addSongsToPlaylist, MetadataStatus } from '../../../../services';
+import { saveToLibrary, saveToPlaylist, addSongsToPlaylist, MetadataStatus, setMbids } from '../../../../services';
 import { useUploadCache } from '../../../../hooks';
 import { UPLOAD_MODE } from '../../../../utils';
 import styles from './SaveToLibrary.module.css';
@@ -33,6 +33,49 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
   const playlistName = uploadContext?.playlist;
   const playlistId = uploadContext?.playlistId;
   const isExistingPlaylist = isPlaylistMode && playlistId !== null;
+
+  /**
+   * Store MBIDs for albums after saving to library.
+   * Maps each file's releaseMbid to the corresponding albumId from the result.
+   * @param {Array} filesToSave - Files that were saved
+   * @param {Array} albumIds - Album IDs returned from save operation (parallel array)
+   */
+  const storeMbids = useCallback(async (filesToSave, albumIds) => {
+    console.log('[SaveToLibrary] storeMbids called');
+    console.log('[SaveToLibrary] albumIds from result:', albumIds);
+    console.log('[SaveToLibrary] filesToSave count:', filesToSave?.length);
+    
+    // Log each file's metadata to see what MBIDs we have
+    filesToSave?.forEach((file, i) => {
+      console.log(`[SaveToLibrary] File ${i}: "${file.metadata?.title}" by "${file.metadata?.artist}"`);
+      console.log(`[SaveToLibrary]   Album: "${file.metadata?.album}"`);
+      console.log(`[SaveToLibrary]   releaseMbid: ${file.metadata?.releaseMbid || 'NOT SET'}`);
+      console.log(`[SaveToLibrary]   albumId from result: ${albumIds?.[i]}`);
+    });
+    
+    if (!albumIds || albumIds.length === 0) {
+      console.log('[SaveToLibrary] No albumIds returned from save operation!');
+      return;
+    }
+    
+    const entries = [];
+    for (let i = 0; i < filesToSave.length && i < albumIds.length; i++) {
+      const mbid = filesToSave[i].metadata?.releaseMbid;
+      const albumId = albumIds[i];
+      if (mbid && albumId !== undefined && albumId !== null) {
+        entries.push({ albumId, mbid });
+      } else {
+        console.log(`[SaveToLibrary] Skipping file ${i}: mbid=${mbid}, albumId=${albumId}`);
+      }
+    }
+    
+    if (entries.length > 0) {
+      console.log('[SaveToLibrary] Storing MBIDs:', entries);
+      await setMbids(entries);
+    } else {
+      console.log('[SaveToLibrary] No valid MBID entries to store!');
+    }
+  }, []);
 
   const handleSaveToLibrary = useCallback(async () => {
     if (!libraryPath) {
@@ -64,6 +107,9 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
         // Existing playlist mode: save to library, then add songs to playlist
         const libraryResult = await saveToLibrary(libraryPath, files);
         
+        // Store MBIDs for cover art fetching
+        await storeMbids(filesToSave, libraryResult.albumIds);
+        
         // Combine newly saved songs AND duplicate songs (which already exist in library)
         // Both should be added to the playlist
         const allSongIds = [
@@ -91,6 +137,9 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
         // New playlist mode: save to library AND create playlist
         const result = await saveToPlaylist(libraryPath, playlistName, files);
         
+        // Store MBIDs for cover art fetching
+        await storeMbids(filesToSave, result.albumIds);
+        
         message = `Created playlist "${result.playlistName}" with ${result.songsAdded} song(s). ` +
           `${result.artistsAdded} artist(s), ${result.albumsAdded} album(s).`;
         
@@ -100,6 +149,9 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
       } else {
         // Normal mode: save to library only
         const result = await saveToLibrary(libraryPath, files);
+        
+        // Store MBIDs for cover art fetching
+        await storeMbids(filesToSave, result.albumIds);
         
         message = `Added ${result.filesSaved} file(s) to library. ` +
           `${result.artistsAdded} artist(s), ${result.albumsAdded} album(s), ${result.songsAdded} song(s).`;
@@ -117,7 +169,7 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
     } finally {
       setIsSaving(false);
     }
-  }, [libraryPath, confirmedFiles, removeConfirmedFiles, workflow, toast, isPlaylistMode, isExistingPlaylist, playlistName, playlistId]);
+  }, [libraryPath, confirmedFiles, removeConfirmedFiles, workflow, toast, isPlaylistMode, isExistingPlaylist, playlistName, playlistId, storeMbids]);
 
   const handleBackToReview = useCallback(() => {
     const startIndex = confirmedFiles.findIndex(f => !f.isConfirmed);

@@ -31,6 +31,10 @@ use commands::{
     clear_library_path,
     get_library_path,
     set_library_path,
+    // Cover art commands
+    fetch_album_cover,
+    get_album_cover_path,
+    read_album_cover,
     // Library commands
     compact_library,
     delete_album,
@@ -78,6 +82,10 @@ pub fn run() {
             get_library_path,
             set_library_path,
             clear_library_path,
+            // Cover art commands
+            fetch_album_cover,
+            get_album_cover_path,
+            read_album_cover,
             // Library commands
             initialize_library,
             get_library_info,

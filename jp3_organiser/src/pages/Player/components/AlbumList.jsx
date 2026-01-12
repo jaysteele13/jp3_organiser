@@ -9,10 +9,11 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlayer } from '../../../hooks';
+import { CoverArt } from '../../../components';
 import { addToRecents, RECENT_TYPE } from '../../../services/recentsService';
 import styles from './ListStyles.module.css';
 
-export default function AlbumList({ albums, songs }) {
+export default function AlbumList({ albums, songs, libraryPath }) {
   const navigate = useNavigate();
   const { playTrack, addToQueue } = usePlayer();
 
@@ -66,6 +67,13 @@ export default function AlbumList({ albums, songs }) {
             className={`${styles.card} ${styles.albumCard}`}
             onClick={() => handleCardClick(album)}
           >
+            <div className={styles.cardCover}>
+              <CoverArt
+                albumId={album.id}
+                libraryPath={libraryPath}
+                size="medium"
+              />
+            </div>
             <span className={styles.cardTitle}>{album.name}</span>
             <span className={styles.cardSubtitle}>{album.artistName}</span>
             <span className={styles.cardMeta}>

@@ -38,7 +38,7 @@ export default React.memo(function TabContent({
   }
 
   if (activeTab === TABS.ALBUMS) {
-    return <Component library={library} onDeleteAlbum={onDeleteAlbum} onEditAlbum={onEditAlbum} />;
+    return <Component library={library} libraryPath={libraryPath} onDeleteAlbum={onDeleteAlbum} onEditAlbum={onEditAlbum} />;
   }
 
   if (activeTab === TABS.ARTISTS) {

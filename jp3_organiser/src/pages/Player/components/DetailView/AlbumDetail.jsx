@@ -12,7 +12,7 @@ import React, { useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useLibraryConfig } from '../../../../hooks';
 import { useLibrary } from '../../../../hooks/useLibrary';
-import { LoadingState, ErrorState, EmptyState } from '../../../../components';
+import { LoadingState, ErrorState, EmptyState, CoverArt } from '../../../../components';
 import DetailView from '../DetailView';
 import { formatDuration } from '../../../../utils/formatters';
 import { TABS } from '../../../../utils/enums';
@@ -56,6 +56,15 @@ export default function AlbumDetail() {
     }
   }, [navigate, location.key]);
 
+  // Render cover art with large size - defined before early returns to follow Rules of Hooks
+  const renderCoverArt = useCallback(() => (
+    <CoverArt
+      albumId={albumId}
+      libraryPath={libraryPath}
+      size="large"
+    />
+  ), [albumId, libraryPath]);
+
   if (isLoading) {
     return <LoadingState message="Loading album..." />;
   }
@@ -89,6 +98,7 @@ export default function AlbumDetail() {
       meta={meta}
       songs={albumSongs}
       onBack={handleBack}
+      renderCoverArt={renderCoverArt}
     />
   );
 }

@@ -58,6 +58,15 @@
   box-shadow: 0 0 0 2px #fff;
 }
 
+/* Card cover art */
+.cardCover {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 0.25rem;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
 /* Card info */
 .cardTitle {
   font-size: 0.9rem;

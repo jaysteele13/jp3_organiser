@@ -116,6 +116,7 @@ export default function Player() {
             <TabContent 
               activeTab={activeTab}
               library={library}
+              libraryPath={libraryPath}
             />
           </div>
         </>
