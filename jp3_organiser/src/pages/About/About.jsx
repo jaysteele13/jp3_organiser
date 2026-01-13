@@ -6,15 +6,6 @@ import { clearMbids } from '../../services';
 
 export default function About() {
 
-  useEffect(() => {
-    const doClear = async() => {
-      await clearMbids();
-      console.log('clear mbids to test new logic!');
-    }
-    doClear();
-   
-  },[clearMbids])
-
 
 
   return (

@@ -1,6 +1,8 @@
 //! Cover art Tauri commands.
 //!
 //! Commands for fetching and managing album cover art.
+//! Cover files are named using a hash of "artist|||album" for stability
+//! across library compaction operations.
 
 use serde::Serialize;
 use std::path::Path;
@@ -36,27 +38,31 @@ pub struct GetCoverPathResult {
 ///
 /// If cover already exists in cache, returns the cached path.
 /// Otherwise, fetches from Cover Art Archive using the MBID.
+/// Cover files are named using a hash of artist+album for stability.
 ///
 /// # Arguments
 /// * `base_path` - Library base path
-/// * `album_id` - Album ID for the filename
+/// * `artist` - Artist name (for stable filename generation)
+/// * `album` - Album name (for stable filename generation)
 /// * `mbid` - MusicBrainz Release ID
 #[tauri::command]
 pub async fn fetch_album_cover(
     base_path: String,
-    album_id: u32,
+    artist: String,
+    album: String,
     mbid: String,
 ) -> Result<FetchCoverResult, String> {
     log::info!(
-        "fetch_album_cover called: album_id={}, mbid={}",
-        album_id,
+        "fetch_album_cover called: artist=\"{}\", album=\"{}\", mbid={}",
+        artist,
+        album,
         mbid
     );
 
     let covers_dir = Path::new(&base_path).join("jp3").join("covers");
 
-    // Check if already cached
-    if let Some(path) = cover_art_service::get_cover_path(&covers_dir, album_id) {
+    // Check if already cached (using artist+album hash)
+    if let Some(path) = cover_art_service::get_cover_path_by_name(&covers_dir, &artist, &album) {
         log::info!("Cover already cached: {}", path);
         return Ok(FetchCoverResult {
             success: true,
@@ -74,8 +80,8 @@ pub async fn fetch_album_cover(
         })?;
     }
 
-    // Fetch and save
-    match cover_art_service::fetch_and_save_cover(&mbid, &covers_dir, album_id).await {
+    // Fetch and save (using artist+album for filename)
+    match cover_art_service::fetch_and_save_cover(&mbid, &covers_dir, &artist, &album).await {
         Ok(result) => Ok(FetchCoverResult {
             success: true,
             path: Some(result.path),
@@ -106,15 +112,21 @@ pub async fn fetch_album_cover(
 /// Get the cached cover path for an album.
 ///
 /// Returns the path if the cover exists in cache, None otherwise.
+/// Uses artist+album hash for stable filename lookup.
 ///
 /// # Arguments
 /// * `base_path` - Library base path
-/// * `album_id` - Album ID
+/// * `artist` - Artist name
+/// * `album` - Album name
 #[tauri::command]
-pub fn get_album_cover_path(base_path: String, album_id: u32) -> GetCoverPathResult {
+pub fn get_album_cover_path(
+    base_path: String,
+    artist: String,
+    album: String,
+) -> GetCoverPathResult {
     let covers_dir = Path::new(&base_path).join("jp3").join("covers");
 
-    match cover_art_service::get_cover_path(&covers_dir, album_id) {
+    match cover_art_service::get_cover_path_by_name(&covers_dir, &artist, &album) {
         Some(path) => GetCoverPathResult {
             exists: true,
             path: Some(path),
@@ -130,14 +142,21 @@ pub fn get_album_cover_path(base_path: String, album_id: u32) -> GetCoverPathRes
 ///
 /// This is useful when the frontend needs the raw image data
 /// rather than a file path (e.g., for blob URLs).
+/// Uses artist+album hash for stable filename lookup.
 ///
 /// # Arguments
 /// * `base_path` - Library base path  
-/// * `album_id` - Album ID
+/// * `artist` - Artist name
+/// * `album` - Album name
 #[tauri::command]
-pub fn read_album_cover(base_path: String, album_id: u32) -> Result<Vec<u8>, String> {
+pub fn read_album_cover(
+    base_path: String,
+    artist: String,
+    album: String,
+) -> Result<Vec<u8>, String> {
     let covers_dir = Path::new(&base_path).join("jp3").join("covers");
-    let cover_path = covers_dir.join(format!("{}.jpg", album_id));
+    let filename = cover_art_service::cover_filename(&artist, &album);
+    let cover_path = covers_dir.join(format!("{}.jpg", filename));
 
     if !cover_path.exists() {
         return Err("Cover not found".to_string());

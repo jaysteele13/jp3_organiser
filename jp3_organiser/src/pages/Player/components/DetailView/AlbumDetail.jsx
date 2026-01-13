@@ -61,11 +61,10 @@ export default function AlbumDetail() {
     <CoverArt
       artist={album?.artistName}
       album={album?.name}
-      albumId={albumId}
       libraryPath={libraryPath}
       size="large"
     />
-  ), [album?.artistName, album?.name, albumId, libraryPath]);
+  ), [album?.artistName, album?.name, libraryPath]);
 
   if (isLoading) {
     return <LoadingState message="Loading album..." />;

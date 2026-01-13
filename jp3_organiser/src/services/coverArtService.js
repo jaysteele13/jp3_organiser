@@ -5,11 +5,14 @@
  * Cover art is fetched from Cover Art Archive using MusicBrainz Release IDs (MBIDs)
  * and cached locally in the jp3/covers/ directory.
  * 
+ * Cover files are named using a hash of "artist|||album" for stability
+ * across library compaction operations.
+ * 
  * Directory Structure:
  * {libraryPath}/
  *   jp3/
  *     covers/
- *       {albumId}.jpg  (cached cover images)
+ *       {hash}.jpg  (cached cover images, hash based on artist+album)
  */
 
 import { invoke } from '@tauri-apps/api/core';
@@ -48,14 +51,16 @@ export async function searchAlbumMbidsBatch(queries) {
  * 
  * If cover already exists in cache, returns the cached path immediately.
  * Otherwise, fetches from Cover Art Archive using the MBID and caches it.
+ * Cover files are named using a hash of artist+album for stability.
  * 
  * @param {string} basePath - Library base path
- * @param {number} albumId - Album ID for the filename
+ * @param {string} artist - Artist name (for stable filename generation)
+ * @param {string} album - Album name (for stable filename generation)
  * @param {string} mbid - MusicBrainz Release ID
  * @returns {Promise<{success: boolean, path?: string, error?: string, wasCached: boolean}>}
  */
-export async function fetchAlbumCover(basePath, albumId, mbid) {
-  return await invoke('fetch_album_cover', { basePath, albumId, mbid });
+export async function fetchAlbumCover(basePath, artist, album, mbid) {
+  return await invoke('fetch_album_cover', { basePath, artist, album, mbid });
 }
 
 /**
@@ -63,14 +68,16 @@ export async function fetchAlbumCover(basePath, albumId, mbid) {
  * 
  * Useful when you need raw image data for blob URLs.
  * Returns the image as a Uint8Array.
+ * Uses artist+album hash for stable filename lookup.
  * 
  * @param {string} basePath - Library base path
- * @param {number} albumId - Album ID
+ * @param {string} artist - Artist name
+ * @param {string} album - Album name
  * @returns {Promise<Uint8Array>} Image bytes
  * @throws {Error} If cover not found
  */
-export async function readAlbumCover(basePath, albumId) {
-  return await invoke('read_album_cover', { basePath, albumId });
+export async function readAlbumCover(basePath, artist, album) {
+  return await invoke('read_album_cover', { basePath, artist, album });
 }
 
 /**
@@ -78,14 +85,16 @@ export async function readAlbumCover(basePath, albumId) {
  * 
  * Helper function that reads cover bytes and creates an object URL
  * for use in img src attributes.
+ * Uses artist+album hash for stable filename lookup.
  * 
  * @param {string} basePath - Library base path
- * @param {number} albumId - Album ID
+ * @param {string} artist - Artist name
+ * @param {string} album - Album name
  * @returns {Promise<string|null>} Blob URL or null if cover not found
  */
-export async function getCoverBlobUrl(basePath, albumId) {
+export async function getCoverBlobUrl(basePath, artist, album) {
   try {
-    const bytes = await readAlbumCover(basePath, albumId);
+    const bytes = await readAlbumCover(basePath, artist, album);
     
     // Tauri returns an array of numbers, need to convert to Uint8Array
     let uint8Array;

@@ -5,15 +5,15 @@
  * Fetches cover art from cache or Cover Art Archive on first render.
  * 
  * Props:
- * - artist: string - Artist name (required for MBID lookup)
- * - album: string - Album name (required for MBID lookup)
- * - albumId: number - Album ID for local cache path
+ * - artist: string - Artist name (required for stable cache key)
+ * - album: string - Album name (required for stable cache key)
  * - libraryPath: string - Base library path
  * - size: 'small' | 'medium' | 'large' - Thumbnail size (40px, 60px, 120px)
  * - className: string - Additional CSS class
  * - fallbackIcon: string - Emoji to show when no cover available
  * 
- * Note: MBIDs are looked up from the mbidStore using artist+album name.
+ * Note: Cover files are named using a hash of artist+album for stability
+ * across library compaction operations.
  */
 
 import { useState, useEffect, memo } from 'react';
@@ -29,12 +29,21 @@ const SIZES = {
 };
 
 // Cache for blob URLs to avoid re-fetching during session
+// Key is now "libraryPath:artist|||album" for stability
 const blobUrlCache = new Map();
+
+/**
+ * Create a stable cache key from artist and album
+ */
+function makeCacheKey(libraryPath, artist, album) {
+  const normalizedArtist = (artist || '').toLowerCase().trim();
+  const normalizedAlbum = (album || '').toLowerCase().trim();
+  return `${libraryPath}:${normalizedArtist}|||${normalizedAlbum}`;
+}
 
 const CoverArt = memo(function CoverArt({
   artist,
   album,
-  albumId,
   libraryPath,
   size = 'medium',
   className = '',
@@ -50,16 +59,15 @@ const CoverArt = memo(function CoverArt({
     let isMounted = true;
 
     async function loadCover() {
-      // Check for missing props - albumId can be 0 which is valid, so use explicit check
-      if (!libraryPath || albumId === undefined || albumId === null) {
+      // Check for missing props
+      if (!libraryPath || !artist || !album) {
         setIsLoading(false);
         setHasError(true);
         return;
       }
 
-      // Check in-memory cache first - only use cache if we have a valid URL
-      // (don't cache failures, so we can retry when MBID becomes available)
-      const cacheKey = `${libraryPath}:${albumId}`;
+      // Check in-memory cache first using stable key
+      const cacheKey = makeCacheKey(libraryPath, artist, album);
       if (blobUrlCache.has(cacheKey)) {
         const cachedUrl = blobUrlCache.get(cacheKey);
         // Only use cache if it has a valid URL (not null)
@@ -79,18 +87,18 @@ const CoverArt = memo(function CoverArt({
 
       try {
         // First try to get from local cache (file on disk)
-        let blobUrl = await getCoverBlobUrl(libraryPath, albumId);
+        let blobUrl = await getCoverBlobUrl(libraryPath, artist, album);
 
         // If not cached, look up MBID from store and try to fetch
         if (!blobUrl) {
-          // Use artist+album for MBID lookup (new key format)
+          // Use artist+album for MBID lookup
           const mbid = await getMbid(artist, album);
           
           if (mbid) {
-            const result = await fetchAlbumCover(libraryPath, albumId, mbid);
+            const result = await fetchAlbumCover(libraryPath, artist, album, mbid);
             if (result.success) {
               // Now try to get the blob URL again
-              blobUrl = await getCoverBlobUrl(libraryPath, albumId);
+              blobUrl = await getCoverBlobUrl(libraryPath, artist, album);
             }
           }
         }
@@ -121,7 +129,7 @@ const CoverArt = memo(function CoverArt({
     return () => {
       isMounted = false;
     };
-  }, [artist, album, albumId, libraryPath]);
+  }, [artist, album, libraryPath]);
 
   const containerStyle = {
     width: sizeValue,

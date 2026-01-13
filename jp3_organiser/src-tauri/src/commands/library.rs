@@ -1089,6 +1089,18 @@ pub fn compact_library(base_path: String) -> Result<crate::models::CompactResult
         }
     }
 
+    log::info!(
+        "[compact_library] Removed {} songs, {} artists, {} albums. Updated {} playlists.",
+        songs_removed,
+        artists_removed,
+        albums_removed,
+        playlists_updated
+    );
+
+    // Note: Cover art files are now named using artist+album hash (not album ID),
+    // so they don't need to be renamed when album IDs change during compaction.
+    // Old ID-based cover files will become orphaned but harmless.
+
     Ok(crate::models::CompactResult {
         songs_removed,
         artists_removed,

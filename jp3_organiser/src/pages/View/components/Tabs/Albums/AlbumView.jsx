@@ -51,7 +51,6 @@ export default function AlbumView({ library, libraryPath, onDeleteAlbum, onEditA
     <CoverArt
       artist={album.artistName}
       album={album.name}
-      albumId={album.id}
       libraryPath={libraryPath}
       size="small"
     />

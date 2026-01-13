@@ -71,7 +71,6 @@ export default function AlbumList({ albums, songs, libraryPath }) {
               <CoverArt
                 artist={album.artistName}
                 album={album.name}
-                albumId={album.id}
                 libraryPath={libraryPath}
                 size="medium"
               />

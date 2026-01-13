@@ -3,10 +3,17 @@
 //! Uses the Cover Art Archive API (coverartarchive.org) to fetch album covers
 //! based on MusicBrainz Release IDs (MBIDs).
 //!
+//! # Cover File Naming
+//! Cover files are named using a hash of "artist|||album" (normalized to lowercase).
+//! This provides stable filenames that don't change when album IDs are renumbered
+//! during library compaction.
+//!
 //! # Rate Limiting
 //! Cover Art Archive recommends being "polite" with requests (1 req/sec).
 //! Images can be cached indefinitely as they're under CC/public domain licenses.
 
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::path::Path;
 use std::time::Duration;
 
@@ -81,12 +88,40 @@ pub struct FetchCoverResult {
     pub size_bytes: u64,
 }
 
+/// Separator used between artist and album in the hash key
+const KEY_SEPARATOR: &str = "|||";
+
+/// Generate a stable hash-based filename for a cover image.
+///
+/// Uses artist + album name (normalized to lowercase) to create a deterministic
+/// filename that won't change when album IDs are renumbered during compaction.
+///
+/// # Arguments
+/// * `artist` - Artist name
+/// * `album` - Album name
+///
+/// # Returns
+/// A hex string hash (e.g., "a1b2c3d4e5f6")
+pub fn cover_filename(artist: &str, album: &str) -> String {
+    let normalized_artist = artist.to_lowercase().trim().to_string();
+    let normalized_album = album.to_lowercase().trim().to_string();
+    let key = format!("{}{}{}", normalized_artist, KEY_SEPARATOR, normalized_album);
+
+    let mut hasher = DefaultHasher::new();
+    key.hash(&mut hasher);
+    let hash = hasher.finish();
+
+    // Use hex encoding for a clean filename (no special chars)
+    format!("{:016x}", hash)
+}
+
 /// Fetch cover art for a release and save it to the covers directory.
 ///
 /// # Arguments
 /// * `mbid` - MusicBrainz Release ID
 /// * `covers_dir` - Directory to save covers (e.g., `{library}/jp3/covers`)
-/// * `album_id` - Album ID to use for the filename
+/// * `artist` - Artist name (for generating stable filename)
+/// * `album` - Album name (for generating stable filename)
 ///
 /// # Returns
 /// * `Ok(FetchCoverResult)` - Path and size of saved cover
@@ -94,12 +129,15 @@ pub struct FetchCoverResult {
 pub async fn fetch_and_save_cover(
     mbid: &str,
     covers_dir: &Path,
-    album_id: u32,
+    artist: &str,
+    album: &str,
 ) -> Result<FetchCoverResult, CoverArtError> {
+    let filename = cover_filename(artist, album);
     log::info!("[CoverArt] ========================================");
     log::info!("[CoverArt] fetch_and_save_cover called");
     log::info!("[CoverArt] MBID: {}", mbid);
-    log::info!("[CoverArt] Album ID: {}", album_id);
+    log::info!("[CoverArt] Artist: {}, Album: {}", artist, album);
+    log::info!("[CoverArt] Generated filename: {}", filename);
     log::info!("[CoverArt] Covers dir: {:?}", covers_dir);
 
     // Rate limit
@@ -117,7 +155,7 @@ pub async fn fetch_and_save_cover(
 
     // Save to file
     log::info!("[CoverArt] Step 3: Saving to disk...");
-    let cover_path = covers_dir.join(format!("{}.jpg", album_id));
+    let cover_path = covers_dir.join(format!("{}.jpg", filename));
     log::info!("[CoverArt] Saving to: {:?}", cover_path);
     
     std::fs::write(&cover_path, &image_bytes).map_err(|e| {
@@ -258,13 +296,36 @@ async fn download_image(url: &str) -> Result<Vec<u8>, CoverArtError> {
     Ok(bytes.to_vec())
 }
 
-/// Check if a cover already exists for an album.
+/// Check if a cover already exists for an album (by artist+album name).
+pub fn cover_exists_by_name(covers_dir: &Path, artist: &str, album: &str) -> bool {
+    let filename = cover_filename(artist, album);
+    let cover_path = covers_dir.join(format!("{}.jpg", filename));
+    cover_path.exists()
+}
+
+/// Get the path to a cover if it exists (by artist+album name).
+pub fn get_cover_path_by_name(covers_dir: &Path, artist: &str, album: &str) -> Option<String> {
+    let filename = cover_filename(artist, album);
+    let cover_path = covers_dir.join(format!("{}.jpg", filename));
+    if cover_path.exists() {
+        Some(cover_path.to_string_lossy().to_string())
+    } else {
+        None
+    }
+}
+
+// Legacy functions kept for backward compatibility during migration
+// TODO: Remove these after migration is complete
+
+/// Check if a cover already exists for an album (by ID - deprecated).
+#[deprecated(note = "Use cover_exists_by_name instead")]
 pub fn cover_exists(covers_dir: &Path, album_id: u32) -> bool {
     let cover_path = covers_dir.join(format!("{}.jpg", album_id));
     cover_path.exists()
 }
 
-/// Get the path to a cover if it exists.
+/// Get the path to a cover if it exists (by ID - deprecated).
+#[deprecated(note = "Use get_cover_path_by_name instead")]
 pub fn get_cover_path(covers_dir: &Path, album_id: u32) -> Option<String> {
     let cover_path = covers_dir.join(format!("{}.jpg", album_id));
     if cover_path.exists() {
