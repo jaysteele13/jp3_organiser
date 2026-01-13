@@ -1,9 +1,22 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Header from '../../components/Header';
 import styles from './About.module.css';
 import AboutCard from './components';
+import { clearMbids } from '../../services';
 
 export default function About() {
+
+  useEffect(() => {
+    const doClear = async() => {
+      await clearMbids();
+      console.log('clear mbids to test new logic!');
+    }
+    doClear();
+   
+  },[clearMbids])
+
+
+
   return (
     <div className={styles.AboutAll}>
       <Header

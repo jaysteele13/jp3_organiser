@@ -5,13 +5,15 @@
  * Fetches cover art from cache or Cover Art Archive on first render.
  * 
  * Props:
- * - albumId: number - Album ID to fetch cover for
+ * - artist: string - Artist name (required for MBID lookup)
+ * - album: string - Album name (required for MBID lookup)
+ * - albumId: number - Album ID for local cache path
  * - libraryPath: string - Base library path
  * - size: 'small' | 'medium' | 'large' - Thumbnail size (40px, 60px, 120px)
  * - className: string - Additional CSS class
  * - fallbackIcon: string - Emoji to show when no cover available
  * 
- * Note: MBIDs are looked up from the mbidStore automatically.
+ * Note: MBIDs are looked up from the mbidStore using artist+album name.
  */
 
 import { useState, useEffect, memo } from 'react';
@@ -30,6 +32,8 @@ const SIZES = {
 const blobUrlCache = new Map();
 
 const CoverArt = memo(function CoverArt({
+  artist,
+  album,
   albumId,
   libraryPath,
   size = 'medium',
@@ -79,7 +83,8 @@ const CoverArt = memo(function CoverArt({
 
         // If not cached, look up MBID from store and try to fetch
         if (!blobUrl) {
-          const mbid = await getMbid(albumId);
+          // Use artist+album for MBID lookup (new key format)
+          const mbid = await getMbid(artist, album);
           
           if (mbid) {
             const result = await fetchAlbumCover(libraryPath, albumId, mbid);
@@ -116,7 +121,7 @@ const CoverArt = memo(function CoverArt({
     return () => {
       isMounted = false;
     };
-  }, [albumId, libraryPath]);
+  }, [artist, album, albumId, libraryPath]);
 
   const containerStyle = {
     width: sizeValue,

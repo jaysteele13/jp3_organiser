@@ -69,6 +69,8 @@ export default function AlbumList({ albums, songs, libraryPath }) {
           >
             <div className={styles.cardCover}>
               <CoverArt
+                artist={album.artistName}
+                album={album.name}
                 albumId={album.id}
                 libraryPath={libraryPath}
                 size="medium"

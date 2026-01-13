@@ -59,11 +59,13 @@ export default function AlbumDetail() {
   // Render cover art with large size - defined before early returns to follow Rules of Hooks
   const renderCoverArt = useCallback(() => (
     <CoverArt
+      artist={album?.artistName}
+      album={album?.name}
       albumId={albumId}
       libraryPath={libraryPath}
       size="large"
     />
-  ), [albumId, libraryPath]);
+  ), [album?.artistName, album?.name, albumId, libraryPath]);
 
   if (isLoading) {
     return <LoadingState message="Loading album..." />;

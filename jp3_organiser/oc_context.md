@@ -369,6 +369,32 @@ Models are in `src-tauri/src/models/`:
 - `addSongsToPlaylist(basePath, playlistId, songIds)` - Add songs to existing playlist
 - `removeSongsFromPlaylist(basePath, playlistId, songIds)` - Remove songs from playlist
 
+### coverArtService.js
+- `searchAlbumMbid(artist, album)` - Search MusicBrainz for release MBID by artist+album name
+- `searchAlbumMbidsBatch(queries)` - Batch search for multiple albums (respects rate limiting)
+- `fetchAlbumCover(basePath, albumId, mbid)` - Fetch and cache cover art from Cover Art Archive
+- `readAlbumCover(basePath, albumId)` - Read cached cover image bytes
+- `getCoverBlobUrl(basePath, albumId)` - Create blob URL from cached cover for img src
+
+**Cover Art Flow:**
+1. On save: Extract unique (artist, album) pairs from saved files
+2. Batch search MusicBrainz for each album → get release MBID
+3. Fall back to AcoustID MBID if MusicBrainz search fails
+4. Store albumId→MBID mapping in `mbidStore.js`
+5. On display: CoverArt component looks up MBID → fetches from Cover Art Archive → caches to disk
+
+**Rate Limiting:** MusicBrainz enforces strict 1 request/second limit. The Rust service uses a global mutex to ensure compliance.
+
+### mbidStore.js
+- `getMbid(albumId)` - Get stored MBID for an album
+- `getAllMbids()` - Get all stored albumId→MBID mappings
+- `setMbid(albumId, mbid)` - Store single MBID (first wins)
+- `setMbids(entries)` - Store multiple MBIDs at once
+- `removeMbid(albumId)` - Remove stored MBID
+- `clearMbids()` - Clear all stored MBIDs
+
+**Persistence:** Uses `@tauri-apps/plugin-store` to persist MBIDs in `mbids.json`.
+
 ## Enums
 
 ### TABS (`src/utils/enums.js`)
@@ -801,6 +827,25 @@ App.jsx
 - State management (Context API or Zustand) as app grows
 - Don't use TypeScript - this is a ReactJS project
 - Testing setup (Vitest for React, Rust tests for backend)
+
+### Artist Images (Not Implemented)
+
+MusicBrainz doesn't host artist images directly. Options for future implementation:
+
+| Source | Pros | Cons |
+|--------|------|------|
+| **Fanart.tv** (Recommended) | Uses MusicBrainz Artist MBIDs, high quality images | Requires API key (free tier available) |
+| **Discogs API** | Large database, includes photos | Requires API key, OAuth flow |
+| **Wikidata/Wikimedia Commons** | Free, no API key | Complex: MusicBrainz → Wikidata → Commons |
+| **Last.fm** | Simple API | Lower quality, may be deprecated |
+
+**Recommended Implementation (Fanart.tv):**
+1. Get Artist MBID from MusicBrainz (we already search for albums)
+2. Call Fanart.tv: `http://webservice.fanart.tv/v3/music/{artist_mbid}?api_key=XXX`
+3. Response includes: `artistthumb`, `artistbackground`, `hdmusiclogo`
+4. Cache images locally like album covers
+
+**API Key:** Register at https://fanart.tv/get-an-api-key/
 
 ## Known Issues / Technical Debt
 

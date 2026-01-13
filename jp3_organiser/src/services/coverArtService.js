@@ -15,6 +15,35 @@
 import { invoke } from '@tauri-apps/api/core';
 
 /**
+ * Search for a release MBID using MusicBrainz API
+ * 
+ * This searches the MusicBrainz database by artist and album name,
+ * returning the best matching release MBID for use with Cover Art Archive.
+ * 
+ * More accurate than AcoustID's MBID because it uses user-confirmed metadata.
+ * 
+ * @param {string} artist - Artist name
+ * @param {string} album - Album name
+ * @returns {Promise<{found: boolean, mbid?: string, title?: string, artist?: string, score?: number}>}
+ */
+export async function searchAlbumMbid(artist, album) {
+  return await invoke('search_album_mbid', { artist, album });
+}
+
+/**
+ * Batch search for multiple release MBIDs
+ * 
+ * More efficient than calling searchAlbumMbid multiple times as it
+ * manages rate limiting internally.
+ * 
+ * @param {Array<{artist: string, album: string}>} queries - Albums to search
+ * @returns {Promise<Array<{found: boolean, mbid?: string, title?: string, artist?: string, score?: number}>>}
+ */
+export async function searchAlbumMbidsBatch(queries) {
+  return await invoke('search_album_mbids_batch', { queries });
+}
+
+/**
  * Fetch and cache cover art for an album
  * 
  * If cover already exists in cache, returns the cached path immediately.

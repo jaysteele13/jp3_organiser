@@ -7,19 +7,21 @@
  * Storage format:
  * {
  *   albumMbids: {
- *     [albumId: number]: string (mbid)
+ *     "artist|||album": string (mbid)
  *   }
  * }
  * 
- * Note: MBIDs are stored per-album since cover art is fetched per-album.
- * When uploading songs, we extract the MBID from AudioMetadata.releaseMbid
- * and store it keyed by the albumId returned from save_to_library.
+ * Note: MBIDs are keyed by "artist|||album" string to:
+ * - Survive album deletion and re-add cycles (IDs get reused)
+ * - Match how we search MusicBrainz (by artist + album name)
+ * - Provide stable keys based on actual album identity
  */
 
 import { load } from '@tauri-apps/plugin-store';
 
 const STORE_NAME = 'mbids.json';
 const MBIDS_KEY = 'albumMbids';
+const KEY_SEPARATOR = '|||';
 
 let storeInstance = null;
 
@@ -35,8 +37,21 @@ async function getStore() {
 }
 
 /**
+ * Create a storage key from artist and album names
+ * @param {string} artist - Artist name
+ * @param {string} album - Album name
+ * @returns {string} Storage key
+ */
+function makeKey(artist, album) {
+  // Normalize: lowercase and trim to avoid duplicates from case differences
+  const normalizedArtist = (artist || '').toLowerCase().trim();
+  const normalizedAlbum = (album || '').toLowerCase().trim();
+  return `${normalizedArtist}${KEY_SEPARATOR}${normalizedAlbum}`;
+}
+
+/**
  * Get all stored MBIDs
- * @returns {Promise<Object<number, string>>} Map of albumId -> mbid
+ * @returns {Promise<Object<string, string>>} Map of "artist|||album" -> mbid
  */
 export async function getAllMbids() {
   try {
@@ -50,38 +65,45 @@ export async function getAllMbids() {
 }
 
 /**
- * Get MBID for a specific album
- * @param {number} albumId - Album ID
+ * Get MBID for a specific album by artist and album name
+ * @param {string} artist - Artist name
+ * @param {string} album - Album name
  * @returns {Promise<string|null>} MBID or null if not found
  */
-export async function getMbid(albumId) {
+export async function getMbid(artist, album) {
+  if (!artist || !album) {
+    return null;
+  }
+  
   try {
     const mbids = await getAllMbids();
-    return mbids[albumId] || null;
+    const key = makeKey(artist, album);
+    return mbids[key] || null;
   } catch (error) {
-    console.error('[mbidStore] Failed to get MBID for album:', albumId, error);
+    console.error('[mbidStore] Failed to get MBID for:', artist, album, error);
     return null;
   }
 }
 
 /**
  * Store MBID for an album
- * @param {number} albumId - Album ID
+ * @param {string} artist - Artist name
+ * @param {string} album - Album name
  * @param {string} mbid - MusicBrainz Release ID
  * @returns {Promise<void>}
  */
-export async function setMbid(albumId, mbid) {
-  if (!mbid) return; // Don't store empty MBIDs
-  if (albumId === undefined || albumId === null) return; // Validate albumId (0 is valid)
+export async function setMbid(artist, album, mbid) {
+  if (!mbid || !artist || !album) return;
   
   try {
     const store = await getStore();
     const mbids = await store.get(MBIDS_KEY) || {};
+    const key = makeKey(artist, album);
     
     // Only store if we don't already have one for this album
     // (first MBID wins - usually the most accurate)
-    if (!mbids[albumId]) {
-      mbids[albumId] = mbid;
+    if (!mbids[key]) {
+      mbids[key] = mbid;
       await store.set(MBIDS_KEY, mbids);
     }
   } catch (error) {
@@ -91,7 +113,7 @@ export async function setMbid(albumId, mbid) {
 
 /**
  * Store multiple MBIDs at once
- * @param {Array<{albumId: number, mbid: string}>} entries - Array of albumId/mbid pairs
+ * @param {Array<{artist: string, album: string, mbid: string}>} entries - Array of artist/album/mbid entries
  * @returns {Promise<void>}
  */
 export async function setMbids(entries) {
@@ -102,10 +124,12 @@ export async function setMbids(entries) {
     const mbids = await store.get(MBIDS_KEY) || {};
     
     let added = 0;
-    for (const { albumId, mbid } of entries) {
-      // Validate: mbid must exist, albumId must be a valid number (0 is valid)
-      if (mbid && albumId !== undefined && albumId !== null && !mbids[albumId]) {
-        mbids[albumId] = mbid;
+    for (const { artist, album, mbid } of entries) {
+      if (!artist || !album || !mbid) continue;
+      
+      const key = makeKey(artist, album);
+      if (!mbids[key]) {
+        mbids[key] = mbid;
         added++;
       }
     }
@@ -119,15 +143,31 @@ export async function setMbids(entries) {
 }
 
 /**
+ * Check if an MBID exists for an album (without returning the value)
+ * Useful for checking before making API calls
+ * @param {string} artist - Artist name
+ * @param {string} album - Album name
+ * @returns {Promise<boolean>} True if MBID exists
+ */
+export async function hasMbid(artist, album) {
+  const mbid = await getMbid(artist, album);
+  return mbid !== null;
+}
+
+/**
  * Remove MBID for an album
- * @param {number} albumId - Album ID
+ * @param {string} artist - Artist name
+ * @param {string} album - Album name
  * @returns {Promise<void>}
  */
-export async function removeMbid(albumId) {
+export async function removeMbid(artist, album) {
+  if (!artist || !album) return;
+  
   try {
     const store = await getStore();
     const mbids = await store.get(MBIDS_KEY) || {};
-    delete mbids[albumId];
+    const key = makeKey(artist, album);
+    delete mbids[key];
     await store.set(MBIDS_KEY, mbids);
   } catch (error) {
     console.error('[mbidStore] Failed to remove MBID:', error);

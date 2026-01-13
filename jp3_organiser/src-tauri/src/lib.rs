@@ -35,6 +35,8 @@ use commands::{
     fetch_album_cover,
     get_album_cover_path,
     read_album_cover,
+    search_album_mbid,
+    search_album_mbids_batch,
     // Library commands
     compact_library,
     delete_album,
@@ -86,6 +88,8 @@ pub fn run() {
             fetch_album_cover,
             get_album_cover_path,
             read_album_cover,
+            search_album_mbid,
+            search_album_mbids_batch,
             // Library commands
             initialize_library,
             get_library_info,

@@ -49,6 +49,8 @@ export default function AlbumView({ library, libraryPath, onDeleteAlbum, onEditA
 
   const renderThumbnail = useCallback((album) => (
     <CoverArt
+      artist={album.artistName}
+      album={album.name}
       albumId={album.id}
       libraryPath={libraryPath}
       size="small"

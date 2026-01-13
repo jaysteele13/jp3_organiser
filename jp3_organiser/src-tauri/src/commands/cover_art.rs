@@ -6,6 +6,7 @@ use serde::Serialize;
 use std::path::Path;
 
 use crate::services::cover_art_service;
+use crate::services::musicbrainz_service;
 
 /// Result of fetching cover art
 #[derive(Debug, Clone, Serialize)]
@@ -146,4 +147,138 @@ pub fn read_album_cover(base_path: String, album_id: u32) -> Result<Vec<u8>, Str
         log::error!("Failed to read cover file: {}", e);
         format!("Failed to read cover: {}", e)
     })
+}
+
+/// Result of searching for a release MBID
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchReleaseMbidResult {
+    /// Whether a release was found
+    pub found: bool,
+    /// MusicBrainz Release ID (MBID)
+    pub mbid: Option<String>,
+    /// Matched release title
+    pub title: Option<String>,
+    /// Matched artist name
+    pub artist: Option<String>,
+    /// Search score (0-100)
+    pub score: Option<u32>,
+}
+
+/// Search for a release MBID using MusicBrainz API.
+///
+/// This searches the MusicBrainz database by artist and album name,
+/// returning the best matching release MBID for use with Cover Art Archive.
+///
+/// This is more accurate than using AcoustID's MBID because it uses
+/// the user-confirmed album metadata rather than fingerprint matching.
+///
+/// # Arguments
+/// * `artist` - Artist name
+/// * `album` - Album/release name
+///
+/// # Rate Limiting
+/// This command respects MusicBrainz's rate limit of 1 request per second.
+/// Multiple concurrent calls will be queued automatically.
+#[tauri::command]
+pub async fn search_album_mbid(artist: String, album: String) -> SearchReleaseMbidResult {
+    log::info!(
+        "search_album_mbid called: artist=\"{}\", album=\"{}\"",
+        artist,
+        album
+    );
+
+    match musicbrainz_service::search_release(&artist, &album).await {
+        Ok(Some(result)) => {
+            log::info!(
+                "Found release: \"{}\" by {:?} (MBID: {}, score: {})",
+                result.title,
+                result.artist,
+                result.release_mbid,
+                result.score
+            );
+            SearchReleaseMbidResult {
+                found: true,
+                mbid: Some(result.release_mbid),
+                title: Some(result.title),
+                artist: result.artist,
+                score: Some(result.score),
+            }
+        }
+        Ok(None) => {
+            log::info!("No release found for \"{}\" - \"{}\"", artist, album);
+            SearchReleaseMbidResult {
+                found: false,
+                mbid: None,
+                title: None,
+                artist: None,
+                score: None,
+            }
+        }
+        Err(e) => {
+            log::error!("Search failed: {}", e);
+            SearchReleaseMbidResult {
+                found: false,
+                mbid: None,
+                title: None,
+                artist: None,
+                score: None,
+            }
+        }
+    }
+}
+
+/// Batch search for multiple release MBIDs using MusicBrainz API.
+///
+/// Processes each search sequentially with proper rate limiting.
+/// This is more efficient than calling search_album_mbid multiple times
+/// as it manages rate limiting internally.
+///
+/// # Arguments
+/// * `queries` - Array of {artist, album} objects to search
+///
+/// # Returns
+/// Array of results in the same order as input queries
+#[tauri::command]
+pub async fn search_album_mbids_batch(
+    queries: Vec<AlbumQuery>,
+) -> Vec<SearchReleaseMbidResult> {
+    log::info!(
+        "search_album_mbids_batch called with {} queries",
+        queries.len()
+    );
+
+    let query_tuples: Vec<(String, String)> = queries
+        .into_iter()
+        .map(|q| (q.artist, q.album))
+        .collect();
+
+    let results = musicbrainz_service::search_releases_batch(&query_tuples).await;
+
+    results
+        .into_iter()
+        .map(|opt| match opt {
+            Some(result) => SearchReleaseMbidResult {
+                found: true,
+                mbid: Some(result.release_mbid),
+                title: Some(result.title),
+                artist: result.artist,
+                score: Some(result.score),
+            },
+            None => SearchReleaseMbidResult {
+                found: false,
+                mbid: None,
+                title: None,
+                artist: None,
+                score: None,
+            },
+        })
+        .collect()
+}
+
+/// Query structure for batch album MBID search
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct AlbumQuery {
+    pub artist: String,
+    pub album: String,
 }
