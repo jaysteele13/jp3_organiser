@@ -8,7 +8,7 @@
  * - artist: string - Artist name (required for stable cache key)
  * - album: string - Album name (required for stable cache key)
  * - libraryPath: string - Base library path
- * - size: 'small' | 'medium' | 'large' - Thumbnail size (40px, 60px, 120px)
+ * - size: 'small' | 'medium' | 'large' | 'xlarge' - Thumbnail size (40px, 60px, 120px, 250px)
  * - className: string - Additional CSS class
  * - fallbackIcon: string - Emoji to show when no cover available
  * 
@@ -26,6 +26,7 @@ const SIZES = {
   small: 40,
   medium: 60,
   large: 120,
+  xlarge: 250,
 };
 
 // Cache for blob URLs to avoid re-fetching during session

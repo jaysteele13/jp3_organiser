@@ -7,16 +7,17 @@
 /* Card grid - responsive multi-column layout */
 .cardList {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1rem;
 }
 
 .card {
   background-color: var(--tertiary);
   border-radius: 8px;
-  padding: 1rem;
+  padding: 0rem 1rem 0 0rem;
   color: #000;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+
 }
 
 .card:hover {
@@ -28,7 +29,9 @@
 .cardContent {
   display: flex;
   gap: 0.75rem;
-  align-items: flex-start;
+  align-items: center;
+  text-align:  start !important;
+
 }
 
 .thumbnail {

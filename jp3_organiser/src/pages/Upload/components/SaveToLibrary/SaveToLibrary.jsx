@@ -56,6 +56,8 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
       const artist = file.metadata?.artist;
       const album = file.metadata?.album;
       const acoustidMbid = file.metadata?.releaseMbid;
+
+   
       
       if (!artist || !album) {
         continue;

@@ -57,22 +57,22 @@ export default function AlbumList({ albums, songs, libraryPath }) {
   };
 
   return (
-    <div className={styles.cardGrid}>
+    <div className={styles.albumGrid}>
       {albums.map((album) => {
         const albumSongs = albumSongsMap[album.id] || [];
 
         return (
           <div
             key={album.id}
-            className={`${styles.card} ${styles.albumCard}`}
+            className={`${styles.albumCardLarge} ${styles.albumCard}`}
             onClick={() => handleCardClick(album)}
           >
-            <div className={styles.cardCover}>
+            <div className={styles.cardCoverLarge}>
               <CoverArt
                 artist={album.artistName}
                 album={album.name}
                 libraryPath={libraryPath}
-                size="medium"
+                size="xlarge"
               />
             </div>
             <span className={styles.cardTitle}>{album.name}</span>

@@ -2,7 +2,7 @@
  * CoverArt Component Styles
  * 
  * Styles for the reusable album cover art component.
- * Supports three sizes: small (40px), medium (60px), large (120px).
+ * Supports four sizes: small (40px), medium (60px), large (120px), xlarge (250px).
  */
 
 .container {
@@ -26,6 +26,10 @@
 
 .large .fallback {
   font-size: 48px;
+}
+
+.xlarge .fallback {
+  font-size: 80px;
 }
 
 .fallback {

@@ -52,7 +52,7 @@ export default function AlbumView({ library, libraryPath, onDeleteAlbum, onEditA
       artist={album.artistName}
       album={album.name}
       libraryPath={libraryPath}
-      size="small"
+      size="large"
     />
   ), [libraryPath]);
 

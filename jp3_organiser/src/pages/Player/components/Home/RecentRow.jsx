@@ -148,7 +148,7 @@ export default function RecentRow({
                   artist={coverArtist}
                   album={coverAlbum}
                   libraryPath={libraryPath}
-                  size="small"
+                  size="medium"
                   fallbackIcon={type === RECENT_TYPE.SONG ? '🎵' : '💿'}
                 />
               ) : (
