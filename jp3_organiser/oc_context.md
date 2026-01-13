@@ -236,12 +236,22 @@ Services are in `src-tauri/src/services/`:
 |---------|---------|
 | `fingerprint_service.rs` | Audio fingerprinting via fpcalc + AcoustID API lookup |
 | `metadata_ranking_service.rs` | Ranking algorithm to select best metadata from AcoustID results |
+| `cover_art_service.rs` | Cover art fetching from Cover Art Archive + hash-based file naming |
+| `musicbrainz_service.rs` | MusicBrainz API client for album MBID lookup |
 
 **Fingerprint Service:**
 - Uses external `fpcalc` CLI tool (must be installed)
 - Requires `ACOUSTIC_ID_API_KEY` environment variable
 - Rate limiting: 500ms between API calls
 - Retry logic for transient errors
+
+**Cover Art Service:**
+- `cover_filename(artist, album)` - Generate stable hash-based filename from artist+album
+- `fetch_and_save_cover(base_path, artist, album, mbid)` - Fetch from Cover Art Archive and cache
+- `cover_exists_by_name(base_path, artist, album)` - Check if cover is cached
+- `get_cover_path_by_name(base_path, artist, album)` - Get full path to cached cover
+- Files stored in `jp3/covers/` directory with `.jpg` extension
+- Filenames are 16-character hex hashes, stable across library compaction
 
 **Metadata Ranking Algorithm:**
 | Criterion | Points (Top 5) | Rationale |
@@ -311,7 +321,7 @@ Models are in `src-tauri/src/models/`:
 | `DeleteAlbumResult` | songsDeleted, filesDeleted, albumName, artistName |
 | `DeleteArtistResult` | songsDeleted, filesDeleted, albumsAffected, artistName |
 | `EditSongResult` | newSongId, artistCreated, albumCreated |
-| `CompactResult` | songsRemoved, artistsRemoved, albumsRemoved, stringsRemoved, bytesSaved |
+| `CompactResult` | songsRemoved, artistsRemoved, albumsRemoved, stringsRemoved, playlistsUpdated, oldSizeBytes, newSizeBytes, bytesSaved |
 
 ### File Organization
 
@@ -368,6 +378,39 @@ Models are in `src-tauri/src/models/`:
 - `saveToPlaylist(basePath, playlistName, files)` - Save songs to library AND create playlist
 - `addSongsToPlaylist(basePath, playlistId, songIds)` - Add songs to existing playlist
 - `removeSongsFromPlaylist(basePath, playlistId, songIds)` - Remove songs from playlist
+
+### coverArtService.js
+- `searchAlbumMbid(artist, album)` - Search MusicBrainz for release MBID by artist+album name
+- `searchAlbumMbidsBatch(queries)` - Batch search for multiple albums (respects rate limiting)
+- `fetchAlbumCover(basePath, artist, album, mbid)` - Fetch and cache cover art from Cover Art Archive
+- `readAlbumCover(basePath, artist, album)` - Read cached cover image bytes
+- `getCoverBlobUrl(basePath, artist, album)` - Create blob URL from cached cover for img src
+
+**Cover Art Flow:**
+1. On save: Extract unique (artist, album) pairs from saved files
+2. Batch search MusicBrainz for each album → get release MBID
+3. Fall back to AcoustID MBID if MusicBrainz search fails
+4. Store albumId→MBID mapping in `mbidStore.js`
+5. On display: CoverArt component looks up MBID → fetches from Cover Art Archive → caches to disk
+
+**Cover Art File Naming (Hash-based):**
+Cover art files are named using a stable hash of `"{artist_lowercase}|||{album_lowercase}"` to ensure filenames don't change during library compaction (which renumbers album IDs). The hash is computed using Rust's `DefaultHasher` and stored as a 16-character hex string.
+
+Example: "Pink Floyd" + "Dark Side of the Moon" → `a1b2c3d4e5f6g7h8.jpg`
+
+This solves the problem of album covers getting mismatched after compaction, since the filename is derived from the album's content (artist + album name) rather than its positional ID.
+
+**Rate Limiting:** MusicBrainz enforces strict 1 request/second limit. The Rust service uses a global mutex to ensure compliance.
+
+### mbidStore.js
+- `getMbid(albumId)` - Get stored MBID for an album
+- `getAllMbids()` - Get all stored albumId→MBID mappings
+- `setMbid(albumId, mbid)` - Store single MBID (first wins)
+- `setMbids(entries)` - Store multiple MBIDs at once
+- `removeMbid(albumId)` - Remove stored MBID
+- `clearMbids()` - Clear all stored MBIDs
+
+**Persistence:** Uses `@tauri-apps/plugin-store` to persist MBIDs in `mbids.json`.
 
 ## Enums
 
@@ -801,6 +844,25 @@ App.jsx
 - State management (Context API or Zustand) as app grows
 - Don't use TypeScript - this is a ReactJS project
 - Testing setup (Vitest for React, Rust tests for backend)
+
+### Artist Images (Not Implemented)
+
+MusicBrainz doesn't host artist images directly. Options for future implementation:
+
+| Source | Pros | Cons |
+|--------|------|------|
+| **Fanart.tv** (Recommended) | Uses MusicBrainz Artist MBIDs, high quality images | Requires API key (free tier available) |
+| **Discogs API** | Large database, includes photos | Requires API key, OAuth flow |
+| **Wikidata/Wikimedia Commons** | Free, no API key | Complex: MusicBrainz → Wikidata → Commons |
+| **Last.fm** | Simple API | Lower quality, may be deprecated |
+
+**Recommended Implementation (Fanart.tv):**
+1. Get Artist MBID from MusicBrainz (we already search for albums)
+2. Call Fanart.tv: `http://webservice.fanart.tv/v3/music/{artist_mbid}?api_key=XXX`
+3. Response includes: `artistthumb`, `artistbackground`, `hdmusiclogo`
+4. Cache images locally like album covers
+
+**API Key:** Register at https://fanart.tv/get-an-api-key/
 
 ## Known Issues / Technical Debt
 

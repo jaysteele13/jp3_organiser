@@ -57,8 +57,10 @@ impl ReleaseDate {
 /// Individual release within a release group.
 #[derive(Debug, Clone, Deserialize)]
 pub struct Release {
+    /// MusicBrainz Release ID (MBID) - used for cover art fetching
+    pub id: Option<String>,
     pub date: Option<ReleaseDate>,
-    // Note: id, country, medium_count, track_count omitted - not used for ranking
+    // Note: country, medium_count, track_count omitted - not used for ranking
 }
 
 /// Artist structure.
@@ -310,22 +312,41 @@ fn build_metadata(recording: &Recording) -> Result<AudioMetadata, String> {
 
     let album = release_group.title.clone();
 
-    let year = release_group
+    // Get the oldest release to extract year and MBID
+    let oldest_release = release_group
         .releases
         .as_ref()
         .and_then(|releases| {
             releases
                 .iter()
-                .filter_map(|r| r.date.as_ref()?.year)
-                .min()
+                .filter(|r| r.date.as_ref().and_then(|d| d.year).is_some())
+                .min_by_key(|r| {
+                    r.date
+                        .as_ref()
+                        .map(|d| d.to_sortable_int())
+                        .unwrap_or(i64::MAX)
+                })
+        });
+
+    let year = oldest_release.and_then(|r| r.date.as_ref()?.year);
+
+    // Get release MBID - prefer from oldest release, fallback to first release with ID
+    let release_mbid = oldest_release
+        .and_then(|r| r.id.clone())
+        .or_else(|| {
+            release_group
+                .releases
+                .as_ref()
+                .and_then(|releases| releases.iter().find_map(|r| r.id.clone()))
         });
 
     log::info!(
-        "Selected: '{}' by '{}' from '{}' ({})",
+        "Selected: '{}' by '{}' from '{}' ({}) [MBID: {}]",
         title,
         artist,
         album,
-        year.map(|y| y.to_string()).unwrap_or_else(|| "unknown year".to_string())
+        year.map(|y| y.to_string()).unwrap_or_else(|| "unknown year".to_string()),
+        release_mbid.as_deref().unwrap_or("none")
     );
 
     Ok(AudioMetadata {
@@ -335,6 +356,7 @@ fn build_metadata(recording: &Recording) -> Result<AudioMetadata, String> {
         year,
         track_number: None,
         duration_secs: None,
+        release_mbid,
     })
 }
 

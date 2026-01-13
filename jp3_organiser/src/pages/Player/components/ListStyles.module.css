@@ -32,10 +32,25 @@
   gap: 1rem;
 }
 
+/* Album-specific grid: 4 cards per row, centered */
+.albumGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.0rem;
+  justify-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
 /* Optimize rendering for large card grids */
 .cardGrid > * {
   content-visibility: auto;
   contain-intrinsic-size: auto 180px;
+}
+
+.albumGrid > * {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 380px;
 }
 
 .card {
@@ -49,6 +64,26 @@
   gap: 0.5rem;
 }
 
+/* Large album card variant */
+.albumCardLarge {
+  width: 100%;
+  max-width: 240px;
+  padding: 1rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.albumCardLarge:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
 .card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -56,6 +91,25 @@
 
 .card.expanded {
   box-shadow: 0 0 0 2px #fff;
+}
+
+/* Card cover art */
+.cardCover {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 0.25rem;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Large album cover */
+.cardCoverLarge {
+  width: 250px;
+  height: 250px;
+  margin-bottom: 0.5rem;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* Card info */
@@ -330,11 +384,40 @@
   .cardTitle {
     font-size: 0.85rem;
   }
+
+  /* Album grid: 2 cards per row on tablet */
+  .albumGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .albumCardLarge {
+    max-width: 220px;
+  }
+
+  .cardCoverLarge {
+    width: 180px;
+    height: 180px;
+  }
 }
 
 @media (max-width: 480px) {
   .card {
     width: calc(50% - 0.5rem);
     min-width: 120px;
+  }
+
+  /* Album grid: 1 card per row on mobile */
+  .albumGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .albumCardLarge {
+    max-width: 280px;
+  }
+
+  .cardCoverLarge {
+    width: 220px;
+    height: 220px;
   }
 }

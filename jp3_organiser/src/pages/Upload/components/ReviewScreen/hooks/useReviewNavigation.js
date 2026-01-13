@@ -124,21 +124,34 @@ export function useReviewNavigation(files, {
     }
   }, [canGoPrevious, clearValidationError]);
 
-  // Confirm current file (with validation)
+  // Confirm current file (with validation), then advance to next
+  // Returns true if this confirmation completed all files
   const confirmCurrent = useCallback(() => {
-    if (!currentFile) return;
+    if (!currentFile) return false;
     
     // Validate required fields
     const validation = validateMetadata(currentFile);
     if (!validation.isValid) {
       setValidationError(`Missing required fields: ${validation.missingFields.join(', ')}`);
-      return;
+      return false;
     }
     
     clearValidationError();
     onConfirm(currentFile.trackingId);
     setIsEditMode(false);
-  }, [currentFile, onConfirm, clearValidationError]);
+    
+    // Check if this was the last unconfirmed file
+    const unconfirmedCount = displayFiles.filter(f => !f.isConfirmed).length;
+    const isLastToConfirm = unconfirmedCount === 1 && !currentFile.isConfirmed;
+    
+    // Advance to next file if available (and not completing all)
+    if (!isLastToConfirm && currentIndex < displayFiles.length - 1) {
+      setSlideDirection('left');
+      setCurrentIndex(prev => prev + 1);
+    }
+    
+    return isLastToConfirm;
+  }, [currentFile, onConfirm, clearValidationError, currentIndex, displayFiles]);
 
   // Unconfirm current file
   const unconfirmCurrent = useCallback(() => {

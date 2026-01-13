@@ -212,6 +212,7 @@ fn extract_id3_metadata(tracked_file: &mut TrackedAudioFile) {
                 track_number: tag.track(),
                 year: tag.year(),
                 duration_secs: tag.duration(),
+                release_mbid: None, // ID3 tags don't contain MBID
             };
             tracked_file.update_status();
             log::info!(

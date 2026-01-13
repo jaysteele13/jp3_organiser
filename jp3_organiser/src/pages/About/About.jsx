@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Header from '../../components/Header';
 import styles from './About.module.css';
 import AboutCard from './components';
+import { clearMbids } from '../../services';
 
 export default function About() {
+
+
+
   return (
     <div className={styles.AboutAll}>
       <Header

@@ -13,6 +13,7 @@
  * - meta: string - additional metadata (year, duration, etc.)
  * - songs: array - list of songs to display
  * - onBack: function - called when back button is clicked
+ * - renderCoverArt: function - optional function to render custom cover art component
  */
 
 import React from 'react';
@@ -49,6 +50,7 @@ export default function DetailView({
   meta,
   songs = [],
   onBack,
+  renderCoverArt,
 }) {
   const { playTrack, addToQueue, isCurrentTrack } = usePlayer();
 
@@ -114,9 +116,13 @@ export default function DetailView({
 
       {/* Header Section */}
       <div className={`${styles.header} ${styles[type]}`}>
-        {/* Cover Art Placeholder */}
+        {/* Cover Art */}
         <div className={styles.coverArt}>
-          <span className={styles.icon}>{TYPE_ICONS[type]}</span>
+          {renderCoverArt ? (
+            renderCoverArt()
+          ) : (
+            <span className={styles.icon}>{TYPE_ICONS[type]}</span>
+          )}
         </div>
 
         {/* Info Section */}

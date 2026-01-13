@@ -127,6 +127,8 @@ pub struct SaveToPlaylistResult {
     pub playlist_id: u32,
     /// Name of the created playlist
     pub playlist_name: String,
+    /// Album IDs for each saved song (for MBID mapping)
+    pub album_ids: Vec<u32>,
 }
 
 /// Result returned after deleting a playlist.

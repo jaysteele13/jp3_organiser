@@ -49,6 +49,7 @@ fn create_file_to_save(
             year: Some(year),
             track_number: Some(track),
             duration_secs: Some(180),
+            release_mbid: None,
         },
     }
 }
@@ -310,6 +311,7 @@ fn test_edit_song_metadata() {
         year: Some(2021),
         track_number: Some(1),
         duration_secs: Some(180),
+        release_mbid: None,
     };
 
     let edit_result = edit_song_metadata(base_path.clone(), 0, new_metadata).unwrap();
@@ -437,6 +439,7 @@ fn test_edit_song_remaps_playlist_ids() {
         year: Some(2020),
         track_number: Some(2),
         duration_secs: Some(180),
+        release_mbid: None,
     };
 
     let edit_result = edit_song_metadata(base_path.clone(), 1, new_metadata).unwrap();
@@ -505,6 +508,7 @@ fn test_edit_song_no_playlists_affected() {
         year: Some(2020),
         track_number: Some(2),
         duration_secs: Some(180),
+        release_mbid: None,
     };
 
     let edit_result = edit_song_metadata(base_path, 1, new_metadata).unwrap();

@@ -3,9 +3,11 @@
  * 
  * Horizontal scrollable carousel showing recently played content.
  * Supports songs, albums, artists, and playlists with distinct styling.
+ * Songs and albums display album cover art; artists and playlists use icons.
  * 
  * Props:
  * - items: array - recently played items { type, item, playedAt }
+ * - libraryPath: string - base library path for cover art loading
  * - onPlaySong: function - play a song
  * - onPlayAlbum: function - play an album
  * - onPlayArtist: function - play an artist
@@ -15,12 +17,11 @@
 
 import React from 'react';
 import { RECENT_TYPE } from '../../../../hooks/useRecents';
+import { CoverArt } from '../../../../components';
 import styles from './RecentRow.module.css';
 
-// Icons per content type
+// Icons for content types without album art
 const TYPE_ICONS = {
-  [RECENT_TYPE.SONG]: '🎵',
-  [RECENT_TYPE.ALBUM]: '💿',
   [RECENT_TYPE.ARTIST]: '🎤',
   [RECENT_TYPE.PLAYLIST]: '📋',
 };
@@ -77,6 +78,7 @@ function getDisplayInfo(type, item) {
 
 export default function RecentRow({
   items = [],
+  libraryPath,
   onPlaySong,
   onPlayAlbum,
   onPlayArtist,
@@ -120,7 +122,20 @@ export default function RecentRow({
         {items.map(({ type, item, playedAt }) => {
           const { title, subtitle, typeLabel } = getDisplayInfo(type, item);
           const cardClass = getCardClass(type);
-          const icon = TYPE_ICONS[type] || '🎵';
+          const icon = TYPE_ICONS[type];
+          
+          // Determine cover art props for songs and albums
+          const hasCoverArt = type === RECENT_TYPE.SONG || type === RECENT_TYPE.ALBUM;
+          const coverArtist = type === RECENT_TYPE.SONG 
+            ? item.artistName 
+            : type === RECENT_TYPE.ALBUM 
+              ? item.artistName 
+              : null;
+          const coverAlbum = type === RECENT_TYPE.SONG 
+            ? item.albumName 
+            : type === RECENT_TYPE.ALBUM 
+              ? item.name 
+              : null;
           
           return (
             <div
@@ -128,9 +143,18 @@ export default function RecentRow({
               className={`${styles.card} ${cardClass}`}
               onClick={() => handleCardClick(type, item)}
             >
-              <div className={styles.cardIcon}>{icon}</div>
+              {hasCoverArt ? (
+                <CoverArt
+                  artist={coverArtist}
+                  album={coverAlbum}
+                  libraryPath={libraryPath}
+                  size="medium"
+                  fallbackIcon={type === RECENT_TYPE.SONG ? '🎵' : '💿'}
+                />
+              ) : (
+                <div className={styles.cardIcon}>{icon}</div>
+              )}
               <div className={styles.cardInfo}>
-                <span className={styles.typeLabel}>{typeLabel}</span>
                 <span className={styles.title}>{title}</span>
                 <span className={styles.subtitle}>{subtitle}</span>
               </div>

@@ -358,6 +358,9 @@ pub struct SaveToLibraryResult {
     /// IDs of existing songs that were duplicates (for adding to playlists)
     /// These songs already exist in the library but can still be added to a playlist
     pub duplicate_song_ids: Vec<u32>,
+    /// Album IDs for each saved song, in same order as song_ids
+    /// Used to map MBIDs to albums for cover art
+    pub album_ids: Vec<u32>,
 }
 
 /// Parsed artist data for frontend display.

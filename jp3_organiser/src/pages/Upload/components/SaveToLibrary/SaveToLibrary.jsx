@@ -17,7 +17,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { saveToLibrary, saveToPlaylist, addSongsToPlaylist, MetadataStatus } from '../../../../services';
+import { saveToLibrary, saveToPlaylist, addSongsToPlaylist, MetadataStatus, setMbids, hasMbid, searchAlbumMbidsBatch } from '../../../../services';
 import { useUploadCache } from '../../../../hooks';
 import { UPLOAD_MODE } from '../../../../utils';
 import styles from './SaveToLibrary.module.css';
@@ -33,6 +33,107 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
   const playlistName = uploadContext?.playlist;
   const playlistId = uploadContext?.playlistId;
   const isExistingPlaylist = isPlaylistMode && playlistId !== null;
+
+  /**
+   * Store MBIDs for albums after saving to library.
+   * 
+   * Uses MusicBrainz search to find accurate MBIDs based on artist+album name.
+   * Falls back to AcoustID MBID if MusicBrainz search fails.
+   * Skips albums that already have an MBID stored to avoid redundant API calls.
+   * 
+   * @param {Array} filesToSave - Files that were saved
+   */
+  const storeMbids = useCallback(async (filesToSave) => {
+    if (!filesToSave || filesToSave.length === 0) {
+      return;
+    }
+
+    // Build a map of unique albums: key = "artist|||album" -> { acoustidMbid }
+    // We use the first occurrence's data for each unique album
+    const uniqueAlbums = new Map();
+    
+    for (const file of filesToSave) {
+      const artist = file.metadata?.artist;
+      const album = file.metadata?.album;
+      const acoustidMbid = file.metadata?.releaseMbid;
+
+   
+      
+      if (!artist || !album) {
+        continue;
+      }
+      
+      const key = `${artist}|||${album}`;
+      if (!uniqueAlbums.has(key)) {
+        uniqueAlbums.set(key, { artist, album, acoustidMbid });
+      }
+    }
+    
+    if (uniqueAlbums.size === 0) {
+      return;
+    }
+
+    // Filter out albums that already have an MBID stored
+    const albumList = Array.from(uniqueAlbums.values());
+    const albumsToSearch = [];
+    
+    for (const albumInfo of albumList) {
+      const exists = await hasMbid(albumInfo.artist, albumInfo.album);
+      if (exists) {
+        console.log(`[SaveToLibrary] MBID already cached for "${albumInfo.album}" by "${albumInfo.artist}" - skipping`);
+      } else {
+        albumsToSearch.push(albumInfo);
+      }
+    }
+    
+    if (albumsToSearch.length === 0) {
+      console.log('[SaveToLibrary] All albums already have MBIDs cached');
+      return;
+    }
+
+    // Prepare queries for batch MusicBrainz search
+    const queries = albumsToSearch.map(({ artist, album }) => ({ artist, album }));
+    
+    // Search MusicBrainz for albums without cached MBIDs
+    let searchResults = [];
+    try {
+      searchResults = await searchAlbumMbidsBatch(queries);
+    } catch (err) {
+      console.error('[SaveToLibrary] MusicBrainz batch search failed:', err);
+      // Fall back to AcoustID MBIDs only
+      searchResults = queries.map(() => ({ found: false }));
+    }
+
+    // Build entries for mbidStore, preferring MusicBrainz results
+    const entries = [];
+    for (let i = 0; i < albumsToSearch.length; i++) {
+      const { acoustidMbid, artist, album } = albumsToSearch[i];
+      const searchResult = searchResults[i];
+      
+      // Prefer MusicBrainz MBID, fall back to AcoustID MBID
+      let mbid = null;
+      let source = null;
+      
+      if (searchResult?.found && searchResult.mbid) {
+        mbid = searchResult.mbid;
+        source = 'MusicBrainz';
+      } else if (acoustidMbid) {
+        mbid = acoustidMbid;
+        source = 'AcoustID';
+      }
+      
+      if (mbid) {
+        entries.push({ artist, album, mbid });
+        console.log(`[SaveToLibrary] MBID for "${album}" by "${artist}": ${mbid} (source: ${source})`);
+      } else {
+        console.log(`[SaveToLibrary] No MBID found for "${album}" by "${artist}"`);
+      }
+    }
+    
+    if (entries.length > 0) {
+      await setMbids(entries);
+    }
+  }, []);
 
   const handleSaveToLibrary = useCallback(async () => {
     if (!libraryPath) {
@@ -64,6 +165,9 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
         // Existing playlist mode: save to library, then add songs to playlist
         const libraryResult = await saveToLibrary(libraryPath, files);
         
+        // Store MBIDs for cover art fetching
+        await storeMbids(filesToSave);
+        
         // Combine newly saved songs AND duplicate songs (which already exist in library)
         // Both should be added to the playlist
         const allSongIds = [
@@ -91,6 +195,9 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
         // New playlist mode: save to library AND create playlist
         const result = await saveToPlaylist(libraryPath, playlistName, files);
         
+        // Store MBIDs for cover art fetching
+        await storeMbids(filesToSave);
+        
         message = `Created playlist "${result.playlistName}" with ${result.songsAdded} song(s). ` +
           `${result.artistsAdded} artist(s), ${result.albumsAdded} album(s).`;
         
@@ -100,6 +207,9 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
       } else {
         // Normal mode: save to library only
         const result = await saveToLibrary(libraryPath, files);
+        
+        // Store MBIDs for cover art fetching
+        await storeMbids(filesToSave);
         
         message = `Added ${result.filesSaved} file(s) to library. ` +
           `${result.artistsAdded} artist(s), ${result.albumsAdded} album(s), ${result.songsAdded} song(s).`;
@@ -117,7 +227,7 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
     } finally {
       setIsSaving(false);
     }
-  }, [libraryPath, confirmedFiles, removeConfirmedFiles, workflow, toast, isPlaylistMode, isExistingPlaylist, playlistName, playlistId]);
+  }, [libraryPath, confirmedFiles, removeConfirmedFiles, workflow, toast, isPlaylistMode, isExistingPlaylist, playlistName, playlistId, storeMbids]);
 
   const handleBackToReview = useCallback(() => {
     const startIndex = confirmedFiles.findIndex(f => !f.isConfirmed);

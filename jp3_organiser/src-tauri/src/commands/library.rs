@@ -19,6 +19,7 @@ const JP3_DIR: &str = "jp3";
 const MUSIC_DIR: &str = "music";
 const METADATA_DIR: &str = "metadata";
 const PLAYLISTS_DIR: &str = "playlists";
+const COVERS_DIR: &str = "covers";
 const LIBRARY_BIN: &str = "library.bin";
 
 /// Initialize the JP3 library directory structure.
@@ -32,6 +33,7 @@ const LIBRARY_BIN: &str = "library.bin";
 ///     metadata/
 ///       library.bin   # Empty library header
 ///     playlists/
+///     covers/         # Album cover art cache
 /// ```
 #[tauri::command]
 pub fn initialize_library(base_path: String) -> Result<String, String> {
@@ -48,6 +50,7 @@ pub fn initialize_library(base_path: String) -> Result<String, String> {
     let music_path = jp3_path.join(MUSIC_DIR);
     let metadata_path = jp3_path.join(METADATA_DIR);
     let playlists_path = jp3_path.join(PLAYLISTS_DIR);
+    let covers_path = jp3_path.join(COVERS_DIR);
 
     // Create main jp3 directory and subdirectories
     fs::create_dir_all(&jp3_path).map_err(|e| format!("Failed to create jp3 directory: {}", e))?;
@@ -57,6 +60,8 @@ pub fn initialize_library(base_path: String) -> Result<String, String> {
         .map_err(|e| format!("Failed to create metadata directory: {}", e))?;
     fs::create_dir_all(&playlists_path)
         .map_err(|e| format!("Failed to create playlists directory: {}", e))?;
+    fs::create_dir_all(&covers_path)
+        .map_err(|e| format!("Failed to create covers directory: {}", e))?;
 
     // Create initial music bucket (00/)
     let first_bucket = music_path.join("00");
@@ -329,6 +334,7 @@ pub fn save_to_library(
     let mut duplicates_skipped = 0u32;
     let mut saved_song_ids: Vec<u32> = Vec::new();
     let mut duplicate_song_ids: Vec<u32> = Vec::new();
+    let mut saved_album_ids: Vec<u32> = Vec::new();
 
     for file_to_save in files {
         let source = Path::new(&file_to_save.source_path);
@@ -438,6 +444,7 @@ pub fn save_to_library(
         ));
 
         saved_song_ids.push(new_song_id);
+        saved_album_ids.push(album_id);
         files_in_bucket += 1;
         files_saved += 1;
     }
@@ -488,6 +495,7 @@ pub fn save_to_library(
         duplicates_skipped,
         song_ids: saved_song_ids,
         duplicate_song_ids,
+        album_ids: saved_album_ids,
     })
 }
 
@@ -1080,6 +1088,18 @@ pub fn compact_library(base_path: String) -> Result<crate::models::CompactResult
             }
         }
     }
+
+    log::info!(
+        "[compact_library] Removed {} songs, {} artists, {} albums. Updated {} playlists.",
+        songs_removed,
+        artists_removed,
+        albums_removed,
+        playlists_updated
+    );
+
+    // Note: Cover art files are now named using artist+album hash (not album ID),
+    // so they don't need to be renamed when album IDs change during compaction.
+    // Old ID-based cover files will become orphaned but harmless.
 
     Ok(crate::models::CompactResult {
         songs_removed,

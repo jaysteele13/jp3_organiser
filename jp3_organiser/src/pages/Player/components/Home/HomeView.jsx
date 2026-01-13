@@ -7,6 +7,7 @@
  * 
  * Props:
  * - library: object - library data containing songs, albums, artists, playlists
+ * - libraryPath: string - base library path for cover art loading
  */
 
 import React, { useMemo, useCallback } from 'react';
@@ -23,7 +24,7 @@ import styles from './HomeView.module.css';
 const RECENTLY_PLAYED_LIMIT = 5;
 const RECENTLY_ADDED_LIMIT = 8;
 
-export default function HomeView({ library }) {
+export default function HomeView({ library, libraryPath }) {
   const navigate = useNavigate();
   const { playTrack, addToQueue, isCurrentTrack } = usePlayer();
 
@@ -132,6 +133,7 @@ export default function HomeView({ library }) {
           />
           <RecentRow
             items={recentItems.slice(0, RECENTLY_PLAYED_LIMIT)}
+            libraryPath={libraryPath}
             onPlaySong={handlePlaySong}
             onPlayAlbum={handlePlayAlbum}
             onPlayArtist={handlePlayArtist}

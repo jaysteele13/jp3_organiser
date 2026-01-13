@@ -313,6 +313,7 @@ pub fn save_to_playlist(
         duplicates_skipped: save_result.duplicates_skipped,
         playlist_id: playlist_result.playlist_id,
         playlist_name,
+        album_ids: save_result.album_ids,
     })
 }
 
