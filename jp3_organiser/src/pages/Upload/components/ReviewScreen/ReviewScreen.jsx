@@ -67,8 +67,17 @@ export default function ReviewScreen({
   // Audio player hook
   const audio = useAudioPlayer();
 
+  // Handle confirm with auto-done when all files confirmed
+  const handleConfirm = useCallback(() => {
+    const isAllConfirmed = navigation.confirmCurrent();
+    if (isAllConfirmed) {
+      audio.stop();
+      onDone();
+    }
+  }, [navigation, audio, onDone]);
+
   // Register Shift+Enter keyboard shortcut for confirm
-  useKeyboardShortcut('Enter', navigation.confirmCurrent, { shift: true });
+  useKeyboardShortcut('Enter', handleConfirm, { shift: true });
 
   // Stop audio and clear errors when file changes
   useEffect(() => {
@@ -173,7 +182,9 @@ export default function ReviewScreen({
 
         {/* Navigation controls */}
         {!navigation.isEditMode && (
-          <NavigationControls navigation={navigation} />
+          <NavigationControls 
+            navigation={{ ...navigation, confirmCurrent: handleConfirm }} 
+          />
         )}
       </div>
     </div>
