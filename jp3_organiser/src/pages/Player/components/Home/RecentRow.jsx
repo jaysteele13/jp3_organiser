@@ -155,7 +155,6 @@ export default function RecentRow({
                 <div className={styles.cardIcon}>{icon}</div>
               )}
               <div className={styles.cardInfo}>
-                <span className={styles.typeLabel}>{typeLabel}</span>
                 <span className={styles.title}>{title}</span>
                 <span className={styles.subtitle}>{subtitle}</span>
               </div>
