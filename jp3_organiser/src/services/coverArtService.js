@@ -59,8 +59,8 @@ export async function searchAlbumMbidsBatch(queries) {
  * @param {string} mbid - MusicBrainz Release ID
  * @returns {Promise<{success: boolean, path?: string, error?: string, wasCached: boolean}>}
  */
-export async function fetchAlbumCover(basePath, artist, album, mbid) {
-  return await invoke('fetch_album_cover', { basePath, artist, album, mbid });
+export async function fetchMusicCover(basePath, artist, album, mbid, imageCoverType) {
+  return await invoke('fetch_music_cover', { basePath, artist, album, mbid, imageCoverType });
 }
 
 /**

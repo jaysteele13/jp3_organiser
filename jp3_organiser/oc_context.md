@@ -382,7 +382,7 @@ Models are in `src-tauri/src/models/`:
 ### coverArtService.js
 - `searchAlbumMbid(artist, album)` - Search MusicBrainz for release MBID by artist+album name
 - `searchAlbumMbidsBatch(queries)` - Batch search for multiple albums (respects rate limiting)
-- `fetchAlbumCover(basePath, artist, album, mbid)` - Fetch and cache cover art from Cover Art Archive
+- `fetchMusicCover(basePath, artist, album, mbid, imageCoverType)` - Fetch and cache cover art from Cover Art Archive
 - `readAlbumCover(basePath, artist, album)` - Read cached cover image bytes
 - `getCoverBlobUrl(basePath, artist, album)` - Create blob URL from cached cover for img src
 

@@ -277,7 +277,7 @@ pub async fn process_single_audio_file(file_path: String) -> Result<TrackedAudio
         }
     }
 
-    // Generate fingerprint
+    // Generate fingerprint for Acoustic ID
     let audio_finger_print = process_audio_fingerprint(&file_path, tracking_id);
 
     if audio_finger_print.fingerprint_status == MetadataStatus::Failed {
@@ -295,10 +295,12 @@ pub async fn process_single_audio_file(file_path: String) -> Result<TrackedAudio
         audio_finger_print.fingerprint_id.len()
     );
 
+    // If we get a match from AcousticID, extract and rank the metadata
     match lookup_acoustid(&audio_finger_print).await {
         Ok(result_json) => {
             log::info!("Successfully got AcousticID result for file: {}", file_path);
 
+            // We extract the metatdata from the Ranking System function
             match extract_metadata_from_acoustic_json(&result_json) {
                 Ok(extracted_metadata) => {
                     log::info!(

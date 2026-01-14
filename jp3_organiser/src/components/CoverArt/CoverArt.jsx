@@ -17,8 +17,9 @@
  */
 
 import { useState, useEffect, memo } from 'react';
-import { getCoverBlobUrl, fetchAlbumCover } from '../../services/coverArtService';
+import { getCoverBlobUrl, fetchMusicCover } from '../../services/coverArtService';
 import { getMbid } from '../../services/mbidStore';
+import { IMAGE_COVER_TYPE } from '../../utils/enums';
 import styles from './CoverArt.module.css';
 
 // Size configurations
@@ -96,7 +97,8 @@ const CoverArt = memo(function CoverArt({
           const mbid = await getMbid(artist, album);
           
           if (mbid) {
-            const result = await fetchAlbumCover(libraryPath, artist, album, mbid);
+            const result = await fetchMusicCover(libraryPath, artist, album, mbid, IMAGE_COVER_TYPE.ALBUM);
+            console.log('[CoverArt] fetchMusicCover result:', result);
             if (result.success) {
               // Now try to get the blob URL again
               blobUrl = await getCoverBlobUrl(libraryPath, artist, album);

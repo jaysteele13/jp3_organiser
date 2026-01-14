@@ -67,6 +67,8 @@ pub struct Release {
 #[derive(Debug, Clone, Deserialize)]
 pub struct Artist {
     #[serde(default)]
+    // Add back in artist ID as it is an MBID which we will use to extract cover art later
+    pub id: String,
     pub name: String,
     // Note: id omitted - not used for ranking
 }

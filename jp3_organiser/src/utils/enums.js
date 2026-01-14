@@ -27,3 +27,8 @@ export const UPLOAD_MODE = {
   ARTIST: 'artist',
   PLAYLIST: 'playlist',
 };
+
+export const IMAGE_COVER_TYPE = {
+  ALBUM: 'Album',
+  ARTIST: 'Artist',
+};

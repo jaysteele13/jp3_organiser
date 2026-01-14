@@ -9,6 +9,7 @@ use std::path::Path;
 
 use crate::services::cover_art_service;
 use crate::services::musicbrainz_service;
+use crate::models::cover_art::ImageCoverType;
 
 /// Result of fetching cover art
 #[derive(Debug, Clone, Serialize)]
@@ -46,14 +47,15 @@ pub struct GetCoverPathResult {
 /// * `album` - Album name (for stable filename generation)
 /// * `mbid` - MusicBrainz Release ID
 #[tauri::command]
-pub async fn fetch_album_cover(
+pub async fn fetch_music_cover(
     base_path: String,
     artist: String,
     album: String,
     mbid: String,
+    image_cover_type: ImageCoverType,
 ) -> Result<FetchCoverResult, String> {
     log::info!(
-        "fetch_album_cover called: artist=\"{}\", album=\"{}\", mbid={}",
+        "fetch_music_cover called: artist=\"{}\", album=\"{}\", mbid={}",
         artist,
         album,
         mbid
@@ -81,7 +83,7 @@ pub async fn fetch_album_cover(
     }
 
     // Fetch and save (using artist+album for filename)
-    match cover_art_service::fetch_and_save_cover(&mbid, &covers_dir, &artist, &album).await {
+    match cover_art_service::fetch_and_save_cover(&mbid, &covers_dir, &artist, &album, image_cover_type).await {
         Ok(result) => Ok(FetchCoverResult {
             success: true,
             path: Some(result.path),
