@@ -1,14 +1,15 @@
 /**
  * ArtistView Component
  * 
- * Displays artists in a full-width card list format.
+ * Displays artists in a circle-centric grid layout.
+ * Each artist shows as a circular image with name below.
+ * On hover, shows album/song count and action menu.
  * Artist names are clickable links that navigate to the Player artist detail page.
  */
 
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CardList, CoverArt} from '../../../../../components';
-import { IMAGE_COVER_TYPE } from '../../../../../utils/enums';
+import { ArtistGrid } from '../../../../../components';
 
 
 export default function ArtistView({ library, libraryPath, onDeleteArtist, onEditArtist }) {
@@ -33,45 +34,23 @@ export default function ArtistView({ library, libraryPath, onDeleteArtist, onEdi
     return counts;
   }, [library.artists, library.songs, library.albums]);
 
-  const handleTitleClick = useCallback((artist) => {
+  const handleArtistClick = useCallback((artist) => {
     navigate(`/player/artist/${artist.id}`);
   }, [navigate]);
-
-  const getTitle = useCallback((artist) => artist.name, []);
-  
-  const getMeta = useCallback((artist) => {
-    const counts = artistCounts[artist.id] || { songs: 0, albums: 0 };
-    return [
-      `${counts.albums} album(s)`,
-      `${counts.songs} song(s)`,
-    ];
-  }, [artistCounts]);
 
   const getActions = useCallback((artist) => [
     { label: 'Edit Artist', onClick: () => onEditArtist?.(artist) },
     { label: 'Delete Artist', onClick: () => onDeleteArtist?.(artist), variant: 'danger' },
   ], [onEditArtist, onDeleteArtist]);
 
-  const renderThumbnail = useCallback((artist) => (
-    <CoverArt
-      artist={artist.name}
-      libraryPath={libraryPath}
-      size="large"
-      imageCoverType={IMAGE_COVER_TYPE.ARTIST}
-    />
-  ), [libraryPath]);
-
-
   return (
-    <CardList
-      items={library.artists}
-      getTitle={getTitle}
-      getMeta={getMeta}
-      onTitleClick={handleTitleClick}
+    <ArtistGrid
+      artists={library.artists}
+      libraryPath={libraryPath}
+      artistCounts={artistCounts}
+      onArtistClick={handleArtistClick}
       getActions={getActions}
       emptyMessage="No artists in library"
-      renderThumbnail={renderThumbnail}
-      variant="artist"
     />
   );
 }

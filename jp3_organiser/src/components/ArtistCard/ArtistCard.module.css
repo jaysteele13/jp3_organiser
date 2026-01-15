@@ -1,0 +1,97 @@
+/**
+ * ArtistCard Component Styles
+ * 
+ * Circle-centric artist card with hover overlay.
+ */
+
+.artistCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.circleContainer {
+  position: relative;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.circleContainer:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.circleContainer:focus {
+  outline: 2px solid var(--primary, #007bff);
+  outline-offset: 2px;
+}
+
+/* Hover overlay - covers the circle */
+.overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.circleContainer:hover .overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Meta info inside overlay */
+.meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  color: #fff;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+/* Action menu container */
+.actions {
+  margin-top: 0.25rem;
+}
+
+/* Override action menu button color for dark overlay */
+.actions :global(.menuButton) {
+  color: #fff;
+}
+
+/* Artist name below circle */
+.artistName {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: inherit;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.artistName:hover {
+  text-decoration: underline;
+}
+
+.artistName:focus {
+  outline: 2px solid var(--primary, #007bff);
+  outline-offset: 1px;
+}
