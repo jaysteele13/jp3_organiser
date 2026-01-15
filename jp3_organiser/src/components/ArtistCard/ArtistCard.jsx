@@ -18,7 +18,7 @@
  */
 
 import { memo, useState, useCallback, useEffect, useRef } from 'react';
-import { CoverArt, ActionMenu } from '../../components';
+import { CoverArt } from '../../components';
 import { IMAGE_COVER_TYPE } from '../../utils/enums';
 import styles from './ArtistCard.module.css';
 
@@ -70,38 +70,59 @@ const ArtistCard = memo(function ArtistCard({
     };
   }, [showActions]);
 
+  // Handle action item click
+  const handleActionClick = useCallback((e, action) => {
+    e.stopPropagation();
+    setShowActions(false);
+    action.onClick?.();
+  }, []);
+
   return (
     <div className={styles.artistCard} ref={cardRef}>
-      <div
-        className={styles.circleContainer}
-        style={{ width: size, height: size }}
-        onClick={handleClick}
-        onKeyDown={handleKeyDown}
-        role="button"
-        tabIndex={0}
-        aria-label={`View options for ${artist.name}`}
-        aria-expanded={showActions}
-      >
-        <CoverArt
-          artist={artist.name}
-          libraryPath={libraryPath}
-          size="large"
-          imageCoverType={IMAGE_COVER_TYPE.ARTIST}
-          circular
-        />
-        
-        {/* Hover overlay - shows counts only */}
-        <div className={styles.hoverOverlay}>
-          <div className={styles.meta}>
-            <span>{albumCount} album{albumCount !== 1 ? 's' : ''}</span>
-            <span>{songCount} song{songCount !== 1 ? 's' : ''}</span>
-          </div>
+      {/* Circle wrapper - allows action overlay to escape circle clipping */}
+      <div className={styles.circleWrapper} style={{ width: size, height: size }}>
+        <div
+          className={styles.circleContainer}
+          onClick={handleClick}
+          onKeyDown={handleKeyDown}
+          role="button"
+          tabIndex={0}
+          aria-label={`View options for ${artist.name}`}
+          aria-expanded={showActions}
+        >
+          <CoverArt
+            artist={artist.name}
+            libraryPath={libraryPath}
+            size="large"
+            imageCoverType={IMAGE_COVER_TYPE.ARTIST}
+            circular
+          />
+          
+          {/* Hover overlay - shows counts only */}
+          {!showActions && (
+            <div className={styles.hoverOverlay}>
+              <div className={styles.meta}>
+                <span>{albumCount} album{albumCount !== 1 ? 's' : ''}</span>
+                <span>{songCount} song{songCount !== 1 ? 's' : ''}</span>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Click overlay - shows action menu */}
+        {/* Action overlay - positioned over circle but not clipped by it */}
         {showActions && actions.length > 0 && (
           <div className={styles.actionOverlay}>
-            <ActionMenu items={actions} />
+            <div className={styles.actionList}>
+              {actions.map((action, index) => (
+                <button
+                  key={index}
+                  className={`${styles.actionButton} ${action.variant === 'danger' ? styles.dangerButton : ''}`}
+                  onClick={(e) => handleActionClick(e, action)}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
