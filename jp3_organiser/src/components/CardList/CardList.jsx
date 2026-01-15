@@ -15,6 +15,7 @@
  * @param {Function} props.getActions - Function to get action menu items array from item
  * @param {Function} props.renderThumbnail - Optional function to render thumbnail for item
  * @param {string} props.emptyMessage - Message to show when list is empty
+ * @param {string} props.variant - 'default' | 'artist' - Layout variant (artist shows meta on hover only)
  */
 
 import React, { memo } from 'react';
@@ -30,6 +31,7 @@ const CardListItem = memo(function CardListItem({
   onSubtitleClick,
   actions,
   thumbnail,
+  variant = 'default',
 }) {
   const handleTitleClick = () => onTitleClick?.(item);
   const handleTitleKeyDown = (e) => e.key === 'Enter' && onTitleClick?.(item);
@@ -44,8 +46,16 @@ const CardListItem = memo(function CardListItem({
     }
   };
 
+  const isArtistVariant = variant === 'artist';
+  const cardClass = isArtistVariant 
+    ? `${styles.card} ${styles.artistCard}` 
+    : styles.card;
+  const metaClass = isArtistVariant 
+    ? `${styles.cardMeta} ${styles.artistMeta}` 
+    : styles.cardMeta;
+
   return (
-    <div className={styles.card}>
+    <div className={cardClass}>
       <div className={styles.cardContent}>
         {thumbnail && <div className={styles.thumbnail}>{thumbnail}</div>}
         <div className={styles.cardMain}>
@@ -79,7 +89,7 @@ const CardListItem = memo(function CardListItem({
             {actions && <ActionMenu items={actions} />}
           </div>
           {meta && meta.length > 0 && (
-            <div className={styles.cardMeta}>
+            <div className={metaClass}>
               {meta.map((item, index) => (
                 <span key={index}>{item}</span>
               ))}
@@ -101,6 +111,7 @@ export default function CardList({
   getActions,
   renderThumbnail,
   emptyMessage = 'No items',
+  variant = 'default',
 }) {
   if (items.length === 0) {
     return <div className={styles.emptyState}>{emptyMessage}</div>;
@@ -119,6 +130,7 @@ export default function CardList({
           onSubtitleClick={onSubtitleClick}
           actions={getActions?.(item)}
           thumbnail={renderThumbnail?.(item)}
+          variant={variant}
         />
       ))}
     </div>

@@ -71,6 +71,7 @@ export default function ArtistView({ library, libraryPath, onDeleteArtist, onEdi
       getActions={getActions}
       emptyMessage="No artists in library"
       renderThumbnail={renderThumbnail}
+      variant="artist"
     />
   );
 }

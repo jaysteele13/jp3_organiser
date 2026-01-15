@@ -13,8 +13,9 @@
  * - libraryPath: string - Base library path
  * - size: 'small' | 'medium' | 'large' | 'xlarge' - Thumbnail size (40px, 60px, 120px, 250px)
  * - className: string - Additional CSS class
- * - fallbackIcon: string - Emoji to show when no cover available
+ * - fallbackIcon: string - Emoji to show when no cover available (ignored for artist covers)
  * - imageCoverType: IMAGE_COVER_TYPE - Whether to fetch album or artist cover
+ * - circular: boolean - Whether to render as a circle (default: false, auto-true for artist covers)
  * 
  * Note: Cover files are named using a hash for stability across library compaction.
  */
@@ -37,6 +38,24 @@ const SIZES = {
   large: 120,
   xlarge: 250,
 };
+
+// Artist fallback emojis (sloth, turtle, snail)
+const ARTIST_FALLBACK_EMOJIS = ['🦥', '🐢', '🐌'];
+
+/**
+ * Get a consistent fallback emoji for an artist based on their name
+ * Uses a simple hash to ensure the same artist always gets the same emoji
+ */
+function getArtistFallbackEmoji(artistName) {
+  const name = (artistName || '').toLowerCase().trim();
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash) + name.charCodeAt(i);
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  const index = Math.abs(hash) % ARTIST_FALLBACK_EMOJIS.length;
+  return ARTIST_FALLBACK_EMOJIS[index];
+}
 
 // Cache for blob URLs to avoid re-fetching during session
 // Key format: "libraryPath:artist|||album" for albums, "libraryPath:artist|||" for artists
@@ -67,6 +86,7 @@ const CoverArt = memo(function CoverArt({
   className = '',
   fallbackIcon = '💿',
   imageCoverType = IMAGE_COVER_TYPE.ALBUM,
+  circular = null, // null = auto (circular for artists, square for albums)
 }) {
   const [imageUrl, setImageUrl] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,6 +94,14 @@ const CoverArt = memo(function CoverArt({
 
   const sizeValue = SIZES[size] || SIZES.medium;
   const isArtistCover = imageCoverType === IMAGE_COVER_TYPE.ARTIST;
+  
+  // Auto-determine circular: true for artists, false for albums (unless explicitly set)
+  const isCircular = circular !== null ? circular : isArtistCover;
+  
+  // Use artist-specific fallback emoji for artist covers
+  const effectiveFallbackIcon = isArtistCover 
+    ? getArtistFallbackEmoji(artist) 
+    : fallbackIcon;
 
   useEffect(() => {
     let isMounted = true;
@@ -221,14 +249,20 @@ const CoverArt = memo(function CoverArt({
     minHeight: sizeValue,
   };
 
-  const containerClass = `${styles.container} ${styles[size]} ${className}`;
+  const containerClass = [
+    styles.container,
+    styles[size],
+    isCircular ? styles.circular : '',
+    className,
+  ].filter(Boolean).join(' ');
+  
   const altText = isArtistCover ? `${artist} artist image` : `${album} album cover`;
 
   // Show fallback icon while loading, on error, or when no image
   if (isLoading || hasError || !imageUrl) {
     return (
       <div className={containerClass} style={containerStyle}>
-        <span className={styles.fallback}>{fallbackIcon}</span>
+        <span className={styles.fallback}>{effectiveFallbackIcon}</span>
       </div>
     );
   }

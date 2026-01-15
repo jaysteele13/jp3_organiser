@@ -131,3 +131,20 @@
   padding: 2rem;
   opacity: 0.6;
 }
+
+/* Artist variant styles - circular thumbnails, meta on hover */
+.artistCard {
+  /* Same base styling but with hover-reveal meta */
+}
+
+.artistMeta {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity 0.2s ease, max-height 0.2s ease;
+}
+
+.artistCard:hover .artistMeta {
+  opacity: 0.6;
+  max-height: 2rem;
+}
