@@ -35,10 +35,10 @@
 /* Album-specific grid: 4 cards per row, centered */
 .albumGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 1.0rem;
-  justify-items: center;
-  max-width: 1200px;
+  /* justify-items: center; */
+  /* max-width: 1200px; */
   margin: 0 auto;
 }
 

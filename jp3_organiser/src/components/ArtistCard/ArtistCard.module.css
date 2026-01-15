@@ -38,6 +38,20 @@
   outline-offset: 2px;
 }
 
+/* Purple variant - quaternary color outline */
+.purpleVariant {
+  box-shadow: 0 0 0 3px var(--quaternary, #6649B6);
+}
+
+.purpleVariant:hover {
+  box-shadow: 0 0 0 3px var(--quaternary-hover, #5339a6), 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.purpleVariant:focus {
+  outline: 2px solid var(--quaternary, #6649B6);
+  outline-offset: 2px;
+}
+
 /* Hover overlay - shows counts only */
 .hoverOverlay {
   position: absolute;

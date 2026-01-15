@@ -6,7 +6,7 @@
  * 
  * Interaction:
  * - Hover: Shows album/song count overlay
- * - Click: Shows action menu overlay (Go to Artist, Edit, Delete)
+ * - Click: If onClick prop provided, calls it directly. Otherwise shows action menu overlay.
  * 
  * @param {Object} props
  * @param {Object} props.artist - Artist object with id and name
@@ -14,7 +14,10 @@
  * @param {number} props.albumCount - Number of albums by this artist
  * @param {number} props.songCount - Number of songs by this artist
  * @param {Array} props.actions - Action menu items: { label: string, onClick: function, variant?: 'danger' }
+ * @param {Function} props.onClick - Direct click handler (bypasses action menu if provided)
  * @param {number} props.size - Circle diameter in pixels (default: 120)
+ * @param {string} props.coverSize - CoverArt size: 'small' | 'medium' | 'large' | 'xlarge' (default: 'large')
+ * @param {string} props.variant - Style variant: 'default' | 'purple' (default: 'default')
  */
 
 import { memo, useState, useCallback, useEffect, useRef } from 'react';
@@ -28,26 +31,37 @@ const ArtistCard = memo(function ArtistCard({
   albumCount = 0,
   songCount = 0,
   actions = [],
+  onClick,
   size = 120,
+  coverSize = 'large',
+  variant = 'default',
 }) {
   const [showActions, setShowActions] = useState(false);
   const cardRef = useRef(null);
 
-  // Toggle action menu visibility on click
+  // Handle click - direct navigation if onClick provided, otherwise toggle action menu
   const handleClick = useCallback((e) => {
     e.stopPropagation();
-    setShowActions(prev => !prev);
-  }, []);
+    if (onClick) {
+      onClick(artist);
+    } else {
+      setShowActions(prev => !prev);
+    }
+  }, [onClick, artist]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      setShowActions(prev => !prev);
+      if (onClick) {
+        onClick(artist);
+      } else {
+        setShowActions(prev => !prev);
+      }
     }
     if (e.key === 'Escape') {
       setShowActions(false);
     }
-  }, []);
+  }, [onClick, artist]);
 
   // Close action menu when clicking outside
   useEffect(() => {
@@ -77,12 +91,16 @@ const ArtistCard = memo(function ArtistCard({
     action.onClick?.();
   }, []);
 
+  const circleClass = variant === 'purple' 
+    ? `${styles.circleContainer} ${styles.purpleVariant}`
+    : styles.circleContainer;
+
   return (
     <div className={styles.artistCard} ref={cardRef}>
       {/* Circle wrapper - allows action overlay to escape circle clipping */}
       <div className={styles.circleWrapper} style={{ width: size, height: size }}>
         <div
-          className={styles.circleContainer}
+          className={circleClass}
           onClick={handleClick}
           onKeyDown={handleKeyDown}
           role="button"
@@ -93,7 +111,7 @@ const ArtistCard = memo(function ArtistCard({
           <CoverArt
             artist={artist.name}
             libraryPath={libraryPath}
-            size="large"
+            size={coverSize}
             imageCoverType={IMAGE_COVER_TYPE.ARTIST}
             circular
           />
@@ -109,7 +127,7 @@ const ArtistCard = memo(function ArtistCard({
           )}
         </div>
 
-        {/* Action overlay - positioned over circle but not clipped by it */}
+        {/* Action overlay - positioned above circle */}
         {showActions && actions.length > 0 && (
           <div className={styles.actionOverlay}>
             <div className={styles.actionList}>

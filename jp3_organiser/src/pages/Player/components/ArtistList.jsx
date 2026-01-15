@@ -1,114 +1,61 @@
 /**
  * ArtistList Component
  * 
- * Displays artists as cards in a flex grid layout.
- * Clicking a card navigates to the artist detail page.
- * Uses quaternary (purple) color scheme.
+ * Displays artists as circular cards in a grid layout using ArtistGrid.
+ * Clicking a card navigates directly to the artist detail page.
+ * Uses quaternary (purple) color scheme with xlarge cover art.
  */
 
-import React, { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { usePlayer } from '../../../hooks';
-import { addToRecents, RECENT_TYPE } from '../../../services/recentsService';
-import styles from './ListStyles.module.css';
+import { ArtistGrid } from '../../../components';
 
-export default function ArtistList({ artists, songs }) {
+export default function ArtistList({ artists, songs, libraryPath }) {
   const navigate = useNavigate();
-  const { playTrack, addToQueue } = usePlayer();
 
-  // Group songs by artist for song count
-  const artistSongsMap = useMemo(() => {
-    const map = {};
+  // Build artistCounts map for ArtistGrid: { artistId: { albums, songs } }
+  const artistCounts = useMemo(() => {
+    const albumSets = {};
+    const songCounts = {};
+    
     songs.forEach(song => {
-      if (!map[song.artistId]) {
-        map[song.artistId] = [];
-      }
-      map[song.artistId].push(song);
-    });
-    // Sort by album then track number
-    Object.keys(map).forEach(artistId => {
-      map[artistId].sort((a, b) => {
-        if (a.albumName !== b.albumName) {
-          return (a.albumName || '').localeCompare(b.albumName || '');
-        }
-        return (a.trackNumber || 0) - (b.trackNumber || 0);
-      });
-    });
-    return map;
-  }, [songs]);
-
-  // Count unique albums for each artist
-  const artistAlbumCounts = useMemo(() => {
-    const counts = {};
-    songs.forEach(song => {
-      if (!counts[song.artistId]) {
-        counts[song.artistId] = new Set();
+      // Count songs
+      songCounts[song.artistId] = (songCounts[song.artistId] || 0) + 1;
+      
+      // Track unique albums
+      if (!albumSets[song.artistId]) {
+        albumSets[song.artistId] = new Set();
       }
       if (song.albumId) {
-        counts[song.artistId].add(song.albumId);
+        albumSets[song.artistId].add(song.albumId);
       }
     });
-    return Object.fromEntries(
-      Object.entries(counts).map(([id, set]) => [id, set.size])
-    );
-  }, [songs]);
 
-  if (artists.length === 0) {
-    return <div className={styles.empty}>No artists in library</div>;
-  }
+    const counts = {};
+    artists.forEach(artist => {
+      counts[artist.id] = {
+        albums: albumSets[artist.id]?.size || 0,
+        songs: songCounts[artist.id] || 0,
+      };
+    });
+    return counts;
+  }, [songs, artists]);
 
-  const handleCardClick = (artist) => {
+  // Navigate directly to artist page on click
+  const handleArtistClick = useCallback((artist) => {
     navigate(`/player/artist/${artist.id}`);
-  };
-
-  const handlePlayAll = (artist, e) => {
-    e.stopPropagation();
-    const artistSongs = artistSongsMap[artist.id] || [];
-    if (artistSongs.length > 0) {
-      playTrack(artistSongs[0], artistSongs);
-      addToRecents(RECENT_TYPE.ARTIST, artist.id);
-    }
-  };
-
-  const handleQueueAll = (artist, e) => {
-    e.stopPropagation();
-    const artistSongs = artistSongsMap[artist.id] || [];
-    addToQueue(artistSongs);
-  };
+  }, [navigate]);
 
   return (
-    <div className={styles.cardGrid}>
-      {artists.map((artist) => {
-        const artistSongs = artistSongsMap[artist.id] || [];
-        const albumCount = artistAlbumCounts[artist.id] || 0;
-
-        return (
-          <div
-            key={artist.id}
-            className={`${styles.card} ${styles.artistCard}`}
-            onClick={() => handleCardClick(artist)}
-          >
-            <span className={styles.cardTitle}>{artist.name}</span>
-            <span className={styles.cardMeta}>
-              {albumCount} {albumCount === 1 ? 'album' : 'albums'} - {artistSongs.length} songs
-            </span>
-            <div className={styles.cardActions}>
-              <button
-                className={styles.cardBtn}
-                onClick={(e) => handlePlayAll(artist, e)}
-              >
-                Play All
-              </button>
-              <button
-                className={`${styles.cardBtn} ${styles.queue}`}
-                onClick={(e) => handleQueueAll(artist, e)}
-              >
-                Queue
-              </button>
-            </div>
-          </div>
-        );
-      })}
-    </div>
+    <ArtistGrid
+      artists={artists}
+      libraryPath={libraryPath}
+      artistCounts={artistCounts}
+      onArtistClick={handleArtistClick}
+      cardSize={250}
+      coverSize="xlarge"
+      variant="purple"
+      emptyMessage="No artists in library"
+    />
   );
 }

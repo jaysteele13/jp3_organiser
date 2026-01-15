@@ -8,7 +8,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 1.5rem;
-  padding: 1rem 0;
+  padding: 1rem 0rem 0rem 1rem;
 }
 
 .emptyState {
