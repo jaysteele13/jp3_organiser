@@ -179,7 +179,7 @@ pub async fn fetch_and_save_cover(
     }
     else if image_cover_type == ImageCoverType::Artist 
     {
-        filename = cover_filename(artist, "cover");
+        filename = cover_filename(artist, "artist");
         // Should have Artist MBID from Acoustic JSON at this stage. Pass this in as ArtistMBID
         // Notebook to track what I did. Amended enum to work with Rust. Now must ensure thumbnail is parsed correctly do after lunch 1 hour
 
@@ -442,23 +442,4 @@ pub fn get_cover_path_by_name(covers_dir: &Path, artist: &str, album: &str) -> O
     }
 }
 
-// Legacy functions kept for backward compatibility during migration
-// TODO: Remove these after migration is complete
 
-/// Check if a cover already exists for an album (by ID - deprecated).
-#[deprecated(note = "Use cover_exists_by_name instead")]
-pub fn cover_exists(covers_dir: &Path, album_id: u32) -> bool {
-    let cover_path = covers_dir.join(format!("{}.jpg", album_id));
-    cover_path.exists()
-}
-
-/// Get the path to a cover if it exists (by ID - deprecated).
-#[deprecated(note = "Use get_cover_path_by_name instead")]
-pub fn get_cover_path(covers_dir: &Path, album_id: u32) -> Option<String> {
-    let cover_path = covers_dir.join(format!("{}.jpg", album_id));
-    if cover_path.exists() {
-        Some(cover_path.to_string_lossy().to_string())
-    } else {
-        None
-    }
-}

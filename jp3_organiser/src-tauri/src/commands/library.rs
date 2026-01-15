@@ -19,7 +19,9 @@ const JP3_DIR: &str = "jp3";
 const MUSIC_DIR: &str = "music";
 const METADATA_DIR: &str = "metadata";
 const PLAYLISTS_DIR: &str = "playlists";
-const COVERS_DIR: &str = "covers";
+const ASSETS_DIR: &str = "assets";
+const ALBUMS_DIR: &str = "albums";
+const ARTISTS_DIR: &str = "artists";
 const LIBRARY_BIN: &str = "library.bin";
 
 /// Initialize the JP3 library directory structure.
@@ -50,7 +52,9 @@ pub fn initialize_library(base_path: String) -> Result<String, String> {
     let music_path = jp3_path.join(MUSIC_DIR);
     let metadata_path = jp3_path.join(METADATA_DIR);
     let playlists_path = jp3_path.join(PLAYLISTS_DIR);
-    let covers_path = jp3_path.join(COVERS_DIR);
+    let assets_path = jp3_path.join(ASSETS_DIR);
+    let album_path = assets_path.join(ALBUMS_DIR);
+    let artist_path = assets_path.join(ARTISTS_DIR);
 
     // Create main jp3 directory and subdirectories
     fs::create_dir_all(&jp3_path).map_err(|e| format!("Failed to create jp3 directory: {}", e))?;
@@ -60,8 +64,14 @@ pub fn initialize_library(base_path: String) -> Result<String, String> {
         .map_err(|e| format!("Failed to create metadata directory: {}", e))?;
     fs::create_dir_all(&playlists_path)
         .map_err(|e| format!("Failed to create playlists directory: {}", e))?;
-    fs::create_dir_all(&covers_path)
-        .map_err(|e| format!("Failed to create covers directory: {}", e))?;
+    fs::create_dir_all(&assets_path)
+        .map_err(|e| format!("Failed to create assets directory: {}", e))?;
+    fs::create_dir_all(&assets_path)
+        .map_err(|e| format!("Failed to create assets directory: {}", e))?;
+    fs::create_dir_all(&album_path)
+        .map_err(|e| format!("Failed to create albums directory: {}", e))?;
+    fs::create_dir_all(&artist_path)
+        .map_err(|e| format!("Failed to create artists directory: {}", e))?;
 
     // Create initial music bucket (00/)
     let first_bucket = music_path.join("00");

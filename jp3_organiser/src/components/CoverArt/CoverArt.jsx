@@ -32,15 +32,24 @@ const SIZES = {
 
 // Cache for blob URLs to avoid re-fetching during session
 // Key is now "libraryPath:artist|||album" for stability
+
+// Can the blobUrlCache be used for artist covers too?
 const blobUrlCache = new Map();
 
 /**
  * Create a stable cache key from artist and album
  */
-function makeCacheKey(libraryPath, artist, album) {
+
+// Make another function for just artists
+function makeAlbumCacheKey(libraryPath, artist, album) {
   const normalizedArtist = (artist || '').toLowerCase().trim();
   const normalizedAlbum = (album || '').toLowerCase().trim();
   return `${libraryPath}:${normalizedArtist}|||${normalizedAlbum}`;
+}
+
+function makeArtistCacheKey(libraryPath, artist) {
+  const normalizedArtist = (artist || '').toLowerCase().trim();
+  return `${libraryPath}:${normalizedArtist}|||`;
 }
 
 const CoverArt = memo(function CoverArt({
@@ -50,12 +59,36 @@ const CoverArt = memo(function CoverArt({
   size = 'medium',
   className = '',
   fallbackIcon = '💿',
+  imageCoverType = IMAGE_COVER_TYPE.ALBUM,
 }) {
   const [imageUrl, setImageUrl] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
   const sizeValue = SIZES[size] || SIZES.medium;
+
+  // This is for Albums only, but we keep it general for possible Artist covers later
+
+
+/*
+// check for missing props if all good process into flows
+
+ternary for cache key artist: makeAlbumCacheKey or makeArtistCacheKey
+
+we then investigate blobUrlCache with the key (dk how this works need ro look elsewhere)
+
+if blob url does not work then we go into rust flow to get the cover art for artist 
+Create a new function to get MBID of artist (this differs from album)
+
+if this exists fetch musicCover that I made earlier with imageCoverType being artist
+
+rest of flow is same as album cover art
+
+if either of these is successfull try blob again (will look into how this works).
+
+
+*/
+
 
   useEffect(() => {
     let isMounted = true;
@@ -69,7 +102,10 @@ const CoverArt = memo(function CoverArt({
       }
 
       // Check in-memory cache first using stable key
-      const cacheKey = makeCacheKey(libraryPath, artist, album);
+      const cacheKey = imageCoverType === IMAGE_COVER_TYPE.ALBUM ? makeAlbumCacheKey(libraryPath, artist, album) 
+      : makeArtistCacheKey(libraryPath, artist);
+
+
       if (blobUrlCache.has(cacheKey)) {
         const cachedUrl = blobUrlCache.get(cacheKey);
         // Only use cache if it has a valid URL (not null)
@@ -89,15 +125,18 @@ const CoverArt = memo(function CoverArt({
 
       try {
         // First try to get from local cache (file on disk)
-        let blobUrl = await getCoverBlobUrl(libraryPath, artist, album);
+        let blobUrl = await getCoverBlobUrl(libraryPath, artist, album, imageCoverType);
 
         // If not cached, look up MBID from store and try to fetch
         if (!blobUrl) {
+
           // Use artist+album for MBID lookup
-          const mbid = await getMbid(artist, album);
+          const mbid = imageCoverType === IMAGE_COVER_TYPE.ALBUM ? await getMbid(artist, album) : await getArtistMbid(artist);
+
+
           
           if (mbid) {
-            const result = await fetchMusicCover(libraryPath, artist, album, mbid, IMAGE_COVER_TYPE.ALBUM);
+            const result = await fetchMusicCover(libraryPath, artist, album, mbid, imageCoverType);
             console.log('[CoverArt] fetchMusicCover result:', result);
             if (result.success) {
               // Now try to get the blob URL again

@@ -16,6 +16,7 @@
  */
 
 import { invoke } from '@tauri-apps/api/core';
+import { IMAGE_COVER_TYPE } from '../utils/enums';
 
 /**
  * Search for a release MBID using MusicBrainz API
@@ -80,6 +81,11 @@ export async function readAlbumCover(basePath, artist, album) {
   return await invoke('read_album_cover', { basePath, artist, album });
 }
 
+export async function readArtistCover(basePath, artist) {
+  return await invoke('read_artist_cover', { basePath, artist });
+}
+
+
 /**
  * Create a blob URL from cover image bytes
  * 
@@ -92,9 +98,18 @@ export async function readAlbumCover(basePath, artist, album) {
  * @param {string} album - Album name
  * @returns {Promise<string|null>} Blob URL or null if cover not found
  */
-export async function getCoverBlobUrl(basePath, artist, album) {
+export async function getCoverBlobUrl(basePath, artist, album, imageCoverType) {
   try {
-    const bytes = await readAlbumCover(basePath, artist, album);
+    let bytes;
+
+    if (imageCoverType === IMAGE_COVER_TYPE.ALBUM) {
+      bytes = await readAlbumCover(basePath, artist, album);
+    } else if (imageCoverType === IMAGE_COVER_TYPE.ARTIST) {
+      // Implement readArtistCover similarly to readAlbumCover
+      bytes = await readArtistCover(basePath, artist);
+    } else {
+      return null;
+    }
     
     // Tauri returns an array of numbers, need to convert to Uint8Array
     let uint8Array;
@@ -105,7 +120,7 @@ export async function getCoverBlobUrl(basePath, artist, album) {
     } else {
       return null;
     }
-    
+    console.log('[coverArtService] readCoverBlobUrl byte length:', uint8Array.length);
     const blob = new Blob([uint8Array], { type: 'image/jpeg' });
     return URL.createObjectURL(blob);
   } catch {

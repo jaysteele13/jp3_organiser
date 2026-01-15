@@ -92,6 +92,7 @@ export async function processAudioFilesIncremental(filePaths, callbacks) {
       console.log(`[audioService]   Artist: ${file.metadata?.artist}`);
       console.log(`[audioService]   Album: ${file.metadata?.album}`);
       console.log(`[audioService]   releaseMbid: ${file.metadata?.releaseMbid || 'NOT SET'}`);
+      console.log(`[audioService]   artistMbid: ${file.metadata?.artistMbid || 'NOT SET'}`);
       
       processedFiles.push(file);
       

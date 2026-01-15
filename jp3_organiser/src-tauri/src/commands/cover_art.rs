@@ -61,10 +61,20 @@ pub async fn fetch_music_cover(
         mbid
     );
 
-    let covers_dir = Path::new(&base_path).join("jp3").join("covers");
+
+    /*
+    we must now ensure we put album songs in assets/albums amd artist images in assets/artists
+    so the cover art service must be able to handle both types now.
+    */
+
+    let assets_dir = Path::new(&base_path).join("jp3").join("assets");
+
+    let album_dir = assets_dir.join("albums");
+    let artist_dir = assets_dir.join("artists");
 
     // Check if already cached (using artist+album hash)
-    if let Some(path) = cover_art_service::get_cover_path_by_name(&covers_dir, &artist, &album) {
+    if let Some(path) = cover_art_service::get_cover_path_by_name(&album_dir
+, &artist, &album) {
         log::info!("Cover already cached: {}", path);
         return Ok(FetchCoverResult {
             success: true,
@@ -74,16 +84,28 @@ pub async fn fetch_music_cover(
         });
     }
 
-    // Ensure covers directory exists
-    if !covers_dir.exists() {
-        std::fs::create_dir_all(&covers_dir).map_err(|e| {
-            log::error!("Failed to create covers directory: {}", e);
-            format!("Failed to create covers directory: {}", e)
+    // Ensure assets, albums and artists directory exists
+    let dir = match image_cover_type {
+        ImageCoverType::Album => &album_dir,
+        ImageCoverType::Artist => &artist_dir,
+    };
+    
+    if !assets_dir.exists() {
+        std::fs::create_dir_all(&assets_dir).map_err(|e| {
+            log::error!("Failed to create asset directory: {}", e);
+            format!("Failed to create asset directory: {}", e)
+        })?;
+    }
+
+     if !dir.exists() {
+        std::fs::create_dir_all(&dir).map_err(|e| {
+            log::error!("Failed to create asset directory: {}", e);
+            format!("Failed to create asset directory: {}", e)
         })?;
     }
 
     // Fetch and save (using artist+album for filename)
-    match cover_art_service::fetch_and_save_cover(&mbid, &covers_dir, &artist, &album, image_cover_type).await {
+    match cover_art_service::fetch_and_save_cover(&mbid, &dir, &artist, &album, image_cover_type).await {
         Ok(result) => Ok(FetchCoverResult {
             success: true,
             path: Some(result.path),
@@ -126,9 +148,10 @@ pub fn get_album_cover_path(
     artist: String,
     album: String,
 ) -> GetCoverPathResult {
-    let covers_dir = Path::new(&base_path).join("jp3").join("covers");
+    let album_dir = Path::new(&base_path).join("jp3/assets").join("albums");
 
-    match cover_art_service::get_cover_path_by_name(&covers_dir, &artist, &album) {
+    match cover_art_service::get_cover_path_by_name(&album_dir
+, &artist, &album) {
         Some(path) => GetCoverPathResult {
             exists: true,
             path: Some(path),
@@ -156,9 +179,9 @@ pub fn read_album_cover(
     artist: String,
     album: String,
 ) -> Result<Vec<u8>, String> {
-    let covers_dir = Path::new(&base_path).join("jp3").join("covers");
+    let album_dir = Path::new(&base_path).join("jp3/assets").join("albums");
     let filename = cover_art_service::cover_filename(&artist, &album);
-    let cover_path = covers_dir.join(format!("{}.jpg", filename));
+    let cover_path = album_dir.join(format!("{}.jpg", filename));
 
     if !cover_path.exists() {
         return Err("Cover not found".to_string());
@@ -169,6 +192,27 @@ pub fn read_album_cover(
         format!("Failed to read cover: {}", e)
     })
 }
+
+#[tauri::command]
+pub fn read_artist_cover(
+    base_path: String,
+    artist: String,
+
+) -> Result<Vec<u8>, String> {
+    let artist_dir = Path::new(&base_path).join("jp3/assets").join("artists");
+    let filename = cover_art_service::cover_filename(&artist, "");
+    let cover_path = artist_dir.join(format!("{}.jpg", filename));
+
+    if !cover_path.exists() {
+        return Err("Cover not found".to_string());
+    }
+
+    std::fs::read(&cover_path).map_err(|e| {
+        log::error!("Failed to read artist cover file: {}", e);
+        format!("Failed to read artist cover: {}", e)
+    })
+}
+
 
 /// Result of searching for a release MBID
 #[derive(Debug, Clone, Serialize)]
