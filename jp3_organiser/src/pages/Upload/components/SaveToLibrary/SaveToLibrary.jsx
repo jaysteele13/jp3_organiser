@@ -17,7 +17,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { saveToLibrary, saveToPlaylist, addSongsToPlaylist, MetadataStatus, setMbids, hasMbid, searchAlbumMbidsBatch } from '../../../../services';
+import { saveToLibrary, saveToPlaylist, addSongsToPlaylist, MetadataStatus, setMbids, hasMbid, searchAlbumMbidsBatch, setArtistMbid } from '../../../../services';
 import { useUploadCache } from '../../../../hooks';
 import { UPLOAD_MODE } from '../../../../utils';
 import styles from './SaveToLibrary.module.css';
@@ -48,33 +48,42 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
       return;
     }
 
-    // Build a map of unique albums: key = "artist|||album" -> { acoustidMbid }
-    // We use the first occurrence's data for each unique album
+    // Build maps of unique albums and artists with their MBIDs
     const uniqueAlbums = new Map();
-    
+    const uniqueArtists = new Map();
+
     for (const file of filesToSave) {
       const artist = file.metadata?.artist;
       const album = file.metadata?.album;
-      const acoustidMbid = file.metadata?.releaseMbid;
-      const acousticArtistMbid = file.metadata?.artistMbid;
+      const releaseMbid = file.metadata?.releaseMbid;  // Renamed for clarity
+      const artistMbid = file.metadata?.artistMbid;    // Renamed for clarity
 
-   
-      
-      if (!artist || !album) {
-        continue;
+      if (!artist) continue;  // Skip if no artist
+
+      // Store unique albums (only if album exists)
+      if (album) {
+        const key = `${artist}|||${album}`;
+        if (!uniqueAlbums.has(key)) {
+          uniqueAlbums.set(key, { artist, album, releaseMbid });
+        }
       }
-      
-      const key = `${artist}|||${album}`;
-      if (!uniqueAlbums.has(key)) {
-        uniqueAlbums.set(key, { artist, album, acoustidMbid });
+
+      // Store unique artists (even without album)
+      if (artistMbid && !uniqueArtists.has(artist)) {
+        uniqueArtists.set(artist, artistMbid);
       }
     }
-    
+
+    // Store artist MBIDs (call a setter in mbidStore)
+    for (const [artist, artistMbid] of uniqueArtists) {
+      await setArtistMbid(artist, artistMbid);  // Assuming this function exists in mbidStore
+    }
+
     if (uniqueAlbums.size === 0) {
-      return;
+      return;  // No albums to process
     }
 
-    // Filter out albums that already have an MBID stored
+    // Filter out albums that already have anMBID stored
     const albumList = Array.from(uniqueAlbums.values());
     const albumsToSearch = [];
     

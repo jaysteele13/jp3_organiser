@@ -1,24 +1,32 @@
 /**
  * CoverArt Component
  * 
- * Reusable album cover art display with lazy loading and fallback.
- * Fetches cover art from cache or Cover Art Archive on first render.
+ * Reusable cover art display with lazy loading and fallback.
+ * Fetches cover art from cache or external API on first render.
+ * 
+ * For albums: Uses Cover Art Archive via MusicBrainz Release IDs
+ * For artists: Uses Fanart.tv via MusicBrainz Artist IDs
  * 
  * Props:
- * - artist: string - Artist name (required for stable cache key)
- * - album: string - Album name (required for stable cache key)
+ * - artist: string - Artist name (required)
+ * - album: string - Album name (required for album covers, omit for artist covers)
  * - libraryPath: string - Base library path
  * - size: 'small' | 'medium' | 'large' | 'xlarge' - Thumbnail size (40px, 60px, 120px, 250px)
  * - className: string - Additional CSS class
  * - fallbackIcon: string - Emoji to show when no cover available
+ * - imageCoverType: IMAGE_COVER_TYPE - Whether to fetch album or artist cover
  * 
- * Note: Cover files are named using a hash of artist+album for stability
- * across library compaction operations.
+ * Note: Cover files are named using a hash for stability across library compaction.
  */
 
 import { useState, useEffect, memo } from 'react';
-import { getCoverBlobUrl, fetchMusicCover } from '../../services/coverArtService';
-import { getMbid } from '../../services/mbidStore';
+import { 
+  getAlbumCoverBlobUrl, 
+  getArtistCoverBlobUrl,
+  fetchAlbumCover,
+  fetchArtistCover 
+} from '../../services/coverArtService';
+import { getAlbumMbid, getArtistMbid } from '../../services/mbidStore';
 import { IMAGE_COVER_TYPE } from '../../utils/enums';
 import styles from './CoverArt.module.css';
 
@@ -31,30 +39,29 @@ const SIZES = {
 };
 
 // Cache for blob URLs to avoid re-fetching during session
-// Key is now "libraryPath:artist|||album" for stability
-
-// Can the blobUrlCache be used for artist covers too?
+// Key format: "libraryPath:artist|||album" for albums, "libraryPath:artist|||" for artists
 const blobUrlCache = new Map();
 
 /**
- * Create a stable cache key from artist and album
+ * Create a stable cache key for album covers
  */
-
-// Make another function for just artists
 function makeAlbumCacheKey(libraryPath, artist, album) {
   const normalizedArtist = (artist || '').toLowerCase().trim();
   const normalizedAlbum = (album || '').toLowerCase().trim();
-  return `${libraryPath}:${normalizedArtist}|||${normalizedAlbum}`;
+  return `album:${libraryPath}:${normalizedArtist}|||${normalizedAlbum}`;
 }
 
+/**
+ * Create a stable cache key for artist covers
+ */
 function makeArtistCacheKey(libraryPath, artist) {
   const normalizedArtist = (artist || '').toLowerCase().trim();
-  return `${libraryPath}:${normalizedArtist}|||`;
+  return `artist:${libraryPath}:${normalizedArtist}`;
 }
 
 const CoverArt = memo(function CoverArt({
   artist,
-  album,
+  album = null,
   libraryPath,
   size = 'medium',
   className = '',
@@ -66,49 +73,23 @@ const CoverArt = memo(function CoverArt({
   const [hasError, setHasError] = useState(false);
 
   const sizeValue = SIZES[size] || SIZES.medium;
-
-  // This is for Albums only, but we keep it general for possible Artist covers later
-
-
-/*
-// check for missing props if all good process into flows
-
-ternary for cache key artist: makeAlbumCacheKey or makeArtistCacheKey
-
-we then investigate blobUrlCache with the key (dk how this works need ro look elsewhere)
-
-if blob url does not work then we go into rust flow to get the cover art for artist 
-Create a new function to get MBID of artist (this differs from album)
-
-if this exists fetch musicCover that I made earlier with imageCoverType being artist
-
-rest of flow is same as album cover art
-
-if either of these is successfull try blob again (will look into how this works).
-
-
-*/
-
+  const isArtistCover = imageCoverType === IMAGE_COVER_TYPE.ARTIST;
 
   useEffect(() => {
     let isMounted = true;
 
-    async function loadCover() {
-      // Check for missing props
+    async function loadAlbumCover() {
       if (!libraryPath || !artist || !album) {
         setIsLoading(false);
         setHasError(true);
         return;
       }
 
-      // Check in-memory cache first using stable key
-      const cacheKey = imageCoverType === IMAGE_COVER_TYPE.ALBUM ? makeAlbumCacheKey(libraryPath, artist, album) 
-      : makeArtistCacheKey(libraryPath, artist);
+      const cacheKey = makeAlbumCacheKey(libraryPath, artist, album);
 
-
+      // Check in-memory cache first
       if (blobUrlCache.has(cacheKey)) {
         const cachedUrl = blobUrlCache.get(cacheKey);
-        // Only use cache if it has a valid URL (not null)
         if (cachedUrl) {
           if (isMounted) {
             setImageUrl(cachedUrl);
@@ -117,36 +98,30 @@ if either of these is successfull try blob again (will look into how this works)
           }
           return;
         }
-        // If cached as null, proceed to check if we now have an MBID
       }
 
       setIsLoading(true);
       setHasError(false);
 
       try {
-        // First try to get from local cache (file on disk)
-        let blobUrl = await getCoverBlobUrl(libraryPath, artist, album, imageCoverType);
+        // Try to read from disk cache first
+        let blobUrl = await getAlbumCoverBlobUrl(libraryPath, artist, album);
 
-        // If not cached, look up MBID from store and try to fetch
+        // If not cached, look up MBID and fetch from API
         if (!blobUrl) {
+          console.log('[CoverArt] No cached album cover, looking up MBID...');
+          const mbid = await getAlbumMbid(artist, album);
+          console.log('[CoverArt] Album MBID:', mbid);
 
-          // Use artist+album for MBID lookup
-          const mbid = imageCoverType === IMAGE_COVER_TYPE.ALBUM ? await getMbid(artist, album) : await getArtistMbid(artist);
-
-
-          
           if (mbid) {
-            const result = await fetchMusicCover(libraryPath, artist, album, mbid, imageCoverType);
-            console.log('[CoverArt] fetchMusicCover result:', result);
+            const result = await fetchAlbumCover(libraryPath, artist, album, mbid);
+            console.log('[CoverArt] fetchAlbumCover result:', result);
             if (result.success) {
-              // Now try to get the blob URL again
-              blobUrl = await getCoverBlobUrl(libraryPath, artist, album);
+              blobUrl = await getAlbumCoverBlobUrl(libraryPath, artist, album);
             }
           }
         }
 
-        // Only cache successful results (actual blob URLs)
-        // Don't cache null - allows retry when MBID becomes available
         if (blobUrl) {
           blobUrlCache.set(cacheKey, blobUrl);
         }
@@ -157,8 +132,7 @@ if either of these is successfull try blob again (will look into how this works)
           setIsLoading(false);
         }
       } catch (error) {
-        console.error('[CoverArt] Failed to load cover art:', error);
-        // Don't cache errors - allows retry
+        console.error('[CoverArt] Failed to load album cover:', error);
         if (isMounted) {
           setHasError(true);
           setIsLoading(false);
@@ -166,12 +140,79 @@ if either of these is successfull try blob again (will look into how this works)
       }
     }
 
-    loadCover();
+    async function loadArtistCover() {
+      if (!libraryPath || !artist) {
+        setIsLoading(false);
+        setHasError(true);
+        return;
+      }
+
+      const cacheKey = makeArtistCacheKey(libraryPath, artist);
+
+      // Check in-memory cache first
+      if (blobUrlCache.has(cacheKey)) {
+        const cachedUrl = blobUrlCache.get(cacheKey);
+        if (cachedUrl) {
+          if (isMounted) {
+            setImageUrl(cachedUrl);
+            setIsLoading(false);
+            setHasError(false);
+          }
+          return;
+        }
+      }
+
+      setIsLoading(true);
+      setHasError(false);
+
+      try {
+        // Try to read from disk cache first
+        let blobUrl = await getArtistCoverBlobUrl(libraryPath, artist);
+
+        // If not cached, look up artist MBID and fetch from Fanart.tv
+        if (!blobUrl) {
+          console.log('[CoverArt] No cached artist cover, looking up artist MBID...');
+          const artistMbid = await getArtistMbid(artist);
+          console.log('[CoverArt] Artist MBID:', artistMbid);
+
+          if (artistMbid) {
+            const result = await fetchArtistCover(libraryPath, artist, artistMbid);
+            console.log('[CoverArt] fetchArtistCover result:', result);
+            if (result.success) {
+              blobUrl = await getArtistCoverBlobUrl(libraryPath, artist);
+            }
+          }
+        }
+
+        if (blobUrl) {
+          blobUrlCache.set(cacheKey, blobUrl);
+        }
+
+        if (isMounted) {
+          setImageUrl(blobUrl);
+          setHasError(!blobUrl);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('[CoverArt] Failed to load artist cover:', error);
+        if (isMounted) {
+          setHasError(true);
+          setIsLoading(false);
+        }
+      }
+    }
+
+    // Call the appropriate loader based on cover type
+    if (isArtistCover) {
+      loadArtistCover();
+    } else {
+      loadAlbumCover();
+    }
 
     return () => {
       isMounted = false;
     };
-  }, [artist, album, libraryPath]);
+  }, [artist, album, libraryPath, isArtistCover]);
 
   const containerStyle = {
     width: sizeValue,
@@ -181,6 +222,7 @@ if either of these is successfull try blob again (will look into how this works)
   };
 
   const containerClass = `${styles.container} ${styles[size]} ${className}`;
+  const altText = isArtistCover ? `${artist} artist image` : `${album} album cover`;
 
   // Show fallback icon while loading, on error, or when no image
   if (isLoading || hasError || !imageUrl) {
@@ -195,7 +237,7 @@ if either of these is successfull try blob again (will look into how this works)
     <div className={containerClass} style={containerStyle}>
       <img
         src={imageUrl}
-        alt="Album cover"
+        alt={altText}
         className={styles.image}
         loading="lazy"
       />

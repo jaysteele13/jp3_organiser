@@ -42,7 +42,7 @@ export default React.memo(function TabContent({
   }
 
   if (activeTab === TABS.ARTISTS) {
-    return <Component library={library} onDeleteArtist={onDeleteArtist} onEditArtist={onEditArtist} />;
+    return <Component library={library} libraryPath={libraryPath} onDeleteArtist={onDeleteArtist} onEditArtist={onEditArtist} />;
   }
 
   return <Component library={library} />;

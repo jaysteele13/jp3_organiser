@@ -1,22 +1,19 @@
 /**
  * Cover Art Service
  * 
- * Wraps Tauri commands for fetching and managing album cover art.
- * Cover art is fetched from Cover Art Archive using MusicBrainz Release IDs (MBIDs)
- * and cached locally in the jp3/covers/ directory.
+ * Wraps Tauri commands for fetching and managing album and artist cover art.
  * 
- * Cover files are named using a hash of "artist|||album" for stability
- * across library compaction operations.
+ * Album covers are fetched from Cover Art Archive using MusicBrainz Release IDs (MBIDs).
+ * Artist covers are fetched from Fanart.tv using MusicBrainz Artist IDs.
  * 
- * Directory Structure:
- * {libraryPath}/
- *   jp3/
- *     covers/
- *       {hash}.jpg  (cached cover images, hash based on artist+album)
+ * Cover files are cached locally in the jp3/assets/ directory:
+ * - Album covers: jp3/assets/albums/{hash}.jpg
+ * - Artist covers: jp3/assets/artists/{hash}.jpg
+ * 
+ * Hash is based on "artist|||album" for albums, "artist|||artist" for artists.
  */
 
 import { invoke } from '@tauri-apps/api/core';
-import { IMAGE_COVER_TYPE } from '../utils/enums';
 
 /**
  * Search for a release MBID using MusicBrainz API
@@ -60,12 +57,28 @@ export async function searchAlbumMbidsBatch(queries) {
  * @param {string} mbid - MusicBrainz Release ID
  * @returns {Promise<{success: boolean, path?: string, error?: string, wasCached: boolean}>}
  */
-export async function fetchMusicCover(basePath, artist, album, mbid, imageCoverType) {
-  return await invoke('fetch_music_cover', { basePath, artist, album, mbid, imageCoverType });
+export async function fetchAlbumCover(basePath, artist, album, mbid) {
+  return await invoke('fetch_album_cover', { basePath, artist, album, mbid });
 }
 
 /**
- * Read cover image bytes for displaying in frontend
+ * Fetch and cache cover art for an artist
+ * 
+ * If cover already exists in cache, returns the cached path immediately.
+ * Otherwise, fetches from Fanart.tv using the artist MBID and caches it.
+ * Cover files are named using a hash of artist name for stability.
+ * 
+ * @param {string} basePath - Library base path
+ * @param {string} artist - Artist name (for stable filename generation)
+ * @param {string} artistMbid - MusicBrainz Artist ID
+ * @returns {Promise<{success: boolean, path?: string, error?: string, wasCached: boolean}>}
+ */
+export async function fetchArtistCover(basePath, artist, artistMbid) {
+  return await invoke('fetch_artist_cover', { basePath, artist, artistMbid });
+}
+
+/**
+ * Read album cover image bytes for displaying in frontend
  * 
  * Useful when you need raw image data for blob URLs.
  * Returns the image as a Uint8Array.
@@ -81,50 +94,80 @@ export async function readAlbumCover(basePath, artist, album) {
   return await invoke('read_album_cover', { basePath, artist, album });
 }
 
+/**
+ * Read artist cover image bytes for displaying in frontend
+ * 
+ * Useful when you need raw image data for blob URLs.
+ * Returns the image as a Uint8Array.
+ * Uses artist hash for stable filename lookup.
+ * 
+ * @param {string} basePath - Library base path
+ * @param {string} artist - Artist name
+ * @returns {Promise<Uint8Array>} Image bytes
+ * @throws {Error} If cover not found
+ */
 export async function readArtistCover(basePath, artist) {
   return await invoke('read_artist_cover', { basePath, artist });
 }
 
-
 /**
- * Create a blob URL from cover image bytes
+ * Create a blob URL from album cover image bytes
  * 
  * Helper function that reads cover bytes and creates an object URL
  * for use in img src attributes.
- * Uses artist+album hash for stable filename lookup.
  * 
  * @param {string} basePath - Library base path
  * @param {string} artist - Artist name
  * @param {string} album - Album name
  * @returns {Promise<string|null>} Blob URL or null if cover not found
  */
-export async function getCoverBlobUrl(basePath, artist, album, imageCoverType) {
+export async function getAlbumCoverBlobUrl(basePath, artist, album) {
   try {
-    let bytes;
-
-    if (imageCoverType === IMAGE_COVER_TYPE.ALBUM) {
-      bytes = await readAlbumCover(basePath, artist, album);
-    } else if (imageCoverType === IMAGE_COVER_TYPE.ARTIST) {
-      // Implement readArtistCover similarly to readAlbumCover
-      bytes = await readArtistCover(basePath, artist);
-    } else {
-      return null;
-    }
-    
-    // Tauri returns an array of numbers, need to convert to Uint8Array
-    let uint8Array;
-    if (bytes instanceof Uint8Array) {
-      uint8Array = bytes;
-    } else if (Array.isArray(bytes)) {
-      uint8Array = new Uint8Array(bytes);
-    } else {
-      return null;
-    }
-    console.log('[coverArtService] readCoverBlobUrl byte length:', uint8Array.length);
-    const blob = new Blob([uint8Array], { type: 'image/jpeg' });
-    return URL.createObjectURL(blob);
+    const bytes = await readAlbumCover(basePath, artist, album);
+    return bytesToBlobUrl(bytes);
   } catch {
     // Cover not found or read error - this is expected for albums without covers
     return null;
   }
+}
+
+/**
+ * Create a blob URL from artist cover image bytes
+ * 
+ * Helper function that reads cover bytes and creates an object URL
+ * for use in img src attributes.
+ * 
+ * @param {string} basePath - Library base path
+ * @param {string} artist - Artist name
+ * @returns {Promise<string|null>} Blob URL or null if cover not found
+ */
+export async function getArtistCoverBlobUrl(basePath, artist) {
+  try {
+    const bytes = await readArtistCover(basePath, artist);
+    return bytesToBlobUrl(bytes);
+  } catch {
+    // Cover not found or read error - this is expected for artists without covers
+    return null;
+  }
+}
+
+/**
+ * Convert raw bytes to a blob URL
+ * @param {Uint8Array|number[]} bytes - Image bytes
+ * @returns {string|null} Blob URL or null if conversion fails
+ */
+function bytesToBlobUrl(bytes) {
+  // Tauri returns an array of numbers, need to convert to Uint8Array
+  let uint8Array;
+  if (bytes instanceof Uint8Array) {
+    uint8Array = bytes;
+  } else if (Array.isArray(bytes)) {
+    uint8Array = new Uint8Array(bytes);
+  } else {
+    console.log('[coverArtService] Unexpected bytes type:', typeof bytes);
+    return null;
+  }
+  
+  const blob = new Blob([uint8Array], { type: 'image/jpeg' });
+  return URL.createObjectURL(blob);
 }

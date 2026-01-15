@@ -1,11 +1,14 @@
-//! Cover Art Service for fetching album artwork from Cover Art Archive.
+//! Cover Art Service for fetching album and artist artwork.
 //!
-//! Uses the Cover Art Archive API (coverartarchive.org) to fetch album covers
-//! based on MusicBrainz Release IDs (MBIDs).
+//! Album covers are fetched from Cover Art Archive (coverartarchive.org) using 
+//! MusicBrainz Release IDs (MBIDs).
+//!
+//! Artist covers are fetched from Fanart.tv using MusicBrainz Artist IDs.
 //!
 //! # Cover File Naming
 //! Cover files are named using a hash of "artist|||album" (normalized to lowercase).
-//! This provides stable filenames that don't change when album IDs are renumbered
+//! For artists, we use "artist|||artist" as the key.
+//! This provides stable filenames that don't change when IDs are renumbered
 //! during library compaction.
 //!
 //! # Rate Limiting
@@ -21,8 +24,6 @@ use std::env::var;
 use serde::Deserialize;
 use tokio::time::sleep;
 
-use crate::models::cover_art::ImageCoverType;
-
 /// Delay between API calls to be polite to Cover Art Archive
 const API_CALL_DELAY_MS: u64 = 500;
 
@@ -35,19 +36,21 @@ pub struct CoverArtAlbumResponse {
 }
 
 
+/// Fanart.tv artist thumbnail response
+/// Note: We only need the URL, other fields are ignored.
+/// Fanart.tv returns likes/width/height as strings, not numbers.
 #[derive(Debug, Deserialize)]
 pub struct ArtistThumb {
     pub url: String,
-    #[allow(dead_code)]
-    pub likes: u32,
-    #[allow(dead_code)]
-    pub width: u32,
-    #[allow(dead_code)]
-    pub height: u32,
+    // Other fields (likes, width, height) are strings in the API response
+    // We don't need them, so we skip them entirely
 }
 
+/// Fanart.tv API response structure
+/// Note: The API returns many fields, we only parse what we need.
 #[derive(Debug, Deserialize)]
 pub struct FanartResponse {
+    #[serde(default)]
     pub artistthumb: Vec<ArtistThumb>,
 }
 
@@ -141,65 +144,86 @@ pub fn cover_filename(artist: &str, album: &str) -> String {
 ///
 /// # Arguments
 /// * `mbid` - MusicBrainz Release ID
-/// * `covers_dir` - Directory to save covers (e.g., `{library}/jp3/covers`)
+/// * `covers_dir` - Directory to save covers (e.g., `{library}/jp3/assets/albums`)
 /// * `artist` - Artist name (for generating stable filename)
 /// * `album` - Album name (for generating stable filename)
 ///
 /// # Returns
 /// * `Ok(FetchCoverResult)` - Path and size of saved cover
 /// * `Err(CoverArtError)` - If fetch or save fails
-pub async fn fetch_and_save_cover(
+pub async fn fetch_and_save_album_cover(
     mbid: &str,
     covers_dir: &Path,
     artist: &str,
     album: &str,
-    image_cover_type: ImageCoverType,
 ) -> Result<FetchCoverResult, CoverArtError> {
+    let filename = cover_filename(artist, album);
+    
+    log::info!("[CoverArt] ========================================");
+    log::info!("[CoverArt] fetch_and_save_album_cover called");
+    log::info!("[CoverArt] MBID: {}", mbid);
+    log::info!("[CoverArt] Artist: {}, Album: {}", artist, album);
+    log::info!("[CoverArt] Generated filename: {}", filename);
+    log::info!("[CoverArt] Covers dir: {:?}", covers_dir);
 
-    let filename;
-    let cover_url;
+    // Rate limit
+    sleep(Duration::from_millis(API_CALL_DELAY_MS)).await;
 
-    if image_cover_type == ImageCoverType::Album {
-        filename = cover_filename(artist, album);
-        log::info!("[CoverArt] ========================================");
-        log::info!("[CoverArt] fetch_and_save_cover called");
-        log::info!("[CoverArt] MBID: {}", mbid);
-        log::info!("[CoverArt] Artist: {}, Album: {}", artist, album);
-        log::info!("[CoverArt] Generated filename: {}", filename);
-        log::info!("[CoverArt] Covers dir: {:?}", covers_dir);
+    // Fetch cover art metadata from Cover Art Archive
+    log::info!("[CoverArt] Step 1: Getting cover URL from API...");
+    let cover_url = get_album_cover_url(mbid).await?;
+    log::info!("[CoverArt] Step 1 complete: Got URL: {}", cover_url);
 
-        // Rate limit
-        sleep(Duration::from_millis(API_CALL_DELAY_MS)).await;
+    // Download and save the image
+    save_cover_image(&cover_url, covers_dir, &filename).await
+}
 
-        // Fetch cover art metadata from Cover Art Archive
-        log::info!("[CoverArt] Step 1: Getting cover URL from API...");
-        cover_url = get_album_cover_url(mbid).await?;
-        log::info!("[CoverArt] Step 1 complete: Got URL: {}", cover_url);
+/// Fetch artist cover art from Fanart.tv and save it to the covers directory.
+///
+/// # Arguments
+/// * `artist_mbid` - MusicBrainz Artist ID
+/// * `covers_dir` - Directory to save covers (e.g., `{library}/jp3/assets/artists`)
+/// * `artist` - Artist name (for generating stable filename)
+///
+/// # Returns
+/// * `Ok(FetchCoverResult)` - Path and size of saved cover
+/// * `Err(CoverArtError)` - If fetch or save fails
+pub async fn fetch_and_save_artist_cover(
+    artist_mbid: &str,
+    covers_dir: &Path,
+    artist: &str,
+) -> Result<FetchCoverResult, CoverArtError> {
+    // Use "artist" as the second component for artist covers
+    let filename = cover_filename(artist, "artist");
+    
+    log::info!("[FanArt] ========================================");
+    log::info!("[FanArt] fetch_and_save_artist_cover called");
+    log::info!("[FanArt] Artist MBID: {}", artist_mbid);
+    log::info!("[FanArt] Artist: {}", artist);
+    log::info!("[FanArt] Generated filename: {}", filename);
+    log::info!("[FanArt] Covers dir: {:?}", covers_dir);
 
-    }
-    else if image_cover_type == ImageCoverType::Artist 
-    {
-        filename = cover_filename(artist, "artist");
-        // Should have Artist MBID from Acoustic JSON at this stage. Pass this in as ArtistMBID
-        // Notebook to track what I did. Amended enum to work with Rust. Now must ensure thumbnail is parsed correctly do after lunch 1 hour
+    // Rate limit
+    sleep(Duration::from_millis(API_CALL_DELAY_MS)).await;
 
-        // Rate limit
-        sleep(Duration::from_millis(API_CALL_DELAY_MS)).await;
+    // Fetch artist cover URL from Fanart.tv
+    log::info!("[FanArt] Step 1: Getting artist cover URL from Fanart.tv API...");
+    let cover_url = get_artist_cover_url(artist_mbid).await?;
+    log::info!("[FanArt] Step 1 complete: Got URL: {}", cover_url);
 
+    // Download and save the image
+    save_cover_image(&cover_url, covers_dir, &filename).await
+}
 
-        // get artist cover from fanart tv
-        log::info!("[CoverArt] Step 1: Getting artist cover URL from fanart tv API...");
-        cover_url = get_artist_cover_url(mbid).await?;
-        log::info!("[CoverArt] Step 1 complete: Got URL: {}", cover_url);
-    }
-    else {
-        return Err(CoverArtError::RequestError("Invalid image cover type".to_string()));
-    }
-
-
+/// Download and save a cover image to disk.
+async fn save_cover_image(
+    cover_url: &str,
+    covers_dir: &Path,
+    filename: &str,
+) -> Result<FetchCoverResult, CoverArtError> {
     // Download the image
     log::info!("[CoverArt] Step 2: Downloading image...");
-    let image_bytes = download_image(&cover_url).await?;
+    let image_bytes = download_image(cover_url).await?;
     log::info!("[CoverArt] Step 2 complete: Downloaded {} bytes", image_bytes.len());
 
     // Save to file

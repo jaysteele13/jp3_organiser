@@ -1,15 +1,19 @@
 //! Cover art Tauri commands.
 //!
-//! Commands for fetching and managing album cover art.
-//! Cover files are named using a hash of "artist|||album" for stability
-//! across library compaction operations.
+//! Commands for fetching and managing album and artist cover art.
+//! 
+//! Album covers are fetched from Cover Art Archive using MusicBrainz Release IDs.
+//! Artist covers are fetched from Fanart.tv using MusicBrainz Artist IDs.
+//! 
+//! Cover files are named using a hash for stability across library compaction:
+//! - Albums: hash of "artist|||album"
+//! - Artists: hash of "artist|||artist" (uses "artist" as second component)
 
 use serde::Serialize;
 use std::path::Path;
 
 use crate::services::cover_art_service;
 use crate::services::musicbrainz_service;
-use crate::models::cover_art::ImageCoverType;
 
 /// Result of fetching cover art
 #[derive(Debug, Clone, Serialize)]
@@ -47,35 +51,24 @@ pub struct GetCoverPathResult {
 /// * `album` - Album name (for stable filename generation)
 /// * `mbid` - MusicBrainz Release ID
 #[tauri::command]
-pub async fn fetch_music_cover(
+pub async fn fetch_album_cover(
     base_path: String,
     artist: String,
     album: String,
     mbid: String,
-    image_cover_type: ImageCoverType,
 ) -> Result<FetchCoverResult, String> {
     log::info!(
-        "fetch_music_cover called: artist=\"{}\", album=\"{}\", mbid={}",
+        "fetch_album_cover called: artist=\"{}\", album=\"{}\", mbid={}",
         artist,
         album,
         mbid
     );
 
-
-    /*
-    we must now ensure we put album songs in assets/albums amd artist images in assets/artists
-    so the cover art service must be able to handle both types now.
-    */
-
-    let assets_dir = Path::new(&base_path).join("jp3").join("assets");
-
-    let album_dir = assets_dir.join("albums");
-    let artist_dir = assets_dir.join("artists");
+    let albums_dir = Path::new(&base_path).join("jp3").join("assets").join("albums");
 
     // Check if already cached (using artist+album hash)
-    if let Some(path) = cover_art_service::get_cover_path_by_name(&album_dir
-, &artist, &album) {
-        log::info!("Cover already cached: {}", path);
+    if let Some(path) = cover_art_service::get_cover_path_by_name(&albums_dir, &artist, &album) {
+        log::info!("Album cover already cached: {}", path);
         return Ok(FetchCoverResult {
             success: true,
             path: Some(path),
@@ -84,28 +77,16 @@ pub async fn fetch_music_cover(
         });
     }
 
-    // Ensure assets, albums and artists directory exists
-    let dir = match image_cover_type {
-        ImageCoverType::Album => &album_dir,
-        ImageCoverType::Artist => &artist_dir,
-    };
-    
-    if !assets_dir.exists() {
-        std::fs::create_dir_all(&assets_dir).map_err(|e| {
-            log::error!("Failed to create asset directory: {}", e);
-            format!("Failed to create asset directory: {}", e)
+    // Ensure albums directory exists
+    if !albums_dir.exists() {
+        std::fs::create_dir_all(&albums_dir).map_err(|e| {
+            log::error!("Failed to create albums directory: {}", e);
+            format!("Failed to create albums directory: {}", e)
         })?;
     }
 
-     if !dir.exists() {
-        std::fs::create_dir_all(&dir).map_err(|e| {
-            log::error!("Failed to create asset directory: {}", e);
-            format!("Failed to create asset directory: {}", e)
-        })?;
-    }
-
-    // Fetch and save (using artist+album for filename)
-    match cover_art_service::fetch_and_save_cover(&mbid, &dir, &artist, &album, image_cover_type).await {
+    // Fetch and save album cover from Cover Art Archive
+    match cover_art_service::fetch_and_save_album_cover(&mbid, &albums_dir, &artist, &album).await {
         Ok(result) => Ok(FetchCoverResult {
             success: true,
             path: Some(result.path),
@@ -113,7 +94,7 @@ pub async fn fetch_music_cover(
             was_cached: false,
         }),
         Err(cover_art_service::CoverArtError::NotFound) => {
-            log::info!("No cover art available for MBID: {}", mbid);
+            log::info!("No album cover art available for MBID: {}", mbid);
             Ok(FetchCoverResult {
                 success: false,
                 path: None,
@@ -122,7 +103,79 @@ pub async fn fetch_music_cover(
             })
         }
         Err(e) => {
-            log::error!("Failed to fetch cover art: {}", e);
+            log::error!("Failed to fetch album cover art: {}", e);
+            Ok(FetchCoverResult {
+                success: false,
+                path: None,
+                error: Some(e.to_string()),
+                was_cached: false,
+            })
+        }
+    }
+}
+
+/// Fetch and cache cover art for an artist.
+///
+/// If cover already exists in cache, returns the cached path.
+/// Otherwise, fetches from Fanart.tv using the Artist MBID.
+/// Cover files are named using a hash of artist name for stability.
+///
+/// # Arguments
+/// * `base_path` - Library base path
+/// * `artist` - Artist name (for stable filename generation)
+/// * `artist_mbid` - MusicBrainz Artist ID
+#[tauri::command]
+pub async fn fetch_artist_cover(
+    base_path: String,
+    artist: String,
+    artist_mbid: String,
+) -> Result<FetchCoverResult, String> {
+    log::info!(
+        "fetch_artist_cover called: artist=\"{}\", artist_mbid={}",
+        artist,
+        artist_mbid
+    );
+
+    let artists_dir = Path::new(&base_path).join("jp3").join("assets").join("artists");
+
+    // Check if already cached (using artist hash - we use "artist" as the album component)
+    if let Some(path) = cover_art_service::get_cover_path_by_name(&artists_dir, &artist, "artist") {
+        log::info!("Artist cover already cached: {}", path);
+        return Ok(FetchCoverResult {
+            success: true,
+            path: Some(path),
+            error: None,
+            was_cached: true,
+        });
+    }
+
+    // Ensure artists directory exists
+    if !artists_dir.exists() {
+        std::fs::create_dir_all(&artists_dir).map_err(|e| {
+            log::error!("Failed to create artists directory: {}", e);
+            format!("Failed to create artists directory: {}", e)
+        })?;
+    }
+
+    // Fetch and save artist cover from Fanart.tv
+    match cover_art_service::fetch_and_save_artist_cover(&artist_mbid, &artists_dir, &artist).await {
+        Ok(result) => Ok(FetchCoverResult {
+            success: true,
+            path: Some(result.path),
+            error: None,
+            was_cached: false,
+        }),
+        Err(cover_art_service::CoverArtError::NotFound) => {
+            log::info!("No artist cover art available for MBID: {}", artist_mbid);
+            Ok(FetchCoverResult {
+                success: false,
+                path: None,
+                error: Some("No artist cover available".to_string()),
+                was_cached: false,
+            })
+        }
+        Err(e) => {
+            log::error!("Failed to fetch artist cover art: {}", e);
             Ok(FetchCoverResult {
                 success: false,
                 path: None,
@@ -193,18 +246,27 @@ pub fn read_album_cover(
     })
 }
 
+/// Read artist cover image bytes for displaying in frontend.
+///
+/// This is useful when the frontend needs the raw image data
+/// rather than a file path (e.g., for blob URLs).
+/// Uses artist hash for stable filename lookup.
+///
+/// # Arguments
+/// * `base_path` - Library base path  
+/// * `artist` - Artist name
 #[tauri::command]
 pub fn read_artist_cover(
     base_path: String,
     artist: String,
-
 ) -> Result<Vec<u8>, String> {
     let artist_dir = Path::new(&base_path).join("jp3/assets").join("artists");
-    let filename = cover_art_service::cover_filename(&artist, "");
+    // Use "artist" as the second component for consistency with fetch_artist_cover
+    let filename = cover_art_service::cover_filename(&artist, "artist");
     let cover_path = artist_dir.join(format!("{}.jpg", filename));
 
     if !cover_path.exists() {
-        return Err("Cover not found".to_string());
+        return Err("Artist cover not found".to_string());
     }
 
     std::fs::read(&cover_path).map_err(|e| {

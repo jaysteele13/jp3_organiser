@@ -7,9 +7,11 @@
 
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CardList } from '../../../../../components';
+import { CardList, CoverArt} from '../../../../../components';
+import { IMAGE_COVER_TYPE } from '../../../../../utils/enums';
 
-export default function ArtistView({ library, onDeleteArtist, onEditArtist }) {
+
+export default function ArtistView({ library, libraryPath, onDeleteArtist, onEditArtist }) {
   const navigate = useNavigate();
 
   // Pre-compute song and album counts for each artist
@@ -50,6 +52,16 @@ export default function ArtistView({ library, onDeleteArtist, onEditArtist }) {
     { label: 'Delete Artist', onClick: () => onDeleteArtist?.(artist), variant: 'danger' },
   ], [onEditArtist, onDeleteArtist]);
 
+  const renderThumbnail = useCallback((artist) => (
+    <CoverArt
+      artist={artist.name}
+      libraryPath={libraryPath}
+      size="large"
+      imageCoverType={IMAGE_COVER_TYPE.ARTIST}
+    />
+  ), [libraryPath]);
+
+
   return (
     <CardList
       items={library.artists}
@@ -58,6 +70,7 @@ export default function ArtistView({ library, onDeleteArtist, onEditArtist }) {
       onTitleClick={handleTitleClick}
       getActions={getActions}
       emptyMessage="No artists in library"
+      renderThumbnail={renderThumbnail}
     />
   );
 }

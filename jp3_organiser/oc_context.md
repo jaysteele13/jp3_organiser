@@ -382,35 +382,47 @@ Models are in `src-tauri/src/models/`:
 ### coverArtService.js
 - `searchAlbumMbid(artist, album)` - Search MusicBrainz for release MBID by artist+album name
 - `searchAlbumMbidsBatch(queries)` - Batch search for multiple albums (respects rate limiting)
-- `fetchMusicCover(basePath, artist, album, mbid, imageCoverType)` - Fetch and cache cover art from Cover Art Archive
-- `readAlbumCover(basePath, artist, album)` - Read cached cover image bytes
-- `getCoverBlobUrl(basePath, artist, album)` - Create blob URL from cached cover for img src
+- `fetchAlbumCover(basePath, artist, album, mbid)` - Fetch and cache album cover from Cover Art Archive
+- `fetchArtistCover(basePath, artist, artistMbid)` - Fetch and cache artist cover from Fanart.tv
+- `readAlbumCover(basePath, artist, album)` - Read cached album cover image bytes
+- `readArtistCover(basePath, artist)` - Read cached artist cover image bytes
+- `getAlbumCoverBlobUrl(basePath, artist, album)` - Create blob URL from cached album cover for img src
+- `getArtistCoverBlobUrl(basePath, artist)` - Create blob URL from cached artist cover for img src
 
-**Cover Art Flow:**
+**Cover Art Flow (Albums):**
 1. On save: Extract unique (artist, album) pairs from saved files
 2. Batch search MusicBrainz for each album → get release MBID
 3. Fall back to AcoustID MBID if MusicBrainz search fails
-4. Store albumId→MBID mapping in `mbidStore.js`
+4. Store artist→MBID and artist+album→MBID mappings in `mbidStore.js`
 5. On display: CoverArt component looks up MBID → fetches from Cover Art Archive → caches to disk
 
+**Cover Art Flow (Artists):**
+1. On save: Extract unique artists and their MBIDs from AcoustID response
+2. Store artist→MBID mapping in `mbidStore.js`
+3. On display: CoverArt component looks up artist MBID → fetches from Fanart.tv → caches to disk
+
 **Cover Art File Naming (Hash-based):**
-Cover art files are named using a stable hash of `"{artist_lowercase}|||{album_lowercase}"` to ensure filenames don't change during library compaction (which renumbers album IDs). The hash is computed using Rust's `DefaultHasher` and stored as a 16-character hex string.
+Cover art files are named using a stable hash for filenames that don't change during library compaction:
+- Albums: hash of `"{artist_lowercase}|||{album_lowercase}"` → stored in `jp3/assets/albums/`
+- Artists: hash of `"{artist_lowercase}|||artist"` → stored in `jp3/assets/artists/`
 
 Example: "Pink Floyd" + "Dark Side of the Moon" → `a1b2c3d4e5f6g7h8.jpg`
-
-This solves the problem of album covers getting mismatched after compaction, since the filename is derived from the album's content (artist + album name) rather than its positional ID.
 
 **Rate Limiting:** MusicBrainz enforces strict 1 request/second limit. The Rust service uses a global mutex to ensure compliance.
 
 ### mbidStore.js
-- `getMbid(albumId)` - Get stored MBID for an album
-- `getAllMbids()` - Get all stored albumId→MBID mappings
-- `setMbid(albumId, mbid)` - Store single MBID (first wins)
-- `setMbids(entries)` - Store multiple MBIDs at once
-- `removeMbid(albumId)` - Remove stored MBID
+- `getAlbumMbid(artist, album)` - Get stored release MBID for an album
+- `getArtistMbid(artist)` - Get stored artist MBID for an artist
+- `getAllMbids()` - Get all stored MBID mappings
+- `setMbid(artist, album, mbid)` - Store album MBID (first wins)
+- `setArtistMbid(artist, mbid)` - Store artist MBID (first wins)
+- `setMbids(entries)` - Store multiple album MBIDs at once
+- `hasMbid(artist, album)` - Check if album MBID exists
+- `removeMbid(artist, album)` - Remove stored MBID
 - `clearMbids()` - Clear all stored MBIDs
 
 **Persistence:** Uses `@tauri-apps/plugin-store` to persist MBIDs in `mbids.json`.
+Key format: `"artist|||album"` for albums, `"artist|||"` for artists.
 
 ## Enums
 
@@ -845,24 +857,23 @@ App.jsx
 - Don't use TypeScript - this is a ReactJS project
 - Testing setup (Vitest for React, Rust tests for backend)
 
-### Artist Images (Not Implemented)
+### Artist Images (Implemented)
 
-MusicBrainz doesn't host artist images directly. Options for future implementation:
+Artist images are fetched from Fanart.tv using MusicBrainz Artist IDs:
 
-| Source | Pros | Cons |
-|--------|------|------|
-| **Fanart.tv** (Recommended) | Uses MusicBrainz Artist MBIDs, high quality images | Requires API key (free tier available) |
-| **Discogs API** | Large database, includes photos | Requires API key, OAuth flow |
-| **Wikidata/Wikimedia Commons** | Free, no API key | Complex: MusicBrainz → Wikidata → Commons |
-| **Last.fm** | Simple API | Lower quality, may be deprecated |
+**Flow:**
+1. Artist MBID is extracted from AcoustID response during file processing
+2. Artist MBID is stored in `mbidStore.js` when saving files to library
+3. CoverArt component with `imageCoverType={IMAGE_COVER_TYPE.ARTIST}` fetches from Fanart.tv
+4. Images are cached in `jp3/assets/artists/{hash}.jpg`
 
-**Recommended Implementation (Fanart.tv):**
-1. Get Artist MBID from MusicBrainz (we already search for albums)
-2. Call Fanart.tv: `http://webservice.fanart.tv/v3/music/{artist_mbid}?api_key=XXX`
-3. Response includes: `artistthumb`, `artistbackground`, `hdmusiclogo`
-4. Cache images locally like album covers
+**API:** Fanart.tv: `https://webservice.fanart.tv/v3/music/{artist_mbid}?api_key=XXX`
+- Response includes: `artistthumb`, `artistbackground`, `hdmusiclogo`
+- We use the first `artistthumb` (ordered by likes)
 
-**API Key:** Register at https://fanart.tv/get-an-api-key/
+**Requirements:**
+- `FANART_PROJECT_KEY` environment variable must be set (in `.env.local`)
+- Register for free API key at https://fanart.tv/get-an-api-key/
 
 ## Known Issues / Technical Debt
 
