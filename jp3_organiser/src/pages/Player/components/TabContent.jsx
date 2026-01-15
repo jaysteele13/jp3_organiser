@@ -26,7 +26,7 @@ export default function TabContent({ activeTab, library, libraryPath }) {
     case TABS.ALBUMS:
       return <AlbumList albums={library.albums || []} songs={library.songs || []} libraryPath={libraryPath} />;
     case TABS.ARTISTS:
-      return <ArtistList artists={library.artists || []} songs={library.songs || []} />;
+      return <ArtistList artists={library.artists || []} songs={library.songs || []} libraryPath={libraryPath} />;
     case TABS.PLAYLISTS:
       return <PlaylistList playlists={library.playlists || []} songs={library.songs || []} />;
     default:

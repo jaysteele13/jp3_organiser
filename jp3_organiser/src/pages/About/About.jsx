@@ -6,6 +6,10 @@ import { clearMbids } from '../../services';
 
 export default function About() {
 
+  // useEffect(() => {
+  //   // Clear MBID store on about page load for fresh start
+  //   clearMbids();
+  // }, []);
 
 
   return (

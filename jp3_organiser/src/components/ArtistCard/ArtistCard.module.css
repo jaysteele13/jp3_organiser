@@ -1,0 +1,157 @@
+/**
+ * ArtistCard Component Styles
+ * 
+ * Circle-centric artist card with:
+ * - Hover: shows album/song counts
+ * - Click: shows action buttons (not clipped by circle)
+ */
+
+.artistCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Wrapper allows action overlay to overflow the circle */
+.circleWrapper {
+  position: relative;
+}
+
+.circleContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.circleContainer:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.circleContainer:focus {
+  outline: 2px solid var(--primary, #007bff);
+  outline-offset: 2px;
+}
+
+/* Purple variant - quaternary color outline */
+.purpleVariant {
+  box-shadow: 0 0 0 3px var(--quaternary, #6649B6);
+}
+
+.purpleVariant:hover {
+  box-shadow: 0 0 0 3px var(--quaternary-hover, #5339a6), 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.purpleVariant:focus {
+  outline: 2px solid var(--quaternary, #6649B6);
+  outline-offset: 2px;
+}
+
+/* Hover overlay - shows counts only */
+.hoverOverlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.circleContainer:hover .hoverOverlay {
+  opacity: 1;
+}
+
+/* Meta info (album/song counts) */
+.meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  color: #fff;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+/* Action overlay - positioned above circle, not clipped */
+.actionOverlay {
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 0.5rem;
+  z-index: 10;
+}
+
+.actionList {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(0, 0, 0, 0.9);
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.actionButton {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 0.75rem;
+  font-family: inherit;
+  padding: 0.4rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  white-space: nowrap;
+  width: 100%;
+  text-align: center;
+}
+
+.actionButton:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.dangerButton {
+  color: var(--primary, #ff4444);
+}
+
+.dangerButton:hover {
+  background-color: var(--primary, #ff4444);
+  color: #fff;
+}
+
+/* Artist name below circle */
+.artistName {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: inherit;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.artistName:hover {
+  text-decoration: underline;
+}
+
+.artistName:focus {
+  outline: 2px solid var(--primary, #007bff);
+  outline-offset: 1px;
+}

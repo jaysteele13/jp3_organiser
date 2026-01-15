@@ -1,7 +1,7 @@
 /**
  * CardList Component
  * 
- * A reusable full-width card list for displaying entities (albums, artists, etc.)
+ * A reusable full-width card list for displaying entities (albums, etc.)
  * Each card has a clickable title, optional subtitle, action menu, and meta info.
  * Optionally supports a thumbnail on the left side.
  * 

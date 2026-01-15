@@ -1,11 +1,14 @@
-//! Cover Art Service for fetching album artwork from Cover Art Archive.
+//! Cover Art Service for fetching album and artist artwork.
 //!
-//! Uses the Cover Art Archive API (coverartarchive.org) to fetch album covers
-//! based on MusicBrainz Release IDs (MBIDs).
+//! Album covers are fetched from Cover Art Archive (coverartarchive.org) using 
+//! MusicBrainz Release IDs (MBIDs).
+//!
+//! Artist covers are fetched from Fanart.tv using MusicBrainz Artist IDs.
 //!
 //! # Cover File Naming
 //! Cover files are named using a hash of "artist|||album" (normalized to lowercase).
-//! This provides stable filenames that don't change when album IDs are renumbered
+//! For artists, we use "artist|||artist" as the key.
+//! This provides stable filenames that don't change when IDs are renumbered
 //! during library compaction.
 //!
 //! # Rate Limiting
@@ -16,6 +19,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::path::Path;
 use std::time::Duration;
+use std::env::var;
 
 use serde::Deserialize;
 use tokio::time::sleep;
@@ -25,11 +29,32 @@ const API_CALL_DELAY_MS: u64 = 500;
 
 /// Cover Art Archive API response structures
 #[derive(Debug, Deserialize)]
-pub struct CoverArtResponse {
+pub struct CoverArtAlbumResponse {
     pub images: Vec<CoverArtImage>,
     #[allow(dead_code)]
     pub release: String,
 }
+
+
+/// Fanart.tv artist thumbnail response
+/// Note: We only need the URL, other fields are ignored.
+/// Fanart.tv returns likes/width/height as strings, not numbers.
+#[derive(Debug, Deserialize)]
+pub struct ArtistThumb {
+    pub url: String,
+    // Other fields (likes, width, height) are strings in the API response
+    // We don't need them, so we skip them entirely
+}
+
+/// Fanart.tv API response structure
+/// Note: The API returns many fields, we only parse what we need.
+#[derive(Debug, Deserialize)]
+pub struct FanartResponse {
+    #[serde(default)]
+    pub artistthumb: Vec<ArtistThumb>,
+}
+
+
 
 #[derive(Debug, Deserialize)]
 pub struct CoverArtImage {
@@ -119,22 +144,23 @@ pub fn cover_filename(artist: &str, album: &str) -> String {
 ///
 /// # Arguments
 /// * `mbid` - MusicBrainz Release ID
-/// * `covers_dir` - Directory to save covers (e.g., `{library}/jp3/covers`)
+/// * `covers_dir` - Directory to save covers (e.g., `{library}/jp3/assets/albums`)
 /// * `artist` - Artist name (for generating stable filename)
 /// * `album` - Album name (for generating stable filename)
 ///
 /// # Returns
 /// * `Ok(FetchCoverResult)` - Path and size of saved cover
 /// * `Err(CoverArtError)` - If fetch or save fails
-pub async fn fetch_and_save_cover(
+pub async fn fetch_and_save_album_cover(
     mbid: &str,
     covers_dir: &Path,
     artist: &str,
     album: &str,
 ) -> Result<FetchCoverResult, CoverArtError> {
     let filename = cover_filename(artist, album);
+    
     log::info!("[CoverArt] ========================================");
-    log::info!("[CoverArt] fetch_and_save_cover called");
+    log::info!("[CoverArt] fetch_and_save_album_cover called");
     log::info!("[CoverArt] MBID: {}", mbid);
     log::info!("[CoverArt] Artist: {}, Album: {}", artist, album);
     log::info!("[CoverArt] Generated filename: {}", filename);
@@ -145,12 +171,59 @@ pub async fn fetch_and_save_cover(
 
     // Fetch cover art metadata from Cover Art Archive
     log::info!("[CoverArt] Step 1: Getting cover URL from API...");
-    let cover_url = get_cover_url(mbid).await?;
+    let cover_url = get_album_cover_url(mbid).await?;
     log::info!("[CoverArt] Step 1 complete: Got URL: {}", cover_url);
 
+    // Download and save the image
+    save_cover_image(&cover_url, covers_dir, &filename).await
+}
+
+/// Fetch artist cover art from Fanart.tv and save it to the covers directory.
+///
+/// # Arguments
+/// * `artist_mbid` - MusicBrainz Artist ID
+/// * `covers_dir` - Directory to save covers (e.g., `{library}/jp3/assets/artists`)
+/// * `artist` - Artist name (for generating stable filename)
+///
+/// # Returns
+/// * `Ok(FetchCoverResult)` - Path and size of saved cover
+/// * `Err(CoverArtError)` - If fetch or save fails
+pub async fn fetch_and_save_artist_cover(
+    artist_mbid: &str,
+    covers_dir: &Path,
+    artist: &str,
+) -> Result<FetchCoverResult, CoverArtError> {
+    // Use "artist" as the second component for artist covers
+    let filename = cover_filename(artist, "artist");
+    
+    log::info!("[FanArt] ========================================");
+    log::info!("[FanArt] fetch_and_save_artist_cover called");
+    log::info!("[FanArt] Artist MBID: {}", artist_mbid);
+    log::info!("[FanArt] Artist: {}", artist);
+    log::info!("[FanArt] Generated filename: {}", filename);
+    log::info!("[FanArt] Covers dir: {:?}", covers_dir);
+
+    // Rate limit
+    sleep(Duration::from_millis(API_CALL_DELAY_MS)).await;
+
+    // Fetch artist cover URL from Fanart.tv
+    log::info!("[FanArt] Step 1: Getting artist cover URL from Fanart.tv API...");
+    let cover_url = get_artist_cover_url(artist_mbid).await?;
+    log::info!("[FanArt] Step 1 complete: Got URL: {}", cover_url);
+
+    // Download and save the image
+    save_cover_image(&cover_url, covers_dir, &filename).await
+}
+
+/// Download and save a cover image to disk.
+async fn save_cover_image(
+    cover_url: &str,
+    covers_dir: &Path,
+    filename: &str,
+) -> Result<FetchCoverResult, CoverArtError> {
     // Download the image
     log::info!("[CoverArt] Step 2: Downloading image...");
-    let image_bytes = download_image(&cover_url).await?;
+    let image_bytes = download_image(cover_url).await?;
     log::info!("[CoverArt] Step 2 complete: Downloaded {} bytes", image_bytes.len());
 
     // Save to file
@@ -177,7 +250,7 @@ pub async fn fetch_and_save_cover(
 
 /// Get the best thumbnail URL from Cover Art Archive.
 /// Prefers 500px, falls back to 250px, then large, then small.
-async fn get_cover_url(mbid: &str) -> Result<String, CoverArtError> {
+async fn get_album_cover_url(mbid: &str) -> Result<String, CoverArtError> {
     let api_url = format!("https://coverartarchive.org/release/{}", mbid);
     log::info!("[CoverArt] Fetching cover art metadata from: {}", api_url);
 
@@ -189,7 +262,7 @@ async fn get_cover_url(mbid: &str) -> Result<String, CoverArtError> {
 
     let response = client
         .get(&api_url)
-        .header("User-Agent", "JP3Organiser/1.0 (contact@example.com)")
+        .header("User-Agent", "JP3Organiser/1.0")
         .send()
         .await
         .map_err(|e| {
@@ -219,7 +292,7 @@ async fn get_cover_url(mbid: &str) -> Result<String, CoverArtError> {
     log::info!("[CoverArt] Response body length: {} bytes", body_text.len());
     log::info!("[CoverArt] Response body preview: {}", &body_text.chars().take(200).collect::<String>());
 
-    let cover_data: CoverArtResponse = serde_json::from_str(&body_text).map_err(|e| {
+    let cover_data: CoverArtAlbumResponse = serde_json::from_str(&body_text).map_err(|e| {
         log::error!("[CoverArt] Failed to parse cover art response: {}", e);
         log::error!("[CoverArt] Body was: {}", body_text);
         CoverArtError::ParseError(e.to_string())
@@ -257,13 +330,92 @@ async fn get_cover_url(mbid: &str) -> Result<String, CoverArtError> {
     Ok(thumbnail_url.clone())
 }
 
+
+async fn get_artist_cover_url(mbid: &str) -> Result<String, CoverArtError> {
+
+    // Load in the API key from .env.local
+    let api_key = var("FANART_PROJECT_KEY").map_err(|e| {
+        log::error!("FANART_PROJECT_KEY environment variable not set: {}", e);
+        CoverArtError::ParseError("FANART_PROJECT_KEY not set".to_string())
+    })?;
+
+
+
+    let api_url = format!("https://webservice.fanart.tv/v3.2/music/{}?api_key={}", mbid, api_key );
+    log::info!("[CoverArt] Fetching cover art metadata from: {}", api_url);
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(30))
+        .redirect(reqwest::redirect::Policy::limited(10)) // Follow up to 10 redirects
+        .build()
+        .map_err(|e| CoverArtError::RequestError(e.to_string()))?;
+
+    let response = client
+        .get(&api_url)
+        .header("User-Agent", "JP3Organiser/1.0")
+        .send()
+        .await
+        .map_err(|e| {
+            log::error!("[CoverArt] Failed to fetch cover art metadata: {}", e);
+            CoverArtError::RequestError(e.to_string())
+        })?;
+
+    log::info!("[CoverArt] Response status: {}", response.status());
+
+    // We must parse the resonse. In this response we will want to grab the artistthumb array in which we will grab the image with the most ikes.
+    // We can grab the firstone from the array as it seems the response is ordered by likes.
+
+    //so will be artistthumb[0].url
+
+    // we will need a new struct for this response and will return the url. 
+
+    // Handle 404 - no cover art available
+    if response.status() == reqwest::StatusCode::NOT_FOUND {
+        log::info!("[CoverArt] No cover art found for MBID: {}", mbid);
+        return Err(CoverArtError::NotFound);
+    }
+
+    if !response.status().is_success() {
+        let status = response.status();
+        log::error!("[FanArt] fanart tv returned status: {}", status);
+        return Err(CoverArtError::RequestError(format!("HTTP {}", status)));
+    }
+
+    let body_text = response.text().await.map_err(|e| {
+        log::error!("[FanArt] Failed to read response body: {}", e);
+        CoverArtError::RequestError(e.to_string())
+    })?;
+    
+    log::info!("[FanArt] Response body length: {} bytes", body_text.len());
+    log::info!("[FanArt] Response body preview: {}", &body_text.chars().take(200).collect::<String>());
+
+    let cover_data: FanartResponse = serde_json::from_str(&body_text).map_err(|e| {
+        log::error!("[FanArt] Failed to parse cover art response: {}", e);
+        log::error!("[FanArt] Body was: {}", body_text);
+        CoverArtError::ParseError(e.to_string())
+    })?;
+
+
+    // there is no option for image sizes just whatever it gives us we take the first one.
+    let thumbnail_url = cover_data.artistthumb
+        .first()
+        .map(|img| img.url.clone())
+        .ok_or_else(|| {
+            log::error!("[FanArt] No artist thumbnail found in response for MBID: {}", mbid);
+            CoverArtError::NotFound
+        })?;
+
+    log::info!("[FanArt] Selected thumbnail URL: {}", thumbnail_url);
+    Ok(thumbnail_url)
+}
+
 /// Download image bytes from a URL.
 async fn download_image(url: &str) -> Result<Vec<u8>, CoverArtError> {
     log::info!("[CoverArt] Downloading image from: {}", url);
 
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(60))
-        .redirect(reqwest::redirect::Policy::limited(10)) // Follow redirects
+        .redirect(reqwest::redirect::Policy::limited(10)) // Follow redirects 
         .build()
         .map_err(|e| CoverArtError::RequestError(e.to_string()))?;
 
@@ -314,23 +466,4 @@ pub fn get_cover_path_by_name(covers_dir: &Path, artist: &str, album: &str) -> O
     }
 }
 
-// Legacy functions kept for backward compatibility during migration
-// TODO: Remove these after migration is complete
 
-/// Check if a cover already exists for an album (by ID - deprecated).
-#[deprecated(note = "Use cover_exists_by_name instead")]
-pub fn cover_exists(covers_dir: &Path, album_id: u32) -> bool {
-    let cover_path = covers_dir.join(format!("{}.jpg", album_id));
-    cover_path.exists()
-}
-
-/// Get the path to a cover if it exists (by ID - deprecated).
-#[deprecated(note = "Use get_cover_path_by_name instead")]
-pub fn get_cover_path(covers_dir: &Path, album_id: u32) -> Option<String> {
-    let cover_path = covers_dir.join(format!("{}.jpg", album_id));
-    if cover_path.exists() {
-        Some(cover_path.to_string_lossy().to_string())
-    } else {
-        None
-    }
-}

@@ -1,15 +1,18 @@
 /**
  * ArtistView Component
  * 
- * Displays artists in a full-width card list format.
- * Artist names are clickable links that navigate to the Player artist detail page.
+ * Displays artists in a circle-centric grid layout.
+ * Each artist shows as a circular image with name below.
+ * Clicking an artist reveals an overlay with album/song count and action menu.
+ * "Go to Artist" action navigates to the Player artist detail page.
  */
 
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CardList } from '../../../../../components';
+import { ArtistGrid } from '../../../../../components';
 
-export default function ArtistView({ library, onDeleteArtist, onEditArtist }) {
+
+export default function ArtistView({ library, libraryPath, onDeleteArtist, onEditArtist }) {
   const navigate = useNavigate();
 
   // Pre-compute song and album counts for each artist
@@ -31,31 +34,17 @@ export default function ArtistView({ library, onDeleteArtist, onEditArtist }) {
     return counts;
   }, [library.artists, library.songs, library.albums]);
 
-  const handleTitleClick = useCallback((artist) => {
-    navigate(`/player/artist/${artist.id}`);
-  }, [navigate]);
-
-  const getTitle = useCallback((artist) => artist.name, []);
-  
-  const getMeta = useCallback((artist) => {
-    const counts = artistCounts[artist.id] || { songs: 0, albums: 0 };
-    return [
-      `${counts.albums} album(s)`,
-      `${counts.songs} song(s)`,
-    ];
-  }, [artistCounts]);
-
   const getActions = useCallback((artist) => [
+    { label: 'Go to Artist', onClick: () => navigate(`/player/artist/${artist.id}`) },
     { label: 'Edit Artist', onClick: () => onEditArtist?.(artist) },
     { label: 'Delete Artist', onClick: () => onDeleteArtist?.(artist), variant: 'danger' },
-  ], [onEditArtist, onDeleteArtist]);
+  ], [navigate, onEditArtist, onDeleteArtist]);
 
   return (
-    <CardList
-      items={library.artists}
-      getTitle={getTitle}
-      getMeta={getMeta}
-      onTitleClick={handleTitleClick}
+    <ArtistGrid
+      artists={library.artists}
+      libraryPath={libraryPath}
+      artistCounts={artistCounts}
       getActions={getActions}
       emptyMessage="No artists in library"
     />

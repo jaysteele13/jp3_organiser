@@ -1,20 +1,23 @@
 /**
  * MBID Store Service
  * 
- * Stores MusicBrainz Release IDs (MBIDs) for albums using tauri-plugin-store.
- * Used to fetch cover art from Cover Art Archive.
+ * Stores MusicBrainz IDs (MBIDs) for albums and artists using tauri-plugin-store.
+ * Used to fetch cover art from Cover Art Archive (albums) and Fanart.tv (artists).
  * 
  * Storage format:
  * {
  *   albumMbids: {
- *     "artist|||album": string (mbid)
+ *     "artist|||album": string (release mbid for albums)
+ *     "artist|||": string (artist mbid for artists)
  *   }
  * }
  * 
- * Note: MBIDs are keyed by "artist|||album" string to:
- * - Survive album deletion and re-add cycles (IDs get reused)
+ * Note: MBIDs are keyed by normalized "artist|||album" string to:
+ * - Survive album/artist deletion and re-add cycles (IDs get reused)
  * - Match how we search MusicBrainz (by artist + album name)
- * - Provide stable keys based on actual album identity
+ * - Provide stable keys based on actual identity
+ * 
+ * For artists, the album component is empty (e.g., "pink floyd|||")
  */
 
 import { load } from '@tauri-apps/plugin-store';
@@ -70,7 +73,7 @@ export async function getAllMbids() {
  * @param {string} album - Album name
  * @returns {Promise<string|null>} MBID or null if not found
  */
-export async function getMbid(artist, album) {
+export async function getAlbumMbid(artist, album) {
   if (!artist || !album) {
     return null;
   }
@@ -84,6 +87,47 @@ export async function getMbid(artist, album) {
     return null;
   }
 }
+
+
+
+// Get artist MBID
+
+export async function getArtistMbid(artist) {
+  if (!artist) {
+    return null;
+  }
+  
+
+  try {
+    const mbids = await getAllMbids();
+    const key = makeKey(artist, '');
+
+    
+    return mbids[key] || null;
+  } catch (error) {
+    console.error('[mbidStore] Failed to get MBID for:', artist, error);
+    return null;
+  }
+}
+export async function setArtistMbid(artist, mbid) {
+  if (!mbid || !artist) return;
+  
+  try {
+    const store = await getStore();
+    const mbids = await store.get(MBIDS_KEY) || {};
+    const key = makeKey(artist, '');
+    
+    // Only store if we don't already have one for this album
+    // (first MBID wins - usually the most accurate)
+    if (!mbids[key]) {
+      mbids[key] = mbid;
+      await store.set(MBIDS_KEY, mbids);
+    }
+  } catch (error) {
+    console.error('[mbidStore] Failed to set MBID:', error);
+  }
+}
+
 
 /**
  * Store MBID for an album
@@ -150,7 +194,7 @@ export async function setMbids(entries) {
  * @returns {Promise<boolean>} True if MBID exists
  */
 export async function hasMbid(artist, album) {
-  const mbid = await getMbid(artist, album);
+  const mbid = await getAlbumMbid(artist, album);
   return mbid !== null;
 }
 

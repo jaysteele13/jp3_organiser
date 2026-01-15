@@ -1,25 +1,41 @@
 /**
  * CoverArt Component
  * 
- * Reusable album cover art display with lazy loading and fallback.
- * Fetches cover art from cache or Cover Art Archive on first render.
+ * Reusable cover art display with lazy loading and fallback.
+ * Fetches cover art from cache or external API on first render.
+ * 
+ * For albums: Uses Cover Art Archive via MusicBrainz Release IDs
+ * For artists: Uses Fanart.tv via MusicBrainz Artist IDs
  * 
  * Props:
- * - artist: string - Artist name (required for stable cache key)
- * - album: string - Album name (required for stable cache key)
+ * - artist: string - Artist name (required)
+ * - album: string - Album name (required for album covers, omit for artist covers)
  * - libraryPath: string - Base library path
  * - size: 'small' | 'medium' | 'large' | 'xlarge' - Thumbnail size (40px, 60px, 120px, 250px)
  * - className: string - Additional CSS class
- * - fallbackIcon: string - Emoji to show when no cover available
+ * - fallbackIcon: string - Emoji to show when no cover available (ignored for artist covers)
+ * - imageCoverType: IMAGE_COVER_TYPE - Whether to fetch album or artist cover
+ * - circular: boolean - Whether to render as a circle (default: false, auto-true for artist covers)
  * 
- * Note: Cover files are named using a hash of artist+album for stability
- * across library compaction operations.
+ * Note: Cover files are named using a hash for stability across library compaction.
  */
 
 import { useState, useEffect, memo } from 'react';
-import { getCoverBlobUrl, fetchAlbumCover } from '../../services/coverArtService';
-import { getMbid } from '../../services/mbidStore';
+import { 
+  getAlbumCoverBlobUrl, 
+  getArtistCoverBlobUrl,
+  fetchAlbumCover,
+  fetchArtistCover 
+} from '../../services/coverArtService';
+import { getAlbumMbid, getArtistMbid } from '../../services/mbidStore';
+import { IMAGE_COVER_TYPE } from '../../utils/enums';
 import styles from './CoverArt.module.css';
+
+// Artist placeholder images
+import artistPlaceholder0 from '../../assets/artist_placeholders/0.png';
+import artistPlaceholder1 from '../../assets/artist_placeholders/1.png';
+import artistPlaceholder2 from '../../assets/artist_placeholders/2.png';
+import artistPlaceholder3 from '../../assets/artist_placeholders/3.png';
 
 // Size configurations
 const SIZES = {
@@ -29,49 +45,88 @@ const SIZES = {
   xlarge: 250,
 };
 
+// Artist fallback placeholder images
+const ARTIST_PLACEHOLDER_IMAGES = [
+  artistPlaceholder0,
+  artistPlaceholder1,
+  artistPlaceholder2,
+  artistPlaceholder3,
+];
+
+/**
+ * Get a consistent fallback placeholder image for an artist based on their name
+ * Uses a simple hash to ensure the same artist always gets the same placeholder
+ */
+function getArtistPlaceholderImage(artistName) {
+  const name = (artistName || '').toLowerCase().trim();
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash) + name.charCodeAt(i);
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  const index = Math.abs(hash) % ARTIST_PLACEHOLDER_IMAGES.length;
+  return ARTIST_PLACEHOLDER_IMAGES[index];
+}
+
 // Cache for blob URLs to avoid re-fetching during session
-// Key is now "libraryPath:artist|||album" for stability
+// Key format: "libraryPath:artist|||album" for albums, "libraryPath:artist|||" for artists
 const blobUrlCache = new Map();
 
 /**
- * Create a stable cache key from artist and album
+ * Create a stable cache key for album covers
  */
-function makeCacheKey(libraryPath, artist, album) {
+function makeAlbumCacheKey(libraryPath, artist, album) {
   const normalizedArtist = (artist || '').toLowerCase().trim();
   const normalizedAlbum = (album || '').toLowerCase().trim();
-  return `${libraryPath}:${normalizedArtist}|||${normalizedAlbum}`;
+  return `album:${libraryPath}:${normalizedArtist}|||${normalizedAlbum}`;
+}
+
+/**
+ * Create a stable cache key for artist covers
+ */
+function makeArtistCacheKey(libraryPath, artist) {
+  const normalizedArtist = (artist || '').toLowerCase().trim();
+  return `artist:${libraryPath}:${normalizedArtist}`;
 }
 
 const CoverArt = memo(function CoverArt({
   artist,
-  album,
+  album = null,
   libraryPath,
   size = 'medium',
   className = '',
   fallbackIcon = '💿',
+  imageCoverType = IMAGE_COVER_TYPE.ALBUM,
+  circular = null, // null = auto (circular for artists, square for albums)
 }) {
   const [imageUrl, setImageUrl] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
   const sizeValue = SIZES[size] || SIZES.medium;
+  const isArtistCover = imageCoverType === IMAGE_COVER_TYPE.ARTIST;
+  
+  // Auto-determine circular: true for artists, false for albums (unless explicitly set)
+  const isCircular = circular !== null ? circular : isArtistCover;
+  
+  // Use artist-specific fallback placeholder for artist covers
+  const artistPlaceholder = isArtistCover ? getArtistPlaceholderImage(artist) : null;
 
   useEffect(() => {
     let isMounted = true;
 
-    async function loadCover() {
-      // Check for missing props
+    async function loadAlbumCover() {
       if (!libraryPath || !artist || !album) {
         setIsLoading(false);
         setHasError(true);
         return;
       }
 
-      // Check in-memory cache first using stable key
-      const cacheKey = makeCacheKey(libraryPath, artist, album);
+      const cacheKey = makeAlbumCacheKey(libraryPath, artist, album);
+
+      // Check in-memory cache first
       if (blobUrlCache.has(cacheKey)) {
         const cachedUrl = blobUrlCache.get(cacheKey);
-        // Only use cache if it has a valid URL (not null)
         if (cachedUrl) {
           if (isMounted) {
             setImageUrl(cachedUrl);
@@ -80,32 +135,30 @@ const CoverArt = memo(function CoverArt({
           }
           return;
         }
-        // If cached as null, proceed to check if we now have an MBID
       }
 
       setIsLoading(true);
       setHasError(false);
 
       try {
-        // First try to get from local cache (file on disk)
-        let blobUrl = await getCoverBlobUrl(libraryPath, artist, album);
+        // Try to read from disk cache first
+        let blobUrl = await getAlbumCoverBlobUrl(libraryPath, artist, album);
 
-        // If not cached, look up MBID from store and try to fetch
+        // If not cached, look up MBID and fetch from API
         if (!blobUrl) {
-          // Use artist+album for MBID lookup
-          const mbid = await getMbid(artist, album);
-          
+          console.log('[CoverArt] No cached album cover, looking up MBID...');
+          const mbid = await getAlbumMbid(artist, album);
+          console.log('[CoverArt] Album MBID:', mbid);
+
           if (mbid) {
             const result = await fetchAlbumCover(libraryPath, artist, album, mbid);
+            console.log('[CoverArt] fetchAlbumCover result:', result);
             if (result.success) {
-              // Now try to get the blob URL again
-              blobUrl = await getCoverBlobUrl(libraryPath, artist, album);
+              blobUrl = await getAlbumCoverBlobUrl(libraryPath, artist, album);
             }
           }
         }
 
-        // Only cache successful results (actual blob URLs)
-        // Don't cache null - allows retry when MBID becomes available
         if (blobUrl) {
           blobUrlCache.set(cacheKey, blobUrl);
         }
@@ -116,8 +169,7 @@ const CoverArt = memo(function CoverArt({
           setIsLoading(false);
         }
       } catch (error) {
-        console.error('[CoverArt] Failed to load cover art:', error);
-        // Don't cache errors - allows retry
+        console.error('[CoverArt] Failed to load album cover:', error);
         if (isMounted) {
           setHasError(true);
           setIsLoading(false);
@@ -125,12 +177,79 @@ const CoverArt = memo(function CoverArt({
       }
     }
 
-    loadCover();
+    async function loadArtistCover() {
+      if (!libraryPath || !artist) {
+        setIsLoading(false);
+        setHasError(true);
+        return;
+      }
+
+      const cacheKey = makeArtistCacheKey(libraryPath, artist);
+
+      // Check in-memory cache first
+      if (blobUrlCache.has(cacheKey)) {
+        const cachedUrl = blobUrlCache.get(cacheKey);
+        if (cachedUrl) {
+          if (isMounted) {
+            setImageUrl(cachedUrl);
+            setIsLoading(false);
+            setHasError(false);
+          }
+          return;
+        }
+      }
+
+      setIsLoading(true);
+      setHasError(false);
+
+      try {
+        // Try to read from disk cache first
+        let blobUrl = await getArtistCoverBlobUrl(libraryPath, artist);
+
+        // If not cached, look up artist MBID and fetch from Fanart.tv
+        if (!blobUrl) {
+          console.log('[CoverArt] No cached artist cover, looking up artist MBID...');
+          const artistMbid = await getArtistMbid(artist);
+          console.log('[CoverArt] Artist MBID:', artistMbid);
+
+          if (artistMbid) {
+            const result = await fetchArtistCover(libraryPath, artist, artistMbid);
+            console.log('[CoverArt] fetchArtistCover result:', result);
+            if (result.success) {
+              blobUrl = await getArtistCoverBlobUrl(libraryPath, artist);
+            }
+          }
+        }
+
+        if (blobUrl) {
+          blobUrlCache.set(cacheKey, blobUrl);
+        }
+
+        if (isMounted) {
+          setImageUrl(blobUrl);
+          setHasError(!blobUrl);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('[CoverArt] Failed to load artist cover:', error);
+        if (isMounted) {
+          setHasError(true);
+          setIsLoading(false);
+        }
+      }
+    }
+
+    // Call the appropriate loader based on cover type
+    if (isArtistCover) {
+      loadArtistCover();
+    } else {
+      loadAlbumCover();
+    }
 
     return () => {
       isMounted = false;
     };
-  }, [artist, album, libraryPath]);
+  }, [artist, album, libraryPath, isArtistCover]);
 
   const containerStyle = {
     width: sizeValue,
@@ -139,10 +258,29 @@ const CoverArt = memo(function CoverArt({
     minHeight: sizeValue,
   };
 
-  const containerClass = `${styles.container} ${styles[size]} ${className}`;
+  const containerClass = [
+    styles.container,
+    styles[size],
+    isCircular ? styles.circular : '',
+    className,
+  ].filter(Boolean).join(' ');
+  
+  const altText = isArtistCover ? `${artist} artist image` : `${album} album cover`;
 
-  // Show fallback icon while loading, on error, or when no image
+  // Show fallback while loading, on error, or when no image
   if (isLoading || hasError || !imageUrl) {
+    // For artists, use placeholder image; for albums, use emoji fallback
+    if (isArtistCover && artistPlaceholder) {
+      return (
+        <div className={containerClass} style={containerStyle}>
+          <img
+            src={artistPlaceholder}
+            alt={`${artist} placeholder`}
+            className={styles.image}
+          />
+        </div>
+      );
+    }
     return (
       <div className={containerClass} style={containerStyle}>
         <span className={styles.fallback}>{fallbackIcon}</span>
@@ -154,7 +292,7 @@ const CoverArt = memo(function CoverArt({
     <div className={containerClass} style={containerStyle}>
       <img
         src={imageUrl}
-        alt="Album cover"
+        alt={altText}
         className={styles.image}
         loading="lazy"
       />

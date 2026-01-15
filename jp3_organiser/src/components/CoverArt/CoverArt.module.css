@@ -3,6 +3,7 @@
  * 
  * Styles for the reusable album cover art component.
  * Supports four sizes: small (40px), medium (60px), large (120px), xlarge (250px).
+ * Supports circular variant for artist images.
  */
 
 .container {
@@ -13,6 +14,11 @@
   border-radius: 4px;
   overflow: hidden;
   flex-shrink: 0;
+}
+
+/* Circular variant for artist images */
+.circular {
+  border-radius: 50%;
 }
 
 /* Size variants - icons scale proportionally */

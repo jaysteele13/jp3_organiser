@@ -67,6 +67,8 @@ pub struct Release {
 #[derive(Debug, Clone, Deserialize)]
 pub struct Artist {
     #[serde(default)]
+    // Add back in artist ID as it is an MBID which we will use to extract cover art later
+    pub id: String,
     pub name: String,
     // Note: id omitted - not used for ranking
 }
@@ -339,14 +341,22 @@ fn build_metadata(recording: &Recording) -> Result<AudioMetadata, String> {
                 .as_ref()
                 .and_then(|releases| releases.iter().find_map(|r| r.id.clone()))
         });
+    
+    let artist_mbid = recording
+        .artists
+        .as_ref()
+        .and_then(|artists| artists.iter().find(|a| !a.id.is_empty()))
+        .map(|a| a.id.clone())
+        .ok_or("No artist found in recording")?;
 
     log::info!(
-        "Selected: '{}' by '{}' from '{}' ({}) [MBID: {}]",
+        "Selected: '{}' by '{}' from '{}' ({}) [MBID: {} Artist MBID: {}]",
         title,
         artist,
         album,
         year.map(|y| y.to_string()).unwrap_or_else(|| "unknown year".to_string()),
-        release_mbid.as_deref().unwrap_or("none")
+        release_mbid.as_deref().unwrap_or("none"),
+        artist_mbid,
     );
 
     Ok(AudioMetadata {
@@ -354,9 +364,10 @@ fn build_metadata(recording: &Recording) -> Result<AudioMetadata, String> {
         artist: Some(artist),
         album: Some(album),
         year,
-        track_number: None,
+        track_number: None, 
         duration_secs: None,
         release_mbid,
+        artist_mbid: Some(artist_mbid)
     })
 }
 

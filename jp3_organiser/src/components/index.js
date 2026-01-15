@@ -1,5 +1,7 @@
 // Reusable UI Components
 export { default as ActionMenu } from './ActionMenu';
+export { default as ArtistCard } from './ArtistCard';
+export { default as ArtistGrid } from './ArtistGrid';
 export { default as CardList } from './CardList';
 export { default as CoverArt, clearCoverArtCache } from './CoverArt';
 export { default as LoadingState } from './LoadingState';

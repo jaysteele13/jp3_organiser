@@ -33,8 +33,10 @@ use commands::{
     set_library_path,
     // Cover art commands
     fetch_album_cover,
+    fetch_artist_cover,
     get_album_cover_path,
     read_album_cover,
+    read_artist_cover,
     search_album_mbid,
     search_album_mbids_batch,
     // Library commands
@@ -86,8 +88,10 @@ pub fn run() {
             clear_library_path,
             // Cover art commands
             fetch_album_cover,
+            fetch_artist_cover,
             get_album_cover_path,
             read_album_cover,
+            read_artist_cover,
             search_album_mbid,
             search_album_mbids_batch,
             // Library commands

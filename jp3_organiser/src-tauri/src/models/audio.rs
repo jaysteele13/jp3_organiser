@@ -73,6 +73,9 @@ pub struct AudioMetadata {
     pub duration_secs: Option<u32>,
     /// MusicBrainz Release ID (for cover art fetching)
     pub release_mbid: Option<String>,
+    /// MusicBrainz Artist ID ( for fanart tv fetching)
+    pub artist_mbid: Option<String>,
+
 }
 
 impl AudioMetadata {
