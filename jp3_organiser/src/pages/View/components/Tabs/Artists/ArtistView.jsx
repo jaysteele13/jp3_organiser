@@ -3,8 +3,8 @@
  * 
  * Displays artists in a circle-centric grid layout.
  * Each artist shows as a circular image with name below.
- * On hover, shows album/song count and action menu.
- * Artist names are clickable links that navigate to the Player artist detail page.
+ * Clicking an artist reveals an overlay with album/song count and action menu.
+ * "Go to Artist" action navigates to the Player artist detail page.
  */
 
 import { useCallback, useMemo } from 'react';
@@ -34,21 +34,17 @@ export default function ArtistView({ library, libraryPath, onDeleteArtist, onEdi
     return counts;
   }, [library.artists, library.songs, library.albums]);
 
-  const handleArtistClick = useCallback((artist) => {
-    navigate(`/player/artist/${artist.id}`);
-  }, [navigate]);
-
   const getActions = useCallback((artist) => [
+    { label: 'Go to Artist', onClick: () => navigate(`/player/artist/${artist.id}`) },
     { label: 'Edit Artist', onClick: () => onEditArtist?.(artist) },
     { label: 'Delete Artist', onClick: () => onDeleteArtist?.(artist), variant: 'danger' },
-  ], [onEditArtist, onDeleteArtist]);
+  ], [navigate, onEditArtist, onDeleteArtist]);
 
   return (
     <ArtistGrid
       artists={library.artists}
       libraryPath={libraryPath}
       artistCounts={artistCounts}
-      onArtistClick={handleArtistClick}
       getActions={getActions}
       emptyMessage="No artists in library"
     />
