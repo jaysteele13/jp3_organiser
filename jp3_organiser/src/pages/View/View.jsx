@@ -8,12 +8,13 @@
  * mimicking how the ESP32 would parse the binary format.
  */
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useLibraryConfig, useToast } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
 import { deleteSongs, deleteAlbum, deleteArtist, editSongMetadata, editAlbum, editArtist } from '../../services/libraryService';
-import { LoadingState, ErrorState, EmptyState, Toast, ConfirmModal } from '../../components';
+import { LoadingState, ErrorState, EmptyState, Toast, ConfirmModal, LibrarySearch } from '../../components';
+import { SEARCH_CATEGORY } from '../../hooks';
 import styles from './View.module.css';
 
 import { TABS, VIEW_TABS } from '../../utils/enums';
@@ -30,6 +31,7 @@ import EditArtistModal from './components/EditArtistModal';
 
 export default function View() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { libraryPath, isLoading: configLoading } = useLibraryConfig();
   
   // Use tab from navigation state if provided, otherwise default to SONGS
@@ -97,6 +99,30 @@ export default function View() {
   const getArtistAlbumCount = (artistId) => {
     return library?.albums?.filter(a => a.artistId === artistId).length ?? 0;
   };
+
+  // ============ SEARCH HANDLERS ============
+  const handleSelectPlaylist = useCallback((playlist) => {
+    // Navigate to playlist edit page
+    navigate(`/playlist/${playlist.id}`);
+  }, [navigate]);
+
+  const handleSelectArtist = useCallback((artist) => {
+    // Switch to Artists tab - the UI will filter/highlight as needed
+    setActiveTab(TABS.ARTISTS);
+    // Could scroll to artist or expand it in future
+  }, []);
+
+  const handleSelectAlbum = useCallback((album) => {
+    // Switch to Albums tab
+    setActiveTab(TABS.ALBUMS);
+    // Could scroll to album or expand it in future
+  }, []);
+
+  const handleSelectSong = useCallback((song) => {
+    // Switch to Songs tab
+    setActiveTab(TABS.SONGS);
+    // Could scroll to song or highlight it in future
+  }, []);
 
   // ============ SONG DELETE HANDLERS ============
   const handleDeleteSongRequest = (song) => {
@@ -332,11 +358,22 @@ export default function View() {
             libraryPath={libraryPath}
             onCompacted={handleRefresh}
           />
-          <TabSelector 
-            setActiveTab={setActiveTab}
-            activeTab={activeTab}
-            tabs={VIEW_TABS}
-          />
+          <div className={styles.toolbar}>
+            <TabSelector 
+              setActiveTab={setActiveTab}
+              activeTab={activeTab}
+              tabs={VIEW_TABS}
+            />
+            <LibrarySearch
+              library={library}
+              libraryPath={libraryPath}
+              onSelectPlaylist={handleSelectPlaylist}
+              onSelectArtist={handleSelectArtist}
+              onSelectAlbum={handleSelectAlbum}
+              onSelectSong={handleSelectSong}
+              placeholder="Search playlists, artists, albums, songs..."
+            />
+          </div>
           <div className={styles.content}>
             <TabContent 
               activeTab={activeTab} 

@@ -114,6 +114,7 @@
   overflow-x: auto;
   background-color: var(--tertiary);
   border-radius: 8px;
+  
 }
 
 .table {
@@ -121,6 +122,7 @@
   border-collapse: collapse;
   font-size: 0.9rem;
   table-layout: fixed;
+  
 }
 
 .table thead {
@@ -145,6 +147,7 @@
 /* Table rows */
 .tableRow {
   transition: background-color 0.15s ease;
+  text-align: start;
 }
 
 .tableRow:hover {

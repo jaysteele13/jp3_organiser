@@ -12,6 +12,7 @@ export { default as Toast } from './Toast';
 export { default as PlaylistComboBox } from './PlaylistComboBox';
 export { default as QueueDrawer } from './QueueDrawer';
 export { default as SongTable } from './SongTable';
+export { default as LibrarySearch, SEARCH_CATEGORY } from './LibrarySearch';
 
 // Layout Components
 export { default as Header } from './Header';
