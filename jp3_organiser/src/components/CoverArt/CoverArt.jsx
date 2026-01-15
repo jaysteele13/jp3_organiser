@@ -31,6 +31,12 @@ import { getAlbumMbid, getArtistMbid } from '../../services/mbidStore';
 import { IMAGE_COVER_TYPE } from '../../utils/enums';
 import styles from './CoverArt.module.css';
 
+// Artist placeholder images
+import artistPlaceholder0 from '../../assets/artist_placeholders/0.png';
+import artistPlaceholder1 from '../../assets/artist_placeholders/1.png';
+import artistPlaceholder2 from '../../assets/artist_placeholders/2.png';
+import artistPlaceholder3 from '../../assets/artist_placeholders/3.png';
+
 // Size configurations
 const SIZES = {
   small: 40,
@@ -39,22 +45,27 @@ const SIZES = {
   xlarge: 250,
 };
 
-// Artist fallback emojis (sloth, turtle, snail)
-const ARTIST_FALLBACK_EMOJIS = ['🦥', '🐢', '🐌'];
+// Artist fallback placeholder images
+const ARTIST_PLACEHOLDER_IMAGES = [
+  artistPlaceholder0,
+  artistPlaceholder1,
+  artistPlaceholder2,
+  artistPlaceholder3,
+];
 
 /**
- * Get a consistent fallback emoji for an artist based on their name
- * Uses a simple hash to ensure the same artist always gets the same emoji
+ * Get a consistent fallback placeholder image for an artist based on their name
+ * Uses a simple hash to ensure the same artist always gets the same placeholder
  */
-function getArtistFallbackEmoji(artistName) {
+function getArtistPlaceholderImage(artistName) {
   const name = (artistName || '').toLowerCase().trim();
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = ((hash << 5) - hash) + name.charCodeAt(i);
     hash = hash & hash; // Convert to 32-bit integer
   }
-  const index = Math.abs(hash) % ARTIST_FALLBACK_EMOJIS.length;
-  return ARTIST_FALLBACK_EMOJIS[index];
+  const index = Math.abs(hash) % ARTIST_PLACEHOLDER_IMAGES.length;
+  return ARTIST_PLACEHOLDER_IMAGES[index];
 }
 
 // Cache for blob URLs to avoid re-fetching during session
@@ -98,10 +109,8 @@ const CoverArt = memo(function CoverArt({
   // Auto-determine circular: true for artists, false for albums (unless explicitly set)
   const isCircular = circular !== null ? circular : isArtistCover;
   
-  // Use artist-specific fallback emoji for artist covers
-  const effectiveFallbackIcon = isArtistCover 
-    ? getArtistFallbackEmoji(artist) 
-    : fallbackIcon;
+  // Use artist-specific fallback placeholder for artist covers
+  const artistPlaceholder = isArtistCover ? getArtistPlaceholderImage(artist) : null;
 
   useEffect(() => {
     let isMounted = true;
@@ -258,11 +267,23 @@ const CoverArt = memo(function CoverArt({
   
   const altText = isArtistCover ? `${artist} artist image` : `${album} album cover`;
 
-  // Show fallback icon while loading, on error, or when no image
+  // Show fallback while loading, on error, or when no image
   if (isLoading || hasError || !imageUrl) {
+    // For artists, use placeholder image; for albums, use emoji fallback
+    if (isArtistCover && artistPlaceholder) {
+      return (
+        <div className={containerClass} style={containerStyle}>
+          <img
+            src={artistPlaceholder}
+            alt={`${artist} placeholder`}
+            className={styles.image}
+          />
+        </div>
+      );
+    }
     return (
       <div className={containerClass} style={containerStyle}>
-        <span className={styles.fallback}>{effectiveFallbackIcon}</span>
+        <span className={styles.fallback}>{fallbackIcon}</span>
       </div>
     );
   }
