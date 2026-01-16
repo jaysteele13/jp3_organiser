@@ -76,6 +76,9 @@ export default function View() {
   const [artistToEdit, setArtistToEdit] = useState(null);
   const [showEditArtistModal, setShowEditArtistModal] = useState(false);
 
+  // Search filter state - used to pre-filter SongTable when selecting from LibrarySearch
+  const [songSearchFilter, setSongSearchFilter] = useState('');
+
   // Stats for header
   const stats = useMemo(() => {
     if (!library) return { songs: 0, albums: 0, artists: 0, playlists: 0 };
@@ -119,9 +122,15 @@ export default function View() {
   }, []);
 
   const handleSelectSong = useCallback((song) => {
-    // Switch to Songs tab
+    // Switch to Songs tab and filter to show this song
+    setSongSearchFilter(song.title);
     setActiveTab(TABS.SONGS);
-    // Could scroll to song or highlight it in future
+  }, []);
+
+  // Clear song filter when user manually changes tabs
+  const handleTabChange = useCallback((tab) => {
+    setSongSearchFilter('');
+    setActiveTab(tab);
   }, []);
 
   // ============ SONG DELETE HANDLERS ============
@@ -360,25 +369,29 @@ export default function View() {
           />
           <div className={styles.toolbar}>
             <TabSelector 
-              setActiveTab={setActiveTab}
+              setActiveTab={handleTabChange}
               activeTab={activeTab}
               tabs={VIEW_TABS}
             />
-            <LibrarySearch
-              library={library}
-              libraryPath={libraryPath}
-              onSelectPlaylist={handleSelectPlaylist}
-              onSelectArtist={handleSelectArtist}
-              onSelectAlbum={handleSelectAlbum}
-              onSelectSong={handleSelectSong}
-              placeholder="Search playlists, artists, albums, songs..."
-            />
+            <div className={styles.searchWrapper}>
+              <LibrarySearch
+                library={library}
+                libraryPath={libraryPath}
+                onSelectPlaylist={handleSelectPlaylist}
+                onSelectArtist={handleSelectArtist}
+                onSelectAlbum={handleSelectAlbum}
+                onSelectSong={handleSelectSong}
+                placeholder="Search playlists, artists, albums, songs..."
+              />
+            </div>
           </div>
           <div className={styles.content}>
             <TabContent 
               activeTab={activeTab} 
               library={library}
               libraryPath={libraryPath}
+              songSearchFilter={songSearchFilter}
+              onSongFilterClear={() => setSongSearchFilter('')}
               onDeleteSong={handleDeleteSongRequest}
               onEditSong={handleEditRequest}
               onDeleteAlbum={handleDeleteAlbumRequest}

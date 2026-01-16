@@ -7,13 +7,36 @@
  * Clicking a song title navigates to Player and begins playback.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SongTable, ActionMenu } from '../../../../../components';
 import { TABS } from '../../../../../utils/enums';
 
-export default function SongView({ library, onDeleteSong, onEditSong }) {
+export default function SongView({ library, onDeleteSong, onEditSong, searchFilter, onFilterClear }) {
   const navigate = useNavigate();
+  
+  // Track the externally-set filter to detect when user manually changes search
+  const externalFilterRef = useRef(searchFilter);
+  
+  // Update ref when external filter changes
+  if (searchFilter !== externalFilterRef.current) {
+    externalFilterRef.current = searchFilter;
+  }
+  
+  // Create initial state for SongTable based on external search filter
+  const initialState = useMemo(() => {
+    if (!searchFilter) return undefined;
+    return { searchQuery: searchFilter };
+  }, [searchFilter]);
+  
+  // Handle state changes from SongTable - clear external filter when user modifies search
+  const handleStateChange = useCallback((state) => {
+    // If user changed the search query from what we set externally, clear the filter
+    if (externalFilterRef.current && state.searchQuery !== externalFilterRef.current) {
+      onFilterClear?.();
+      externalFilterRef.current = '';
+    }
+  }, [onFilterClear]);
 
   const handleTitleClick = useCallback((song) => {
     // Navigate to Player with song data to trigger playback
@@ -43,8 +66,15 @@ export default function SongView({ library, onDeleteSong, onEditSong }) {
     />
   ), [onEditSong, onDeleteSong]);
 
+  // Generate a key to force SongTable remount when external filter changes
+  // This ensures the initialState is applied when user clicks a song from LibrarySearch
+  const tableKey = useMemo(() => {
+    return searchFilter ? `filter-${searchFilter}` : 'default';
+  }, [searchFilter]);
+
   return (
     <SongTable
+      key={tableKey}
       songs={library.songs}
       variant="table"
       columns={['title', 'artist', 'album', 'path']}
@@ -55,6 +85,8 @@ export default function SongView({ library, onDeleteSong, onEditSong }) {
       emptyMessage="No songs in library"
       noResultsMessage="No songs match your search"
       searchPlaceholder="Search songs by title, artist, or album..."
+      initialState={initialState}
+      onStateChange={handleStateChange}
     />
   );
 }
