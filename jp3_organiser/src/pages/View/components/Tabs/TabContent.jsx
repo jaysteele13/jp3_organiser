@@ -17,7 +17,13 @@ export default React.memo(function TabContent({
   library, 
   libraryPath, 
   songFilter,
+  albumFilter,
+  artistFilter,
+  playlistFilter,
   onClearSongFilter,
+  onClearAlbumFilter,
+  onClearArtistFilter,
+  onClearPlaylistFilter,
   onDeleteSong, 
   onEditSong,
   onDeleteAlbum,
@@ -32,7 +38,14 @@ export default React.memo(function TabContent({
   }
 
   if (activeTab === TABS.PLAYLISTS) {
-    return <Component library={library} libraryPath={libraryPath} />;
+    return (
+      <Component 
+        library={library} 
+        libraryPath={libraryPath}
+        filter={playlistFilter}
+        onClearFilter={onClearPlaylistFilter}
+      />
+    );
   }
 
   if (activeTab === TABS.SONGS) {
@@ -48,11 +61,29 @@ export default React.memo(function TabContent({
   }
 
   if (activeTab === TABS.ALBUMS) {
-    return <Component library={library} libraryPath={libraryPath} onDeleteAlbum={onDeleteAlbum} onEditAlbum={onEditAlbum} />;
+    return (
+      <Component 
+        library={library} 
+        libraryPath={libraryPath} 
+        onDeleteAlbum={onDeleteAlbum} 
+        onEditAlbum={onEditAlbum}
+        filter={albumFilter}
+        onClearFilter={onClearAlbumFilter}
+      />
+    );
   }
 
   if (activeTab === TABS.ARTISTS) {
-    return <Component library={library} libraryPath={libraryPath} onDeleteArtist={onDeleteArtist} onEditArtist={onEditArtist} />;
+    return (
+      <Component 
+        library={library} 
+        libraryPath={libraryPath} 
+        onDeleteArtist={onDeleteArtist} 
+        onEditArtist={onEditArtist}
+        filter={artistFilter}
+        onClearFilter={onClearArtistFilter}
+      />
+    );
   }
 
   return <Component library={library} />;

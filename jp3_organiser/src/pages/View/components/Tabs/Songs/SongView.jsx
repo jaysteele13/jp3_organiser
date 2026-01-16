@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SongTable, ActionMenu } from '../../../../../components';
+import { SongTable, ActionMenu, FilterBar } from '../../../../../components';
 import { TABS } from '../../../../../utils/enums';
 import styles from './SongView.module.css';
 
@@ -60,18 +60,12 @@ export default function SongView({ library, onDeleteSong, onEditSong, songFilter
     <div className={styles.container}>
       {/* Filter indicator bar */}
       {songFilter && (
-        <div className={styles.filterBar}>
-          <span className={styles.filterText}>
-            Showing: <strong>{songFilter.title}</strong> by {songFilter.artistName}
-          </span>
-          <button 
-            className={styles.clearButton}
-            onClick={onClearFilter}
-            type="button"
-          >
-            Show all songs
-          </button>
-        </div>
+        <FilterBar
+          label={songFilter.title}
+          sublabel={`by ${songFilter.artistName}`}
+          onClear={onClearFilter}
+          clearText="Show all songs"
+        />
       )}
       
       <SongTable

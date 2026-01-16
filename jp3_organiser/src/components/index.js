@@ -4,6 +4,7 @@ export { default as ArtistCard } from './ArtistCard';
 export { default as ArtistGrid } from './ArtistGrid';
 export { default as CardList } from './CardList';
 export { default as CoverArt, clearCoverArtCache } from './CoverArt';
+export { default as FilterBar } from './FilterBar';
 export { default as LoadingState } from './LoadingState';
 export { default as ErrorState } from './ErrorState';
 export { default as EmptyState } from './EmptyState';

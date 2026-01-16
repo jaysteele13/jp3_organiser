@@ -7,14 +7,20 @@
  * Playlist names are clickable links that navigate to the Player playlist detail page.
  * "Manage" button navigates to the PlaylistEdit page.
  * 
+ * Supports filtering via filter prop (from LibrarySearch).
+ * When filtered, shows only the selected playlist.
+ * 
  * @param {Object} props
  * @param {Object} props.library - Library data containing songs and playlists
  * @param {string} props.libraryPath - Library path for loading full playlist data
+ * @param {Object} props.filter - Optional playlist filter object
+ * @param {Function} props.onClearFilter - Callback to clear the filter
  */
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loadPlaylist } from '../../../../../services/libraryService';
+import { FilterBar } from '../../../../../components';
 import styles from './PlaylistView.module.css';
 
 /**
@@ -151,10 +157,18 @@ function PlaylistCard({ playlist, songLookup, libraryPath, onManage, onPlaylistC
   );
 }
 
-export default function PlaylistView({ library, libraryPath }) {
+export default function PlaylistView({ library, libraryPath, filter, onClearFilter }) {
   const navigate = useNavigate();
   const playlists = library?.playlists || [];
   const songLookup = useMemo(() => buildSongLookup(library), [library]);
+
+  // Filter playlists if a filter is active
+  const displayPlaylists = useMemo(() => {
+    if (!filter) {
+      return playlists;
+    }
+    return playlists.filter(p => p.id === filter.id);
+  }, [playlists, filter]);
 
   const handleManage = useCallback((playlistId) => {
     navigate(`/playlist/${playlistId}`);
@@ -175,7 +189,14 @@ export default function PlaylistView({ library, libraryPath }) {
 
   return (
     <div className={styles.container}>
-      {playlists.map(playlist => (
+      {filter && (
+        <FilterBar
+          label={filter.name}
+          onClear={onClearFilter}
+          clearText="Show all playlists"
+        />
+      )}
+      {displayPlaylists.map(playlist => (
         <PlaylistCard 
           key={playlist.id} 
           playlist={playlist} 

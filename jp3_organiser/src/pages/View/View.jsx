@@ -78,6 +78,23 @@ export default function View() {
   // Song filter state - used to filter SongTable when selecting from LibrarySearch
   const [songFilter, setSongFilter] = useState(null); // stores song object or null
 
+  // Album filter state - used to filter AlbumView when selecting from LibrarySearch
+  const [albumFilter, setAlbumFilter] = useState(null); // stores album object or null
+
+  // Artist filter state - used to filter ArtistView when selecting from LibrarySearch
+  const [artistFilter, setArtistFilter] = useState(null); // stores artist object or null
+
+  // Playlist filter state - used to filter PlaylistView when selecting from LibrarySearch
+  const [playlistFilter, setPlaylistFilter] = useState(null); // stores playlist object or null
+
+  // Clear all filters
+  const clearAllFilters = useCallback(() => {
+    setSongFilter(null);
+    setAlbumFilter(null);
+    setArtistFilter(null);
+    setPlaylistFilter(null);
+  }, []);
+
   // Stats for header
   const stats = useMemo(() => {
     if (!library) return { songs: 0, albums: 0, artists: 0, playlists: 0 };
@@ -104,33 +121,38 @@ export default function View() {
 
   // ============ SEARCH HANDLERS ============
   const handleSelectPlaylist = useCallback((playlist) => {
-    // Navigate to playlist edit page
-    navigate(`/playlist/${playlist.id}`);
-  }, [navigate]);
+    // Set filter to show this playlist, then switch to Playlists tab
+    clearAllFilters();
+    setPlaylistFilter(playlist);
+    setActiveTab(TABS.PLAYLISTS);
+  }, [clearAllFilters]);
 
   const handleSelectArtist = useCallback((artist) => {
-    // Switch to Artists tab - the UI will filter/highlight as needed
+    // Set filter to show this artist, then switch to Artists tab
+    clearAllFilters();
+    setArtistFilter(artist);
     setActiveTab(TABS.ARTISTS);
-    // Could scroll to artist or expand it in future
-  }, []);
+  }, [clearAllFilters]);
 
   const handleSelectAlbum = useCallback((album) => {
-    // Switch to Albums tab
+    // Set filter to show this album, then switch to Albums tab
+    clearAllFilters();
+    setAlbumFilter(album);
     setActiveTab(TABS.ALBUMS);
-    // Could scroll to album or expand it in future
-  }, []);
+  }, [clearAllFilters]);
 
   const handleSelectSong = useCallback((song) => {
     // Set filter to show this song in the table, then switch to Songs tab
+    clearAllFilters();
     setSongFilter(song);
     setActiveTab(TABS.SONGS);
-  }, []);
+  }, [clearAllFilters]);
 
-  // Handle tab change - clear song filter when switching tabs
+  // Handle tab change - clear all filters when switching tabs
   const handleTabChange = useCallback((tab) => {
-    setSongFilter(null);
+    clearAllFilters();
     setActiveTab(tab);
-  }, []);
+  }, [clearAllFilters]);
 
   // ============ SONG DELETE HANDLERS ============
   const handleDeleteSongRequest = (song) => {
@@ -390,7 +412,13 @@ export default function View() {
               library={library}
               libraryPath={libraryPath}
               songFilter={songFilter}
+              albumFilter={albumFilter}
+              artistFilter={artistFilter}
+              playlistFilter={playlistFilter}
               onClearSongFilter={() => setSongFilter(null)}
+              onClearAlbumFilter={() => setAlbumFilter(null)}
+              onClearArtistFilter={() => setArtistFilter(null)}
+              onClearPlaylistFilter={() => setPlaylistFilter(null)}
               onDeleteSong={handleDeleteSongRequest}
               onEditSong={handleEditRequest}
               onDeleteAlbum={handleDeleteAlbumRequest}

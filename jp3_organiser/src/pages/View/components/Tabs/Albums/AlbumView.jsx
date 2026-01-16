@@ -4,13 +4,17 @@
  * Displays albums in a full-width card list format.
  * Album names are clickable links that navigate to the Player album detail page.
  * Artist names are also clickable links that navigate to the Player artist detail page.
+ * 
+ * Supports filtering via filter prop (from LibrarySearch).
+ * When filtered, shows only the selected album.
  */
 
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CardList, CoverArt } from '../../../../../components';
+import { CardList, CoverArt, FilterBar } from '../../../../../components';
+import styles from './AlbumView.module.css';
 
-export default function AlbumView({ library, libraryPath, onDeleteAlbum, onEditAlbum }) {
+export default function AlbumView({ library, libraryPath, onDeleteAlbum, onEditAlbum, filter, onClearFilter }) {
   const navigate = useNavigate();
 
   // Pre-compute song counts for each album
@@ -21,6 +25,14 @@ export default function AlbumView({ library, libraryPath, onDeleteAlbum, onEditA
     });
     return counts;
   }, [library.songs]);
+
+  // Filter albums if a filter is active
+  const displayAlbums = useMemo(() => {
+    if (!filter) {
+      return library.albums;
+    }
+    return library.albums.filter(album => album.id === filter.id);
+  }, [library.albums, filter]);
 
   const handleTitleClick = useCallback((album) => {
     navigate(`/player/album/${album.id}`);
@@ -57,16 +69,26 @@ export default function AlbumView({ library, libraryPath, onDeleteAlbum, onEditA
   ), [libraryPath]);
 
   return (
-    <CardList
-      items={library.albums}
-      getTitle={getTitle}
-      getSubtitle={getSubtitle}
-      getMeta={getMeta}
-      onTitleClick={handleTitleClick}
-      onSubtitleClick={handleSubtitleClick}
-      getActions={getActions}
-      renderThumbnail={renderThumbnail}
-      emptyMessage="No albums in library"
-    />
+    <div className={styles.container}>
+      {filter && (
+        <FilterBar
+          label={filter.name}
+          sublabel={`by ${filter.artistName}`}
+          onClear={onClearFilter}
+          clearText="Show all albums"
+        />
+      )}
+      <CardList
+        items={displayAlbums}
+        getTitle={getTitle}
+        getSubtitle={getSubtitle}
+        getMeta={getMeta}
+        onTitleClick={handleTitleClick}
+        onSubtitleClick={handleSubtitleClick}
+        getActions={getActions}
+        renderThumbnail={renderThumbnail}
+        emptyMessage="No albums in library"
+      />
+    </div>
   );
 }
