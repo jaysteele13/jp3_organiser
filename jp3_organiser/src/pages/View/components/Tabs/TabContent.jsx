@@ -16,8 +16,8 @@ export default React.memo(function TabContent({
   activeTab, 
   library, 
   libraryPath, 
-  songSearchFilter,
-  onSongFilterClear,
+  songFilter,
+  onClearSongFilter,
   onDeleteSong, 
   onEditSong,
   onDeleteAlbum,
@@ -41,8 +41,8 @@ export default React.memo(function TabContent({
         library={library} 
         onDeleteSong={onDeleteSong} 
         onEditSong={onEditSong}
-        searchFilter={songSearchFilter}
-        onFilterClear={onSongFilterClear}
+        songFilter={songFilter}
+        onClearFilter={onClearSongFilter}
       />
     );
   }

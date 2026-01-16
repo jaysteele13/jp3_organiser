@@ -14,7 +14,6 @@ import { useLibraryConfig, useToast } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
 import { deleteSongs, deleteAlbum, deleteArtist, editSongMetadata, editAlbum, editArtist } from '../../services/libraryService';
 import { LoadingState, ErrorState, EmptyState, Toast, ConfirmModal, LibrarySearch } from '../../components';
-import { SEARCH_CATEGORY } from '../../hooks';
 import styles from './View.module.css';
 
 import { TABS, VIEW_TABS } from '../../utils/enums';
@@ -76,8 +75,8 @@ export default function View() {
   const [artistToEdit, setArtistToEdit] = useState(null);
   const [showEditArtistModal, setShowEditArtistModal] = useState(false);
 
-  // Search filter state - used to pre-filter SongTable when selecting from LibrarySearch
-  const [songSearchFilter, setSongSearchFilter] = useState('');
+  // Song filter state - used to filter SongTable when selecting from LibrarySearch
+  const [songFilter, setSongFilter] = useState(null); // stores song object or null
 
   // Stats for header
   const stats = useMemo(() => {
@@ -122,14 +121,14 @@ export default function View() {
   }, []);
 
   const handleSelectSong = useCallback((song) => {
-    // Switch to Songs tab and filter to show this song
-    setSongSearchFilter(song.title);
+    // Set filter to show this song in the table, then switch to Songs tab
+    setSongFilter(song);
     setActiveTab(TABS.SONGS);
   }, []);
 
-  // Clear song filter when user manually changes tabs
+  // Handle tab change - clear song filter when switching tabs
   const handleTabChange = useCallback((tab) => {
-    setSongSearchFilter('');
+    setSongFilter(null);
     setActiveTab(tab);
   }, []);
 
@@ -390,8 +389,8 @@ export default function View() {
               activeTab={activeTab} 
               library={library}
               libraryPath={libraryPath}
-              songSearchFilter={songSearchFilter}
-              onSongFilterClear={() => setSongSearchFilter('')}
+              songFilter={songFilter}
+              onClearSongFilter={() => setSongFilter(null)}
               onDeleteSong={handleDeleteSongRequest}
               onEditSong={handleEditRequest}
               onDeleteAlbum={handleDeleteAlbumRequest}
