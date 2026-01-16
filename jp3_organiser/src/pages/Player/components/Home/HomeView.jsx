@@ -19,6 +19,8 @@ import SectionHeader from './SectionHeader';
 import SongPreview from './SongPreview';
 import RecentRow from './RecentRow';
 import styles from './HomeView.module.css';
+import Player from '../../Player';
+import PlayerHeader from '../PlayerHeader';
 
 // Number of items to show in each section
 const RECENTLY_PLAYED_LIMIT = 5;
@@ -116,14 +118,6 @@ export default function HomeView({ library, libraryPath }) {
 
   return (
     <div className={styles.container}>
-      {/* Welcome Header */}
-      <div className={styles.welcomeHeader}>
-        <h1 className={styles.welcomeTitle}>Welcome Back</h1>
-        <p className={styles.welcomeSubtitle}>
-          {songs.length} songs in your library
-        </p>
-      </div>
-
       {/* Recently Played Section */}
       {hasRecents && (
         <section className={styles.section}>

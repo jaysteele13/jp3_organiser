@@ -1,8 +1,10 @@
 /**
  * SongTable Component
  * 
- * Reusable song list component with search and pagination.
+ * Reusable song list component with pagination.
  * Supports two display variants: 'table' (traditional rows) and 'card' (Spotify-style).
+ * 
+ * Note: Search is handled externally via LibrarySearch component.
 **/
 
 import React, { useCallback } from 'react';
@@ -29,10 +31,7 @@ export default function SongTable({
   variant = 'table',
   pageSize = DEFAULT_PAGE_SIZE,
   pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
-  searchable = true,
-  searchPlaceholder = 'Search by title, artist, or album...',
   emptyMessage = 'No songs available',
-  noResultsMessage = 'No songs match your search',
   columns = DEFAULT_COLUMNS,
   renderActions,
   onRowClick,
@@ -40,8 +39,6 @@ export default function SongTable({
   onArtistClick,
   onAlbumClick,
   highlightId,
-  initialState,
-  onStateChange,
   showTrackNumber = false,
   cardSubtitle,
   renderCard,
@@ -49,12 +46,9 @@ export default function SongTable({
   const state = useSongTableState({
     songs,
     pageSize,
-    initialState,
-    onStateChange,
   });
 
   const {
-    searchQuery,
     paginatedSongs,
     totalItems,
     totalPages,
@@ -64,77 +58,30 @@ export default function SongTable({
     hasPreviousPage,
     startIndex,
     endIndex,
-    updateSearchQuery,
     updateItemsPerPage,
-    clearSearch,
     goToNextPage,
     goToPreviousPage,
     goToFirstPage,
     goToLastPage,
   } = state;
 
-  const handleSearchChange = useCallback((e) => {
-    updateSearchQuery(e.target.value);
-  }, [updateSearchQuery]);
-
   const handlePageSizeChange = useCallback((e) => {
     updateItemsPerPage(Number(e.target.value));
   }, [updateItemsPerPage]);
-
-  const handleClearSearch = useCallback(() => {
-    clearSearch();
-  }, [clearSearch]);
 
   // Calculate the actual display index for each song (accounting for pagination)
   const getDisplayIndex = useCallback((index) => {
     return startIndex - 1 + index;
   }, [startIndex]);
 
-  // Check if songs array is empty (before any filtering)
+  // Check if songs array is empty
   const isEmpty = songs.length === 0;
-  
-  // Check if filtered results are empty (after search)
-  const isNoResults = !isEmpty && paginatedSongs.length === 0 && searchQuery.trim().length > 0;
 
   return (
     <div className={styles.container}>
-      {/* Search and Controls Bar */}
-      {searchable && (
-        <div className={styles.controlsBar}>
-          <div className={styles.searchContainer}>
-            <input
-              type="text"
-              className={styles.searchInput}
-              placeholder={searchPlaceholder}
-              value={searchQuery}
-              onChange={handleSearchChange}
-              aria-label="Search songs"
-            />
-            {searchQuery && (
-              <button
-                className={styles.clearBtn}
-                onClick={handleClearSearch}
-                aria-label="Clear search"
-                type="button"
-              >
-                ×
-              </button>
-            )}
-          </div>
-          
-          <div className={styles.controlsRight}>
-            <span className={styles.resultsCount}>
-              {totalItems} {totalItems === 1 ? 'song' : 'songs'}
-            </span>
-          </div>
-        </div>
-      )}
-
       {/* Content Area */}
       {isEmpty ? (
         <div className={styles.emptyState}>{emptyMessage}</div>
-      ) : isNoResults ? (
-        <div className={styles.emptyState}>{noResultsMessage}</div>
       ) : variant === 'table' ? (
         /* Table Variant */
         <div className={styles.tableContainer}>

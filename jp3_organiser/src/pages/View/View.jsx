@@ -8,12 +8,12 @@
  * mimicking how the ESP32 would parse the binary format.
  */
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useLibraryConfig, useToast } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
 import { deleteSongs, deleteAlbum, deleteArtist, editSongMetadata, editAlbum, editArtist } from '../../services/libraryService';
-import { LoadingState, ErrorState, EmptyState, Toast, ConfirmModal } from '../../components';
+import { LoadingState, ErrorState, EmptyState, Toast, ConfirmModal, LibrarySearch } from '../../components';
 import styles from './View.module.css';
 
 import { TABS, VIEW_TABS } from '../../utils/enums';
@@ -30,6 +30,7 @@ import EditArtistModal from './components/EditArtistModal';
 
 export default function View() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { libraryPath, isLoading: configLoading } = useLibraryConfig();
   
   // Use tab from navigation state if provided, otherwise default to SONGS
@@ -74,6 +75,26 @@ export default function View() {
   const [artistToEdit, setArtistToEdit] = useState(null);
   const [showEditArtistModal, setShowEditArtistModal] = useState(false);
 
+  // Song filter state - used to filter SongTable when selecting from LibrarySearch
+  const [songFilter, setSongFilter] = useState(null); // stores song object or null
+
+  // Album filter state - used to filter AlbumView when selecting from LibrarySearch
+  const [albumFilter, setAlbumFilter] = useState(null); // stores album object or null
+
+  // Artist filter state - used to filter ArtistView when selecting from LibrarySearch
+  const [artistFilter, setArtistFilter] = useState(null); // stores artist object or null
+
+  // Playlist filter state - used to filter PlaylistView when selecting from LibrarySearch
+  const [playlistFilter, setPlaylistFilter] = useState(null); // stores playlist object or null
+
+  // Clear all filters
+  const clearAllFilters = useCallback(() => {
+    setSongFilter(null);
+    setAlbumFilter(null);
+    setArtistFilter(null);
+    setPlaylistFilter(null);
+  }, []);
+
   // Stats for header
   const stats = useMemo(() => {
     if (!library) return { songs: 0, albums: 0, artists: 0, playlists: 0 };
@@ -97,6 +118,41 @@ export default function View() {
   const getArtistAlbumCount = (artistId) => {
     return library?.albums?.filter(a => a.artistId === artistId).length ?? 0;
   };
+
+  // ============ SEARCH HANDLERS ============
+  const handleSelectPlaylist = useCallback((playlist) => {
+    // Set filter to show this playlist, then switch to Playlists tab
+    clearAllFilters();
+    setPlaylistFilter(playlist);
+    setActiveTab(TABS.PLAYLISTS);
+  }, [clearAllFilters]);
+
+  const handleSelectArtist = useCallback((artist) => {
+    // Set filter to show this artist, then switch to Artists tab
+    clearAllFilters();
+    setArtistFilter(artist);
+    setActiveTab(TABS.ARTISTS);
+  }, [clearAllFilters]);
+
+  const handleSelectAlbum = useCallback((album) => {
+    // Set filter to show this album, then switch to Albums tab
+    clearAllFilters();
+    setAlbumFilter(album);
+    setActiveTab(TABS.ALBUMS);
+  }, [clearAllFilters]);
+
+  const handleSelectSong = useCallback((song) => {
+    // Set filter to show this song in the table, then switch to Songs tab
+    clearAllFilters();
+    setSongFilter(song);
+    setActiveTab(TABS.SONGS);
+  }, [clearAllFilters]);
+
+  // Handle tab change - clear all filters when switching tabs
+  const handleTabChange = useCallback((tab) => {
+    clearAllFilters();
+    setActiveTab(tab);
+  }, [clearAllFilters]);
 
   // ============ SONG DELETE HANDLERS ============
   const handleDeleteSongRequest = (song) => {
@@ -332,16 +388,37 @@ export default function View() {
             libraryPath={libraryPath}
             onCompacted={handleRefresh}
           />
-          <TabSelector 
-            setActiveTab={setActiveTab}
-            activeTab={activeTab}
-            tabs={VIEW_TABS}
-          />
+          <div className={styles.toolbar}>
+            <TabSelector 
+              setActiveTab={handleTabChange}
+              activeTab={activeTab}
+              tabs={VIEW_TABS}
+            />
+            <div className={styles.searchWrapper}>
+              <LibrarySearch
+                library={library}
+                libraryPath={libraryPath}
+                onSelectPlaylist={handleSelectPlaylist}
+                onSelectArtist={handleSelectArtist}
+                onSelectAlbum={handleSelectAlbum}
+                onSelectSong={handleSelectSong}
+                placeholder="Search playlists, artists, albums, songs..."
+              />
+            </div>
+          </div>
           <div className={styles.content}>
             <TabContent 
               activeTab={activeTab} 
               library={library}
               libraryPath={libraryPath}
+              songFilter={songFilter}
+              albumFilter={albumFilter}
+              artistFilter={artistFilter}
+              playlistFilter={playlistFilter}
+              onClearSongFilter={() => setSongFilter(null)}
+              onClearAlbumFilter={() => setAlbumFilter(null)}
+              onClearArtistFilter={() => setArtistFilter(null)}
+              onClearPlaylistFilter={() => setPlaylistFilter(null)}
               onDeleteSong={handleDeleteSongRequest}
               onEditSong={handleEditRequest}
               onDeleteAlbum={handleDeleteAlbumRequest}

@@ -1,3 +1,10 @@
+/* Container */
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
 /* Table styles */
 .tableContainer {
   overflow-x: auto;

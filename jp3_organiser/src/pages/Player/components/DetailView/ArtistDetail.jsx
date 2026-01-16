@@ -12,9 +12,11 @@ import React, { useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useLibraryConfig } from '../../../../hooks';
 import { useLibrary } from '../../../../hooks/useLibrary';
-import { LoadingState, ErrorState, EmptyState } from '../../../../components';
+import { LoadingState, ErrorState, EmptyState, CoverArt } from '../../../../components';
 import DetailView from '../DetailView';
 import { formatDuration } from '../../../../utils/formatters';
+import { IMAGE_COVER_TYPE } from '../../../../utils/enums';
+
 import { TABS } from '../../../../utils/enums';
 
 export default function ArtistDetail() {
@@ -57,6 +59,18 @@ export default function ArtistDetail() {
     const totalSecs = artistSongs.reduce((sum, s) => sum + (s.durationSec || 0), 0);
     return totalSecs > 0 ? formatDuration(totalSecs) : null;
   }, [artistSongs]);
+
+
+    // Render cover art with large size - defined before early returns to follow Rules of Hooks
+    const renderCoverArt = useCallback(() => (
+      <CoverArt
+        artist={artist?.name}
+        libraryPath={libraryPath}
+        size="large"
+        imageCoverType={IMAGE_COVER_TYPE.ARTIST}
+        circular={false}
+      />
+    ), [artist?.name, libraryPath]);
 
   const handleBack = useCallback(() => {
     // If we have navigation history from within the app, go back
@@ -101,6 +115,7 @@ export default function ArtistDetail() {
       meta={meta}
       songs={artistSongs}
       onBack={handleBack}
+      renderCoverArt={renderCoverArt}
     />
   );
 }

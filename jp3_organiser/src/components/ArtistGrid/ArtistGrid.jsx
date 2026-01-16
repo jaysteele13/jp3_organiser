@@ -27,7 +27,7 @@ const ArtistGrid = memo(function ArtistGrid({
   getActions,
   onArtistClick,
   emptyMessage = 'No artists',
-  cardSize = 120,
+  cardSize = 150,
   coverSize = 'large',
   variant = 'default',
 }) {

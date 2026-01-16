@@ -11,6 +11,16 @@
   min-height: 300px;
 }
 
+/* Toolbar - TabSelector + Search on same row */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
 
 
 /* States */
@@ -86,5 +96,10 @@
 
   .cardGrid {
     grid-template-columns: 1fr;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

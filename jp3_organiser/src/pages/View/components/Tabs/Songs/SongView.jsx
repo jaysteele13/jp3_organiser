@@ -1,19 +1,32 @@
 /**
  * SongView Component
  * 
- * Displays all songs in the library with search, pagination, and actions.
+ * Displays all songs in the library with pagination and actions.
  * Uses the shared SongTable component with table variant.
  * Title, artist, and album names are clickable links that navigate to Player.
  * Clicking a song title navigates to Player and begins playback.
+ * 
+ * Supports external filtering via songFilter prop (from LibrarySearch).
+ * When a filter is active, shows only the filtered song with a clear button.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SongTable, ActionMenu } from '../../../../../components';
+import { SongTable, ActionMenu, FilterBar } from '../../../../../components';
 import { TABS } from '../../../../../utils/enums';
+import styles from './SongView.module.css';
 
-export default function SongView({ library, onDeleteSong, onEditSong }) {
+export default function SongView({ library, onDeleteSong, onEditSong, songFilter, onClearFilter }) {
   const navigate = useNavigate();
+
+  // Filter songs if a filter is active
+  const displaySongs = useMemo(() => {
+    if (!songFilter) {
+      return library.songs;
+    }
+    // Filter to only show the selected song (by ID for exact match)
+    return library.songs.filter(song => song.id === songFilter.id);
+  }, [library.songs, songFilter]);
 
   const handleTitleClick = useCallback((song) => {
     // Navigate to Player with song data to trigger playback
@@ -44,17 +57,27 @@ export default function SongView({ library, onDeleteSong, onEditSong }) {
   ), [onEditSong, onDeleteSong]);
 
   return (
-    <SongTable
-      songs={library.songs}
-      variant="table"
-      columns={['title', 'artist', 'album', 'path']}
-      onTitleClick={handleTitleClick}
-      onArtistClick={handleArtistClick}
-      onAlbumClick={handleAlbumClick}
-      renderActions={renderActions}
-      emptyMessage="No songs in library"
-      noResultsMessage="No songs match your search"
-      searchPlaceholder="Search songs by title, artist, or album..."
-    />
+    <div className={styles.container}>
+      {/* Filter indicator bar */}
+      {songFilter && (
+        <FilterBar
+          label={songFilter.title}
+          sublabel={`by ${songFilter.artistName}`}
+          onClear={onClearFilter}
+          clearText="Show all songs"
+        />
+      )}
+      
+      <SongTable
+        songs={displaySongs}
+        variant="table"
+        columns={['title', 'artist', 'album', 'path']}
+        onTitleClick={handleTitleClick}
+        onArtistClick={handleArtistClick}
+        onAlbumClick={handleAlbumClick}
+        renderActions={renderActions}
+        emptyMessage="No songs in library"
+      />
+    </div>
   );
 }

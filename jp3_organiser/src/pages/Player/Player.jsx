@@ -11,17 +11,18 @@
  * - state.playContext: Array of songs for next/prev navigation
  */
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useSearchParams, useLocation } from 'react-router-dom';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { useLibraryConfig, usePlayer } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
-import { LoadingState, ErrorState, EmptyState } from '../../components';
+import { LoadingState, ErrorState, EmptyState, LibrarySearch } from '../../components';
 import StatsBar from '../View/components/StatsBar'
 import styles from './Player.module.css';
 
 import { TABS } from '../../utils/enums';
 import TabSelector from '../View/components/Tabs/TabSelector';
 import TabContent from './components/TabContent';
+import PlayerHeader from './components/PlayerHeader';
 
 // Valid tab values for URL parameter validation
 const VALID_TABS = Object.values(TABS);
@@ -29,6 +30,7 @@ const VALID_TABS = Object.values(TABS);
 export default function Player() {
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { libraryPath, isLoading: configLoading } = useLibraryConfig();
   const { setLibraryPath, playTrack } = usePlayer();
   const hasTriggeredPlayback = useRef(false);
@@ -83,6 +85,24 @@ export default function Player() {
     };
   }, [library]);
 
+  // ============ SEARCH HANDLERS ============
+  const handleSelectSong = useCallback((song) => {
+    // Start playback with all songs as context for next/prev
+    playTrack(song, library?.songs || [song]);
+  }, [playTrack, library?.songs]);
+
+  const handleSelectAlbum = useCallback((album) => {
+    navigate(`/player/album/${album.id}`);
+  }, [navigate]);
+
+  const handleSelectArtist = useCallback((artist) => {
+    navigate(`/player/artist/${artist.id}`);
+  }, [navigate]);
+
+  const handleSelectPlaylist = useCallback((playlist) => {
+    navigate(`/player/playlist/${playlist.id}`);
+  }, [navigate]);
+
   if (configLoading) {
     return <LoadingState message="Loading configuration..." />;
   }
@@ -104,13 +124,30 @@ export default function Player() {
 
       {library && !isLoading && (
         <>
+          {activeTab == TABS.HOME && (
+               <PlayerHeader />
+          )}
+       
           <StatsBar stats={stats} />
 
-          <TabSelector 
-            activeTab={activeTab}
-            setActiveTab={handleTabChange}
-            tabs={TABS}
-          />
+          <div className={styles.toolbar}>
+            <TabSelector 
+              activeTab={activeTab}
+              setActiveTab={handleTabChange}
+              tabs={TABS}
+            />
+            <div className={styles.searchWrapper}>
+              <LibrarySearch
+                library={library}
+                libraryPath={libraryPath}
+                onSelectSong={handleSelectSong}
+                onSelectAlbum={handleSelectAlbum}
+                onSelectArtist={handleSelectArtist}
+                onSelectPlaylist={handleSelectPlaylist}
+                placeholder="Search library..."
+              />
+            </div>
+          </div>
 
           <div className={styles.content}>
             <TabContent 
