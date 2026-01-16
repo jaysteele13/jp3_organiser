@@ -22,6 +22,7 @@ import styles from './Player.module.css';
 import { TABS } from '../../utils/enums';
 import TabSelector from '../View/components/Tabs/TabSelector';
 import TabContent from './components/TabContent';
+import PlayerHeader from './components/PlayerHeader';
 
 // Valid tab values for URL parameter validation
 const VALID_TABS = Object.values(TABS);
@@ -123,6 +124,10 @@ export default function Player() {
 
       {library && !isLoading && (
         <>
+          {activeTab == TABS.HOME && (
+               <PlayerHeader />
+          )}
+       
           <StatsBar stats={stats} />
 
           <div className={styles.toolbar}>

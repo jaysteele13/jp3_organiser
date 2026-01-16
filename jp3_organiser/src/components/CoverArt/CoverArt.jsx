@@ -41,7 +41,7 @@ import artistPlaceholder3 from '../../assets/artist_placeholders/3.png';
 const SIZES = {
   small: 40,
   medium: 60,
-  large: 120,
+  large: 150,
   xlarge: 250,
 };
 

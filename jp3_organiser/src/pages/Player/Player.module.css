@@ -41,6 +41,7 @@
   gap: 1rem;
   margin-bottom: 1rem;
   flex-wrap: wrap;
+  padding-bottom: .5rem;;
 }
 
 .searchWrapper {
