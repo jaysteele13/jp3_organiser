@@ -8,8 +8,7 @@
 
 .container {
   position: relative;
-  width: 100%;
-  max-width: 320px;
+
 }
 
 /* ========================================
@@ -18,11 +17,11 @@
 
 .inputWrapper {
   position: relative;
-  width: 100%;
+ 
 }
 
 .searchInput {
-  width: 100%;
+  width: 500px;
   padding: 0.5rem 2.25rem 0.5rem 0.75rem;
   font-size: 0.875rem;
   font-family: inherit;
@@ -113,6 +112,7 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #555;
+  text-align: start;
 }
 
 .categoryResults {

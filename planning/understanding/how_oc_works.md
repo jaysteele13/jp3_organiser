@@ -1,0 +1,1 @@
+you can open opencode with ` -c` and that will retain history. Can also use /session to go through histroy
