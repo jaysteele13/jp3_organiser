@@ -34,14 +34,15 @@ function SuggestibleInput({
   placeholder,
   error,
   maxLength,
-  enableSuggestions = true
+  enableSuggestions = true,
+  enableFilenameSuggestions = true,
 }) {
   const { suggestion, source, completionText, canAccept, acceptSuggestion } = useAutoSuggest(
     filename, 
     value,
     {
       libraryEntries,
-      enableFilename: enableSuggestions,
+      enableFilename: enableSuggestions && enableFilenameSuggestions,
       enableLibrary: enableSuggestions && libraryEntries?.length > 0,
     }
   );
@@ -110,6 +111,7 @@ export default function MetadataForm({
   onSkip,
   yearReadOnly = false,
   alwaysEnableSuggestions = false,
+  disableFilenameSuggestions = false,
 }) {
   // Get library data from context
   const { library } = useLibraryContext();
@@ -235,6 +237,7 @@ export default function MetadataForm({
             placeholder="Song title"
             error={errors.title}
             enableSuggestions={alwaysEnableSuggestions || !file?.metadata?.title}
+            enableFilenameSuggestions={!disableFilenameSuggestions}
           />
           {errors.title && (
             <span className={styles.errorText}>{errors.title}</span>
@@ -255,6 +258,7 @@ export default function MetadataForm({
             placeholder="Artist name"
             error={errors.artist}
             enableSuggestions={alwaysEnableSuggestions || !file?.metadata?.artist}
+            enableFilenameSuggestions={!disableFilenameSuggestions}
           />
           {errors.artist && (
             <span className={styles.errorText}>{errors.artist}</span>
@@ -275,6 +279,7 @@ export default function MetadataForm({
             placeholder="Album name"
             error={errors.album}
             enableSuggestions={alwaysEnableSuggestions || !file?.metadata?.album}
+            enableFilenameSuggestions={!disableFilenameSuggestions}
           />
           {errors.album && (
             <span className={styles.errorText}>{errors.album}</span>
