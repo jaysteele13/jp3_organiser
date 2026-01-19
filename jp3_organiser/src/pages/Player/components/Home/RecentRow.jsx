@@ -17,12 +17,12 @@
 
 import React from 'react';
 import { RECENT_TYPE } from '../../../../hooks/useRecents';
+import { IMAGE_COVER_TYPE } from '../../../../utils/enums';
 import { CoverArt } from '../../../../components';
 import styles from './RecentRow.module.css';
 
 // Icons for content types without album art
 const TYPE_ICONS = {
-  [RECENT_TYPE.ARTIST]: '🎤',
   [RECENT_TYPE.PLAYLIST]: '📋',
 };
 
@@ -116,6 +116,8 @@ export default function RecentRow({
     }
   };
 
+
+
   return (
     <div className={styles.container}>
       <div className={styles.scrollContainer}>
@@ -125,17 +127,19 @@ export default function RecentRow({
           const icon = TYPE_ICONS[type];
           
           // Determine cover art props for songs and albums
-          const hasCoverArt = type === RECENT_TYPE.SONG || type === RECENT_TYPE.ALBUM;
-          const coverArtist = type === RECENT_TYPE.SONG 
-            ? item.artistName 
-            : type === RECENT_TYPE.ALBUM 
-              ? item.artistName 
-              : null;
-          const coverAlbum = type === RECENT_TYPE.SONG 
-            ? item.albumName 
-            : type === RECENT_TYPE.ALBUM 
-              ? item.name 
-              : null;
+          const hasCoverArt = type === RECENT_TYPE.SONG || type === RECENT_TYPE.ALBUM || type === RECENT_TYPE.ARTIST;
+          const coverArtist = (type === RECENT_TYPE.SONG || type === RECENT_TYPE.ALBUM) ? item.artistName : null
+
+          let coverAlbum = null;
+          if (type === RECENT_TYPE.SONG) {
+            coverAlbum = item.albumName;
+          } else if (type === RECENT_TYPE.ALBUM) {
+            coverAlbum = item.name;
+          }
+
+          const coverArtProps = type === RECENT_TYPE.ARTIST 
+            ? { artist: coverArtist, album: null, fallbackIcon: "🎤", imageCoverType: IMAGE_COVER_TYPE.ARTIST }
+            : { artist: coverArtist, album: coverAlbum, fallbackIcon: type === RECENT_TYPE.SONG ? "🎵" : "💿" };
           
           return (
             <div
@@ -145,11 +149,9 @@ export default function RecentRow({
             >
               {hasCoverArt ? (
                 <CoverArt
-                  artist={coverArtist}
-                  album={coverAlbum}
+                  {...coverArtProps}
                   libraryPath={libraryPath}
                   size="medium"
-                  fallbackIcon={type === RECENT_TYPE.SONG ? '🎵' : '💿'}
                 />
               ) : (
                 <div className={styles.cardIcon}>{icon}</div>
