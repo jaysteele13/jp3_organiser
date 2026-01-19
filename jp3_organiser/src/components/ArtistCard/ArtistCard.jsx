@@ -37,7 +37,26 @@ const ArtistCard = memo(function ArtistCard({
   variant = 'default',
 }) {
   const [showActions, setShowActions] = useState(false);
+  const [isOverflowing, setIsOverflowing] = useState(false);
   const cardRef = useRef(null);
+  const nameRef = useRef(null);
+  const containerRef = useRef(null);
+
+  // Check if artist name overflows its container
+  useEffect(() => {
+    const checkOverflow = () => {
+      if (nameRef.current && containerRef.current) {
+        const textWidth = nameRef.current.scrollWidth;
+        const containerWidth = containerRef.current.clientWidth;
+        setIsOverflowing(textWidth > containerWidth);
+      }
+    };
+    
+    checkOverflow();
+    // Re-check on window resize
+    window.addEventListener('resize', checkOverflow);
+    return () => window.removeEventListener('resize', checkOverflow);
+  }, [artist.name]);
 
   // Handle click - direct navigation if onClick provided, otherwise toggle action menu
   const handleClick = useCallback((e) => {
@@ -145,13 +164,17 @@ const ArtistCard = memo(function ArtistCard({
         )}
       </div>
       
-      <div className={styles.artistNameContainer}>
+      <div 
+        className={`${styles.artistNameContainer} ${isOverflowing ? styles.canScroll : ''}`}
+        ref={containerRef}
+      >
         <span 
           className={styles.artistName}
           onClick={handleClick}
           onKeyDown={handleKeyDown}
           role="button"
           tabIndex={0}
+          ref={nameRef}
         >
           {artist.name}
         </span>

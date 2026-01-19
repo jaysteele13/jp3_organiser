@@ -127,7 +127,8 @@
   width: 100%;
 }
 
-.scrollContainer:hover .title {
+/* Only scroll when text actually overflows */
+.scrollContainer.canScroll:hover .title {
   animation: scroll-title 4s linear infinite;
 }
 
