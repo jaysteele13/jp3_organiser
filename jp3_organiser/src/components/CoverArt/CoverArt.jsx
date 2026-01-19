@@ -28,6 +28,12 @@ import {
   fetchArtistCover 
 } from '../../services/coverArtService';
 import { getAlbumMbid, getArtistMbid } from '../../services/mbidStore';
+import {
+  isAlbumCoverNotFound,
+  isArtistCoverNotFound,
+  markAlbumCoverNotFound,
+  markArtistCoverNotFound,
+} from '../../services/coverArtNotFoundStore';
 import { IMAGE_COVER_TYPE } from '../../utils/enums';
 import styles from './CoverArt.module.css';
 
@@ -168,8 +174,15 @@ const CoverArt = memo(function CoverArt({
           // Try to read from disk cache first
           let blobUrl = await getAlbumCoverBlobUrl(libraryPath, artist, album);
 
-          // If not cached, look up MBID and fetch from API
+          // If not cached, check if previously marked as not found
           if (!blobUrl) {
+            const notFound = await isAlbumCoverNotFound(artist, album);
+            if (notFound) {
+              console.log('[CoverArt] Album cover previously not found, skipping API call:', artist, '-', album);
+              return null;
+            }
+
+            // Look up MBID and fetch from API
             console.log('[CoverArt] No cached album cover, looking up MBID...');
             const mbid = await getAlbumMbid(artist, album);
             console.log('[CoverArt] Album MBID:', mbid);
@@ -179,7 +192,13 @@ const CoverArt = memo(function CoverArt({
               console.log('[CoverArt] fetchAlbumCover result:', result);
               if (result.success) {
                 blobUrl = await getAlbumCoverBlobUrl(libraryPath, artist, album);
+              } else {
+                // Mark as not found to avoid repeated API calls
+                await markAlbumCoverNotFound(artist, album);
               }
+            } else {
+              // No MBID available, mark as not found
+              await markAlbumCoverNotFound(artist, album);
             }
           }
 
@@ -261,8 +280,15 @@ const CoverArt = memo(function CoverArt({
           // Try to read from disk cache first
           let blobUrl = await getArtistCoverBlobUrl(libraryPath, artist);
 
-          // If not cached, look up artist MBID and fetch from Fanart.tv
+          // If not cached, check if previously marked as not found
           if (!blobUrl) {
+            const notFound = await isArtistCoverNotFound(artist);
+            if (notFound) {
+              console.log('[CoverArt] Artist cover previously not found, skipping API call:', artist);
+              return null;
+            }
+
+            // Look up artist MBID and fetch from Fanart.tv
             console.log('[CoverArt] No cached artist cover, looking up artist MBID...');
             const artistMbid = await getArtistMbid(artist);
             console.log('[CoverArt] Artist MBID:', artistMbid);
@@ -272,7 +298,13 @@ const CoverArt = memo(function CoverArt({
               console.log('[CoverArt] fetchArtistCover result:', result);
               if (result.success) {
                 blobUrl = await getArtistCoverBlobUrl(libraryPath, artist);
+              } else {
+                // Mark as not found to avoid repeated API calls
+                await markArtistCoverNotFound(artist);
               }
+            } else {
+              // No MBID available, mark as not found
+              await markArtistCoverNotFound(artist);
             }
           }
 
