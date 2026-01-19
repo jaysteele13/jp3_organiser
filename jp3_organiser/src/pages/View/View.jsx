@@ -454,8 +454,11 @@ export default function View() {
                 onSelectSong={handleSelectSong}
                 placeholder="Search playlists, artists, albums, songs..."
               />
+            
             </div>
+            
           </div>
+          <hr className={styles.divider}/>
           <div className={styles.content}>
             <TabContent 
               activeTab={activeTab} 
