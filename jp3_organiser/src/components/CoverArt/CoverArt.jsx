@@ -72,6 +72,10 @@ function getArtistPlaceholderImage(artistName) {
 // Key format: "libraryPath:artist|||album" for albums, "libraryPath:artist|||" for artists
 const blobUrlCache = new Map();
 
+// Track in-flight requests to deduplicate concurrent fetches
+// Key format same as blobUrlCache, value is a Promise
+const inFlightRequests = new Map();
+
 /**
  * Create a stable cache key for album covers
  */
@@ -137,32 +141,63 @@ const CoverArt = memo(function CoverArt({
         }
       }
 
+      // Check if there's already an in-flight request for this cover
+      if (inFlightRequests.has(cacheKey)) {
+        try {
+          const blobUrl = await inFlightRequests.get(cacheKey);
+          if (isMounted) {
+            setImageUrl(blobUrl);
+            setHasError(!blobUrl);
+            setIsLoading(false);
+          }
+        } catch (error) {
+          if (isMounted) {
+            setHasError(true);
+            setIsLoading(false);
+          }
+        }
+        return;
+      }
+
       setIsLoading(true);
       setHasError(false);
 
-      try {
-        // Try to read from disk cache first
-        let blobUrl = await getAlbumCoverBlobUrl(libraryPath, artist, album);
+      // Create the fetch promise and store it
+      const fetchPromise = (async () => {
+        try {
+          // Try to read from disk cache first
+          let blobUrl = await getAlbumCoverBlobUrl(libraryPath, artist, album);
 
-        // If not cached, look up MBID and fetch from API
-        if (!blobUrl) {
-          console.log('[CoverArt] No cached album cover, looking up MBID...');
-          const mbid = await getAlbumMbid(artist, album);
-          console.log('[CoverArt] Album MBID:', mbid);
+          // If not cached, look up MBID and fetch from API
+          if (!blobUrl) {
+            console.log('[CoverArt] No cached album cover, looking up MBID...');
+            const mbid = await getAlbumMbid(artist, album);
+            console.log('[CoverArt] Album MBID:', mbid);
 
-          if (mbid) {
-            const result = await fetchAlbumCover(libraryPath, artist, album, mbid);
-            console.log('[CoverArt] fetchAlbumCover result:', result);
-            if (result.success) {
-              blobUrl = await getAlbumCoverBlobUrl(libraryPath, artist, album);
+            if (mbid) {
+              const result = await fetchAlbumCover(libraryPath, artist, album, mbid);
+              console.log('[CoverArt] fetchAlbumCover result:', result);
+              if (result.success) {
+                blobUrl = await getAlbumCoverBlobUrl(libraryPath, artist, album);
+              }
             }
           }
-        }
 
-        if (blobUrl) {
-          blobUrlCache.set(cacheKey, blobUrl);
-        }
+          if (blobUrl) {
+            blobUrlCache.set(cacheKey, blobUrl);
+          }
 
+          return blobUrl;
+        } finally {
+          // Clean up in-flight tracking
+          inFlightRequests.delete(cacheKey);
+        }
+      })();
+
+      inFlightRequests.set(cacheKey, fetchPromise);
+
+      try {
+        const blobUrl = await fetchPromise;
         if (isMounted) {
           setImageUrl(blobUrl);
           setHasError(!blobUrl);
@@ -199,32 +234,63 @@ const CoverArt = memo(function CoverArt({
         }
       }
 
+      // Check if there's already an in-flight request for this cover
+      if (inFlightRequests.has(cacheKey)) {
+        try {
+          const blobUrl = await inFlightRequests.get(cacheKey);
+          if (isMounted) {
+            setImageUrl(blobUrl);
+            setHasError(!blobUrl);
+            setIsLoading(false);
+          }
+        } catch (error) {
+          if (isMounted) {
+            setHasError(true);
+            setIsLoading(false);
+          }
+        }
+        return;
+      }
+
       setIsLoading(true);
       setHasError(false);
 
-      try {
-        // Try to read from disk cache first
-        let blobUrl = await getArtistCoverBlobUrl(libraryPath, artist);
+      // Create the fetch promise and store it
+      const fetchPromise = (async () => {
+        try {
+          // Try to read from disk cache first
+          let blobUrl = await getArtistCoverBlobUrl(libraryPath, artist);
 
-        // If not cached, look up artist MBID and fetch from Fanart.tv
-        if (!blobUrl) {
-          console.log('[CoverArt] No cached artist cover, looking up artist MBID...');
-          const artistMbid = await getArtistMbid(artist);
-          console.log('[CoverArt] Artist MBID:', artistMbid);
+          // If not cached, look up artist MBID and fetch from Fanart.tv
+          if (!blobUrl) {
+            console.log('[CoverArt] No cached artist cover, looking up artist MBID...');
+            const artistMbid = await getArtistMbid(artist);
+            console.log('[CoverArt] Artist MBID:', artistMbid);
 
-          if (artistMbid) {
-            const result = await fetchArtistCover(libraryPath, artist, artistMbid);
-            console.log('[CoverArt] fetchArtistCover result:', result);
-            if (result.success) {
-              blobUrl = await getArtistCoverBlobUrl(libraryPath, artist);
+            if (artistMbid) {
+              const result = await fetchArtistCover(libraryPath, artist, artistMbid);
+              console.log('[CoverArt] fetchArtistCover result:', result);
+              if (result.success) {
+                blobUrl = await getArtistCoverBlobUrl(libraryPath, artist);
+              }
             }
           }
-        }
 
-        if (blobUrl) {
-          blobUrlCache.set(cacheKey, blobUrl);
-        }
+          if (blobUrl) {
+            blobUrlCache.set(cacheKey, blobUrl);
+          }
 
+          return blobUrl;
+        } finally {
+          // Clean up in-flight tracking
+          inFlightRequests.delete(cacheKey);
+        }
+      })();
+
+      inFlightRequests.set(cacheKey, fetchPromise);
+
+      try {
+        const blobUrl = await fetchPromise;
         if (isMounted) {
           setImageUrl(blobUrl);
           setHasError(!blobUrl);
@@ -314,4 +380,5 @@ export function clearCoverArtCache() {
     }
   }
   blobUrlCache.clear();
+  inFlightRequests.clear();
 }
