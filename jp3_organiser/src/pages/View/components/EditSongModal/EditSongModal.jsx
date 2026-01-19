@@ -6,6 +6,7 @@
  * Wraps content with LibraryProvider for autosuggest functionality.
  */
 
+import { useRef } from 'react';
 import { LibraryProvider } from '../../../../hooks';
 import { parsedSongToTrackedFile } from '../../../../utils';
 import MetadataForm from '../../../Upload/components/MetadataForm';
@@ -18,6 +19,9 @@ export default function EditSongModal({
   onCancel,
   isSaving
 }) {
+  // Track if mousedown started on overlay (not modal content)
+  const mouseDownOnOverlay = useRef(false);
+
   if (!song) {
     return null;
   }
@@ -39,9 +43,27 @@ export default function EditSongModal({
     });
   };
 
+  // Only close if both mousedown and mouseup happened on overlay
+  const handleOverlayMouseDown = (e) => {
+    if (e.target === e.currentTarget) {
+      mouseDownOnOverlay.current = true;
+    }
+  };
+
+  const handleOverlayMouseUp = (e) => {
+    if (e.target === e.currentTarget && mouseDownOnOverlay.current) {
+      onCancel();
+    }
+    mouseDownOnOverlay.current = false;
+  };
+
   return (
-    <div className={styles.overlay} onClick={onCancel}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div 
+      className={styles.overlay} 
+      onMouseDown={handleOverlayMouseDown}
+      onMouseUp={handleOverlayMouseUp}
+    >
+      <div className={styles.modal}>
         <h2 className={styles.title}>Edit Song Metadata</h2>
         
         <p className={styles.info}>
@@ -54,6 +76,9 @@ export default function EditSongModal({
               file={trackedFile}
               onSave={handleSave}
               onCancel={onCancel}
+              yearReadOnly={true}
+              alwaysEnableSuggestions={true}
+              disableFilenameSuggestions={true}
             />
           </div>
         </LibraryProvider>

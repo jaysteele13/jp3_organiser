@@ -7,6 +7,7 @@
  * Interaction:
  * - Hover: Shows album/song count overlay
  * - Click: If onClick prop provided, calls it directly. Otherwise shows action menu overlay.
+ * - Right-click: Shows context menu with "View in Library" option (if onViewInLibrary provided).
  * 
  * @param {Object} props
  * @param {Object} props.artist - Artist object with id and name
@@ -15,13 +16,14 @@
  * @param {number} props.songCount - Number of songs by this artist
  * @param {Array} props.actions - Action menu items: { label: string, onClick: function, variant?: 'danger' }
  * @param {Function} props.onClick - Direct click handler (bypasses action menu if provided)
+ * @param {Function} props.onViewInLibrary - Callback for "View in Library" context menu action
  * @param {number} props.size - Circle diameter in pixels (default: 120)
  * @param {string} props.coverSize - CoverArt size: 'small' | 'medium' | 'large' | 'xlarge' (default: 'large')
  * @param {string} props.variant - Style variant: 'default' | 'purple' (default: 'default')
  */
 
 import { memo, useState, useCallback, useEffect, useRef } from 'react';
-import { CoverArt } from '../../components';
+import { CoverArt, ScrollingText, ContextMenu } from '../../components';
 import { IMAGE_COVER_TYPE } from '../../utils/enums';
 import styles from './ArtistCard.module.css';
 
@@ -32,12 +34,26 @@ const ArtistCard = memo(function ArtistCard({
   songCount = 0,
   actions = [],
   onClick,
+  onViewInLibrary,
   size = 120,
   coverSize = 'large',
   variant = 'default',
 }) {
   const [showActions, setShowActions] = useState(false);
+  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 });
   const cardRef = useRef(null);
+
+  // Context menu handlers
+  const handleContextMenu = useCallback((e) => {
+    if (!onViewInLibrary) return; // Only show if handler provided
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ visible: true, x: e.clientX, y: e.clientY });
+  }, [onViewInLibrary]);
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenu({ visible: false, x: 0, y: 0 });
+  }, []);
 
   // Handle click - direct navigation if onClick provided, otherwise toggle action menu
   const handleClick = useCallback((e) => {
@@ -102,6 +118,7 @@ const ArtistCard = memo(function ArtistCard({
         <div
           className={circleClass}
           onClick={handleClick}
+          onContextMenu={handleContextMenu}
           onKeyDown={handleKeyDown}
           role="button"
           tabIndex={0}
@@ -145,15 +162,27 @@ const ArtistCard = memo(function ArtistCard({
         )}
       </div>
       
-      <span 
+      <ScrollingText
         className={styles.artistName}
+        containerClassName={styles.artistNameContainer}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         role="button"
         tabIndex={0}
       >
         {artist.name}
-      </span>
+      </ScrollingText>
+      
+      {onViewInLibrary && (
+        <ContextMenu
+          visible={contextMenu.visible}
+          position={{ x: contextMenu.x, y: contextMenu.y }}
+          items={[
+            { label: 'View in Library', onClick: () => onViewInLibrary(artist) }
+          ]}
+          onClose={closeContextMenu}
+        />
+      )}
     </div>
   );
 });

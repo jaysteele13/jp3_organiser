@@ -18,7 +18,7 @@
  */
 
 import React, { memo } from 'react';
-import { ActionMenu } from '../../components';
+import { ActionMenu, ScrollingText } from '../../components';
 import styles from './CardList.module.css';
 
 const CardListItem = memo(function CardListItem({
@@ -51,29 +51,25 @@ const CardListItem = memo(function CardListItem({
         <div className={styles.cardMain}>
           <div className={styles.cardHeader}>
             <div className={styles.cardInfo}>
-              <div className={styles.scrollContainer}>
-                <span
-                  className={styles.cardTitleLink}
-                  onClick={handleTitleClick}
-                  onKeyDown={handleTitleKeyDown}
+              <ScrollingText
+                className={styles.cardTitleLink}
+                onClick={handleTitleClick}
+                onKeyDown={handleTitleKeyDown}
+                role="link"
+                tabIndex={0}
+              >
+                {title}
+              </ScrollingText>
+              {subtitle && (
+                <ScrollingText
+                  className={styles.cardSubtitleLink}
+                  onClick={handleSubtitleClick}
+                  onKeyDown={handleSubtitleKeyDown}
                   role="link"
                   tabIndex={0}
                 >
-                  {title}
-                </span>
-              </div>
-              {subtitle && (
-                <div className={styles.scrollContainer}>
-                  <span
-                    className={styles.cardSubtitleLink}
-                    onClick={handleSubtitleClick}
-                    onKeyDown={handleSubtitleKeyDown}
-                    role="link"
-                    tabIndex={0}
-                  >
-                    {subtitle}
-                  </span>
-                </div>
+                  {subtitle}
+                </ScrollingText>
               )}
             </div>
             {actions && <ActionMenu items={actions} />}

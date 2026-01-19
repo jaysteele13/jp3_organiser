@@ -113,21 +113,20 @@
 }
 
 /* Card info */
+/* Scroll container constraint for ScrollingText */
+.scrollContainer {
+  max-width: 240px;
+}
+
 .cardTitle {
   font-size: 0.9rem;
   font-weight: 600;
   color: #000;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .cardSubtitle {
   font-size: 0.75rem;
   color: #333;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .cardMeta {

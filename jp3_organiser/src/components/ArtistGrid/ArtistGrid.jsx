@@ -10,6 +10,7 @@
  * @param {Object} props.artistCounts - Map of artistId -> { albums: number, songs: number }
  * @param {Function} props.getActions - Function to get action menu items for an artist
  * @param {Function} props.onArtistClick - Direct click handler for artist cards (bypasses action menu)
+ * @param {Function} props.onViewInLibrary - Callback for "View in Library" context menu action
  * @param {string} props.emptyMessage - Message to show when no artists
  * @param {number} props.cardSize - Size of each artist card circle in pixels (default: 120)
  * @param {string} props.coverSize - CoverArt size: 'small' | 'medium' | 'large' | 'xlarge' (default: 'large')
@@ -26,6 +27,7 @@ const ArtistGrid = memo(function ArtistGrid({
   artistCounts = {},
   getActions,
   onArtistClick,
+  onViewInLibrary,
   emptyMessage = 'No artists',
   cardSize = 150,
   coverSize = 'large',
@@ -48,6 +50,7 @@ const ArtistGrid = memo(function ArtistGrid({
             songCount={counts.songs}
             actions={getActions?.(artist) || []}
             onClick={onArtistClick}
+            onViewInLibrary={onViewInLibrary}
             size={cardSize}
             coverSize={coverSize}
             variant={variant}

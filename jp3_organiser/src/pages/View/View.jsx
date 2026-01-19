@@ -49,6 +49,15 @@ export default function View() {
     }
   }, [location.state?.tab]);
 
+  // Handle navigation from Player with pre-set filters (state tracked here, effect below after clearAllFilters)
+  const [showBackToPlayer, setShowBackToPlayer] = useState(false);
+
+  // Handle back to player navigation
+  const handleBackToPlayer = useCallback(() => {
+    setShowBackToPlayer(false);
+    navigate('/player');
+  }, [navigate]);
+
   // Delete song modal state
   const [songsToDelete, setSongsToDelete] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -94,6 +103,39 @@ export default function View() {
     setArtistFilter(null);
     setPlaylistFilter(null);
   }, []);
+
+  // Handle navigation from Player with pre-set filters
+  useEffect(() => {
+    const state = location.state;
+    if (!state) return;
+    
+    // Check if navigating from Player
+    if (state.fromPlayer) {
+      setShowBackToPlayer(true);
+      
+      // Set appropriate filter based on what was passed
+      if (state.filterSong) {
+        clearAllFilters();
+        setSongFilter(state.filterSong);
+        setActiveTab(TABS.SONGS);
+      } else if (state.filterAlbum) {
+        clearAllFilters();
+        setAlbumFilter(state.filterAlbum);
+        setActiveTab(TABS.ALBUMS);
+      } else if (state.filterArtist) {
+        clearAllFilters();
+        setArtistFilter(state.filterArtist);
+        setActiveTab(TABS.ARTISTS);
+      } else if (state.filterPlaylist) {
+        clearAllFilters();
+        setPlaylistFilter(state.filterPlaylist);
+        setActiveTab(TABS.PLAYLISTS);
+      }
+      
+      // Clear navigation state to prevent re-applying on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, clearAllFilters]);
 
   // Stats for header
   const stats = useMemo(() => {
@@ -157,6 +199,12 @@ export default function View() {
   // ============ SONG DELETE HANDLERS ============
   const handleDeleteSongRequest = (song) => {
     setSongsToDelete([song]);
+    setShowDeleteModal(true);
+  };
+
+  // Handle bulk delete request (from multiselect)
+  const handleDeleteSongsRequest = (songs) => {
+    setSongsToDelete(songs);
     setShowDeleteModal(true);
   };
 
@@ -377,6 +425,8 @@ export default function View() {
         libraryPath={libraryPath}
         handleRefresh={handleRefresh}
         isLoading={isLoading}
+        showBackButton={showBackToPlayer}
+        onBackClick={handleBackToPlayer}
       />
 
       <ErrorState error={error}/>
@@ -404,8 +454,11 @@ export default function View() {
                 onSelectSong={handleSelectSong}
                 placeholder="Search playlists, artists, albums, songs..."
               />
+            
             </div>
+            
           </div>
+          <hr className={styles.divider}/>
           <div className={styles.content}>
             <TabContent 
               activeTab={activeTab} 
@@ -420,6 +473,7 @@ export default function View() {
               onClearArtistFilter={() => setArtistFilter(null)}
               onClearPlaylistFilter={() => setPlaylistFilter(null)}
               onDeleteSong={handleDeleteSongRequest}
+              onDeleteSongs={handleDeleteSongsRequest}
               onEditSong={handleEditRequest}
               onDeleteAlbum={handleDeleteAlbumRequest}
               onEditAlbum={handleEditAlbumRequest}

@@ -3,5 +3,9 @@
 .uploadPage {
   position: relative;
   width: 100%;
-  min-height: 100%;
+
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 }

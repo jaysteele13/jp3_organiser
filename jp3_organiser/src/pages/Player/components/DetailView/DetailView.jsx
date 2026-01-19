@@ -18,6 +18,7 @@
 
 import React from 'react';
 import { usePlayer } from '../../../../hooks';
+import { ScrollingText } from '../../../../components';
 import { addToRecents, RECENT_TYPE } from '../../../../services/recentsService';
 import PlayerSongCard from '../PlayerSongCard';
 import styles from './DetailView.module.css';
@@ -128,7 +129,12 @@ export default function DetailView({
         {/* Info Section */}
         <div className={styles.info}>
           <span className={styles.typeLabel}>{TYPE_LABELS[type]}</span>
-          <h1 className={styles.title}>{title}</h1>
+          <ScrollingText
+            className={styles.title}
+            as="h1"
+          >
+            {title}
+          </ScrollingText>
           {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
           {meta && <p className={styles.meta}>{meta}</p>}
 

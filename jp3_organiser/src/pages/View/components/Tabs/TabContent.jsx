@@ -24,7 +24,8 @@ export default React.memo(function TabContent({
   onClearAlbumFilter,
   onClearArtistFilter,
   onClearPlaylistFilter,
-  onDeleteSong, 
+  onDeleteSong,
+  onDeleteSongs,
   onEditSong,
   onDeleteAlbum,
   onEditAlbum,
@@ -52,7 +53,8 @@ export default React.memo(function TabContent({
     return (
       <Component 
         library={library} 
-        onDeleteSong={onDeleteSong} 
+        onDeleteSong={onDeleteSong}
+        onDeleteSongs={onDeleteSongs}
         onEditSong={onEditSong}
         songFilter={songFilter}
         onClearFilter={onClearSongFilter}

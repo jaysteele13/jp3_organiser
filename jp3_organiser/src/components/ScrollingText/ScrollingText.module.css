@@ -1,0 +1,26 @@
+/**
+ * ScrollingText Component Styles
+ * 
+ * Provides horizontal scrolling animation for overflowing text on hover.
+ */
+
+.container {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.text {
+  white-space: nowrap;
+  display: inline-block;
+}
+
+/* Only scroll when text actually overflows */
+.container.canScroll:hover .text {
+  animation: scroll-text 4s linear infinite;
+}
+
+@keyframes scroll-text {
+  0%, 15% { transform: translateX(0); }
+  85%, 100% { transform: translateX(calc(-100% + 80px)); }
+}

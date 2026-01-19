@@ -392,6 +392,7 @@ pub struct ParsedSong {
     pub artist_name: String,
     pub album_id: u32,
     pub album_name: String,
+    pub year: u16,
     pub path: String,
     pub track_number: u16,
     pub duration_sec: u16,

@@ -34,14 +34,15 @@ function SuggestibleInput({
   placeholder,
   error,
   maxLength,
-  enableSuggestions = true
+  enableSuggestions = true,
+  enableFilenameSuggestions = true,
 }) {
   const { suggestion, source, completionText, canAccept, acceptSuggestion } = useAutoSuggest(
     filename, 
     value,
     {
       libraryEntries,
-      enableFilename: enableSuggestions,
+      enableFilename: enableSuggestions && enableFilenameSuggestions,
       enableLibrary: enableSuggestions && libraryEntries?.length > 0,
     }
   );
@@ -108,6 +109,9 @@ export default function MetadataForm({
   onSave, 
   onCancel,
   onSkip,
+  yearReadOnly = false,
+  alwaysEnableSuggestions = false,
+  disableFilenameSuggestions = false,
 }) {
   // Get library data from context
   const { library } = useLibraryContext();
@@ -186,12 +190,8 @@ export default function MetadataForm({
       title: formData.title.trim(),
       artist: formData.artist.trim(),
       album: formData.album.trim(),
+      year: formData.year.trim() ? parseInt(formData.year.trim(), 10) : null,
     };
-
-    // Only include year if provided
-    if (formData.year.trim()) {
-      cleanedData.year = parseInt(formData.year.trim(), 10);
-    }
 
     onSave(file.trackingId, cleanedData);
   };
@@ -232,7 +232,8 @@ export default function MetadataForm({
             libraryEntries={libraryData.titles}
             placeholder="Song title"
             error={errors.title}
-            enableSuggestions={!file?.metadata?.title}
+            enableSuggestions={alwaysEnableSuggestions || !file?.metadata?.title}
+            enableFilenameSuggestions={!disableFilenameSuggestions}
           />
           {errors.title && (
             <span className={styles.errorText}>{errors.title}</span>
@@ -252,7 +253,8 @@ export default function MetadataForm({
             libraryEntries={libraryData.artists}
             placeholder="Artist name"
             error={errors.artist}
-            enableSuggestions={!file?.metadata?.artist}
+            enableSuggestions={alwaysEnableSuggestions || !file?.metadata?.artist}
+            enableFilenameSuggestions={!disableFilenameSuggestions}
           />
           {errors.artist && (
             <span className={styles.errorText}>{errors.artist}</span>
@@ -272,7 +274,8 @@ export default function MetadataForm({
             libraryEntries={libraryData.albums}
             placeholder="Album name"
             error={errors.album}
-            enableSuggestions={!file?.metadata?.album}
+            enableSuggestions={alwaysEnableSuggestions || !file?.metadata?.album}
+            enableFilenameSuggestions={!disableFilenameSuggestions}
           />
           {errors.album && (
             <span className={styles.errorText}>{errors.album}</span>
@@ -289,10 +292,15 @@ export default function MetadataForm({
             name="year"
             value={formData.year}
             onChange={handleChange}
-            className={`${styles.input} ${errors.year ? styles.inputError : ''}`}
+            className={`${styles.input} ${errors.year ? styles.inputError : ''} ${yearReadOnly ? styles.inputReadOnly : ''}`}
             placeholder="Release year"
             maxLength={4}
+            disabled={yearReadOnly}
+            title={yearReadOnly ? 'Year is set at the album level. Edit the album to change.' : undefined}
           />
+          {yearReadOnly && (
+            <span className={styles.readOnlyHint}>Edit album to change year</span>
+          )}
           {errors.year && (
             <span className={styles.errorText}>{errors.year}</span>
           )}
