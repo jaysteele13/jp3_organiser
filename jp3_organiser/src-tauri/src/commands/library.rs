@@ -678,7 +678,7 @@ fn remap_song_id_in_playlists(jp3_path: &Path, old_id: u32, new_id: u32) -> Resu
 /// Edit a song's metadata by soft-deleting the old entry and appending a new one.
 ///
 /// This approach minimizes write cycles by:
-/// 1. Marking the old song entry as deleted (1 byte write)
+/// 1. Marking the old song entry as deleted (1 byte write) - but keeps the audio file
 /// 2. Appending new strings/entries to the end of the file
 ///
 /// Note: This does require a full file rewrite since we need to update offsets.
@@ -689,27 +689,29 @@ pub fn edit_song_metadata(
     song_id: u32,
     new_metadata: AudioMetadata,
 ) -> Result<crate::models::EditSongResult, String> {
-    // First, soft delete the old song
-    let delete_result = delete_songs(base_path.clone(), vec![song_id])?;
-
-    if delete_result.songs_deleted == 0 {
-        return Err(format!("Song {} not found", song_id));
-    }
-
-    // Load existing library to get the old song's path
     let base = Path::new(&base_path);
     let jp3_path = base.join(JP3_DIR);
     let metadata_path = jp3_path.join(METADATA_DIR);
     let library_bin_path = metadata_path.join(LIBRARY_BIN);
 
-    // Read the file to get the old song's path
+    if !library_bin_path.exists() {
+        return Err("Library not found".to_string());
+    }
+
+    // Read the file FIRST to get the old song's path before any modifications
     let mut file = fs::File::open(&library_bin_path)
         .map_err(|e| format!("Failed to open library.bin: {}", e))?;
     let mut data = Vec::new();
     file.read_to_end(&mut data)
         .map_err(|e| format!("Failed to read library.bin: {}", e))?;
+    drop(file); // Release the file handle
 
     let header = LibraryHeader::from_bytes(&data).ok_or("Invalid library.bin header")?;
+
+    // Validate song_id exists
+    if song_id >= header.song_count {
+        return Err(format!("Song {} not found", song_id));
+    }
 
     // Parse string table to get the old path
     let strings = parse_string_table(
@@ -730,6 +732,36 @@ pub fn edit_song_metadata(
         .get(old_path_string_id as usize)
         .cloned()
         .ok_or("Failed to get old song path")?;
+
+    // Also get the old duration if not provided in new_metadata
+    let old_duration_sec = u16::from_le_bytes(
+        data[song_offset + 18..song_offset + 20]
+            .try_into()
+            .map_err(|_| "Failed to read duration_sec")?,
+    );
+
+    // Now soft-delete the old song WITHOUT deleting the audio file
+    // We do this by directly marking the flags byte as DELETED
+    {
+        let mut write_file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&library_bin_path)
+            .map_err(|e| format!("Failed to open library.bin for writing: {}", e))?;
+
+        let flags_offset = song_offset as u64 + 20;
+        write_file
+            .seek(SeekFrom::Start(flags_offset))
+            .map_err(|e| format!("Failed to seek to song {}: {}", song_id, e))?;
+
+        write_file
+            .write_all(&[song_flags::DELETED])
+            .map_err(|e| format!("Failed to mark song {} as deleted: {}", song_id, e))?;
+
+        write_file
+            .sync_all()
+            .map_err(|e| format!("Failed to sync changes: {}", e))?;
+    }
 
     // Load existing library data for the append
     let existing = load_existing_library_data(&library_bin_path)?
@@ -780,13 +812,18 @@ pub fn edit_song_metadata(
     let path_string_id = string_table.add(&old_path); // Reuse path, dedup handles it
 
     let new_song_id = songs.len() as u32;
+    // Preserve duration from old song if not provided in new_metadata
+    let duration = new_metadata
+        .duration_secs
+        .map(|d| d as u16)
+        .unwrap_or(old_duration_sec);
     songs.push(SongEntry::new(
         title_string_id,
         artist_id,
         album_id,
         path_string_id,
         new_metadata.track_number.unwrap_or(0) as u16,
-        new_metadata.duration_secs.unwrap_or(0) as u16,
+        duration,
     ));
 
     // Rebuild and write library.bin
@@ -988,12 +1025,17 @@ pub fn compact_library(base_path: String) -> Result<crate::models::CompactResult
 
     // Rebuild songs with remapped IDs
     // Also build a map from old song IDs to new song IDs for playlist remapping
+    // AND collect paths that are still in use by active songs
     let mut song_id_map: HashMap<u32, u32> = HashMap::new();
+    let mut active_paths: HashSet<u32> = HashSet::new(); // path_string_ids still in use
     for (old_idx, song) in old_songs.iter().enumerate() {
         // Skip deleted songs
         if song.flags & song_flags::DELETED != 0 {
             continue;
         }
+
+        // Track this path as still in use
+        active_paths.insert(song.path_string_id);
 
         let title = old_strings
             .get(song.title_string_id as usize)
@@ -1022,13 +1064,18 @@ pub fn compact_library(base_path: String) -> Result<crate::models::CompactResult
         ));
     }
 
-    // Also delete the actual audio files for deleted songs
+    // Delete audio files for deleted songs ONLY if no active song uses the same path
+    // This handles the case where edit_song_metadata marks old entry as deleted
+    // but creates a new entry with the same audio file path
     for song in &old_songs {
         if song.flags & song_flags::DELETED != 0 {
-            if let Some(path_str) = old_strings.get(song.path_string_id as usize) {
-                let audio_path = music_path.join(path_str);
-                if audio_path.exists() {
-                    let _ = fs::remove_file(&audio_path); // Ignore errors
+            // Only delete if this path is NOT used by any active song
+            if !active_paths.contains(&song.path_string_id) {
+                if let Some(path_str) = old_strings.get(song.path_string_id as usize) {
+                    let audio_path = music_path.join(path_str);
+                    if audio_path.exists() {
+                        let _ = fs::remove_file(&audio_path); // Ignore errors
+                    }
                 }
             }
         }

@@ -50,6 +50,7 @@ fn create_file_to_save(
             track_number: Some(track),
             duration_secs: Some(180),
             release_mbid: None,
+            artist_mbid: None,
         },
     }
 }
@@ -312,6 +313,7 @@ fn test_edit_song_metadata() {
         track_number: Some(1),
         duration_secs: Some(180),
         release_mbid: None,
+        artist_mbid: None,
     };
 
     let edit_result = edit_song_metadata(base_path.clone(), 0, new_metadata).unwrap();
@@ -440,6 +442,7 @@ fn test_edit_song_remaps_playlist_ids() {
         track_number: Some(2),
         duration_secs: Some(180),
         release_mbid: None,
+        artist_mbid: None,
     };
 
     let edit_result = edit_song_metadata(base_path.clone(), 1, new_metadata).unwrap();
@@ -509,6 +512,7 @@ fn test_edit_song_no_playlists_affected() {
         track_number: Some(2),
         duration_secs: Some(180),
         release_mbid: None,
+        artist_mbid: None,
     };
 
     let edit_result = edit_song_metadata(base_path, 1, new_metadata).unwrap();
@@ -518,4 +522,85 @@ fn test_edit_song_no_playlists_affected() {
         edit_result.playlists_updated, 0,
         "No playlists should be updated"
     );
+}
+
+// =============================================================================
+// Edit + Compact Audio File Preservation Test
+// =============================================================================
+
+/// Test that editing a song and then compacting preserves the audio file.
+/// This tests the scenario where:
+/// 1. Song is edited (old entry marked DELETED, new entry created with same path)
+/// 2. Compact runs and should NOT delete the audio file since it's still in use
+#[test]
+fn test_edit_then_compact_preserves_audio_file() {
+    let (temp_dir, base_path) = setup_test_library();
+
+    // Create a real audio file
+    let audio_content = b"fake mp3 content for testing";
+    let source_file = temp_dir.path().join("test_song.mp3");
+    std::fs::write(&source_file, audio_content).unwrap();
+
+    // Save the song to library
+    let files = vec![create_file_to_save(
+        source_file.to_string_lossy().to_string(),
+        "Original Title",
+        "Original Artist",
+        "Original Album",
+        2020,
+        1,
+    )];
+    let save_result = save_to_library(base_path.clone(), files).unwrap();
+    assert_eq!(save_result.songs_added, 1);
+
+    // Verify the audio file was copied to the library
+    let library = load_library(base_path.clone()).unwrap();
+    let song_path = &library.songs[0].path;
+    let music_path = std::path::Path::new(&base_path)
+        .join("jp3")
+        .join("music")
+        .join(song_path);
+    assert!(music_path.exists(), "Audio file should exist in library");
+
+    // Edit the song (changes album)
+    let new_metadata = AudioMetadata {
+        title: Some("Original Title".to_string()),
+        artist: Some("Original Artist".to_string()),
+        album: Some("New Album".to_string()), // Changed album
+        year: Some(2021),
+        track_number: Some(1),
+        duration_secs: Some(180),
+        release_mbid: None,
+        artist_mbid: None,
+    };
+    let edit_result = edit_song_metadata(base_path.clone(), 0, new_metadata).unwrap();
+    assert!(edit_result.album_created, "Should create new album");
+
+    // Audio file should still exist after edit
+    assert!(
+        music_path.exists(),
+        "Audio file should still exist after edit"
+    );
+
+    // Verify we now have 2 songs (old deleted, new active)
+    let stats_before_compact = get_library_stats(base_path.clone()).unwrap();
+    assert_eq!(stats_before_compact.total_songs, 2);
+    assert_eq!(stats_before_compact.deleted_songs, 1);
+    assert_eq!(stats_before_compact.active_songs, 1);
+
+    // Now compact the library
+    let compact_result = compact_library(base_path.clone()).unwrap();
+    assert_eq!(compact_result.songs_removed, 1, "Should remove 1 deleted song");
+
+    // CRITICAL: Audio file should STILL exist because the new song uses the same path
+    assert!(
+        music_path.exists(),
+        "Audio file should still exist after compact - it's used by the edited song!"
+    );
+
+    // Verify the new song still has the correct path and can be loaded
+    let library_after = load_library(base_path.clone()).unwrap();
+    assert_eq!(library_after.songs.len(), 1);
+    assert_eq!(library_after.songs[0].path, *song_path);
+    assert_eq!(library_after.songs[0].album_name, "New Album");
 }
