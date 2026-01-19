@@ -113,38 +113,20 @@
 }
 
 /* Card info */
-/* Scroll container for overflow text */
+/* Scroll container constraint for ScrollingText */
 .scrollContainer {
-  overflow: hidden;
-  position: relative;
-  width: 100%;
   max-width: 240px;
-}
-
-/* Only scroll when text actually overflows */
-.scrollContainer.canScroll:hover .cardTitle,
-.scrollContainer.canScroll:hover .cardSubtitle {
-  animation: scroll-card-text 4s linear infinite;
-}
-
-@keyframes scroll-card-text {
-  0%, 15% { transform: translateX(0); }
-  85%, 100% { transform: translateX(calc(-100% + 100px)); }
 }
 
 .cardTitle {
   font-size: 0.9rem;
   font-weight: 600;
   color: #000;
-  white-space: nowrap;
-  display: inline-block;
 }
 
 .cardSubtitle {
   font-size: 0.75rem;
   color: #333;
-  white-space: nowrap;
-  display: inline-block;
 }
 
 .cardMeta {

@@ -17,8 +17,8 @@
  * @param {string} props.emptyMessage - Message to show when list is empty
  */
 
-import React, { memo, useState, useEffect, useRef } from 'react';
-import { ActionMenu } from '../../components';
+import React, { memo } from 'react';
+import { ActionMenu, ScrollingText } from '../../components';
 import styles from './CardList.module.css';
 
 const CardListItem = memo(function CardListItem({
@@ -31,33 +31,6 @@ const CardListItem = memo(function CardListItem({
   actions,
   thumbnail,
 }) {
-  const [isTitleOverflowing, setIsTitleOverflowing] = useState(false);
-  const [isSubtitleOverflowing, setIsSubtitleOverflowing] = useState(false);
-  const titleRef = useRef(null);
-  const titleContainerRef = useRef(null);
-  const subtitleRef = useRef(null);
-  const subtitleContainerRef = useRef(null);
-
-  // Check if title/subtitle overflow their containers
-  useEffect(() => {
-    const checkOverflow = () => {
-      if (titleRef.current && titleContainerRef.current) {
-        const textWidth = titleRef.current.scrollWidth;
-        const containerWidth = titleContainerRef.current.clientWidth;
-        setIsTitleOverflowing(textWidth > containerWidth);
-      }
-      if (subtitleRef.current && subtitleContainerRef.current) {
-        const textWidth = subtitleRef.current.scrollWidth;
-        const containerWidth = subtitleContainerRef.current.clientWidth;
-        setIsSubtitleOverflowing(textWidth > containerWidth);
-      }
-    };
-    
-    checkOverflow();
-    window.addEventListener('resize', checkOverflow);
-    return () => window.removeEventListener('resize', checkOverflow);
-  }, [title, subtitle]);
-
   const handleTitleClick = () => onTitleClick?.(item);
   const handleTitleKeyDown = (e) => e.key === 'Enter' && onTitleClick?.(item);
   const handleSubtitleClick = (e) => {
@@ -78,37 +51,25 @@ const CardListItem = memo(function CardListItem({
         <div className={styles.cardMain}>
           <div className={styles.cardHeader}>
             <div className={styles.cardInfo}>
-              <div 
-                className={`${styles.scrollContainer} ${isTitleOverflowing ? styles.canScroll : ''}`}
-                ref={titleContainerRef}
+              <ScrollingText
+                className={styles.cardTitleLink}
+                onClick={handleTitleClick}
+                onKeyDown={handleTitleKeyDown}
+                role="link"
+                tabIndex={0}
               >
-                <span
-                  className={styles.cardTitleLink}
-                  onClick={handleTitleClick}
-                  onKeyDown={handleTitleKeyDown}
+                {title}
+              </ScrollingText>
+              {subtitle && (
+                <ScrollingText
+                  className={styles.cardSubtitleLink}
+                  onClick={handleSubtitleClick}
+                  onKeyDown={handleSubtitleKeyDown}
                   role="link"
                   tabIndex={0}
-                  ref={titleRef}
                 >
-                  {title}
-                </span>
-              </div>
-              {subtitle && (
-                <div 
-                  className={`${styles.scrollContainer} ${isSubtitleOverflowing ? styles.canScroll : ''}`}
-                  ref={subtitleContainerRef}
-                >
-                  <span
-                    className={styles.cardSubtitleLink}
-                    onClick={handleSubtitleClick}
-                    onKeyDown={handleSubtitleKeyDown}
-                    role="link"
-                    tabIndex={0}
-                    ref={subtitleRef}
-                  >
-                    {subtitle}
-                  </span>
-                </div>
+                  {subtitle}
+                </ScrollingText>
               )}
             </div>
             {actions && <ActionMenu items={actions} />}

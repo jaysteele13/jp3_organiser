@@ -18,7 +18,7 @@
 import React from 'react';
 import { RECENT_TYPE } from '../../../../hooks/useRecents';
 import { IMAGE_COVER_TYPE } from '../../../../utils/enums';
-import { CoverArt } from '../../../../components';
+import { CoverArt, ScrollingText } from '../../../../components';
 import styles from './RecentRow.module.css';
 
 // Icons for content types without album art
@@ -157,8 +157,12 @@ export default function RecentRow({
                 <div className={styles.cardIcon}>{icon}</div>
               )}
               <div className={styles.cardInfo}>
-                <span className={styles.title}>{title}</span>
-                <span className={styles.subtitle}>{subtitle}</span>
+                <ScrollingText className={styles.title}>
+                  {title}
+                </ScrollingText>
+                <ScrollingText className={styles.subtitle}>
+                  {subtitle}
+                </ScrollingText>
               </div>
               <button
                 className={styles.playBtn}

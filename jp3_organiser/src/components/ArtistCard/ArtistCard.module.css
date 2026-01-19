@@ -132,22 +132,9 @@
   color: #fff;
 }
 
-/* Artist name scroll container */
+/* Artist name container - sizing constraint for ScrollingText */
 .artistNameContainer {
-  overflow: hidden;
-  position: relative;
-  width: 100%;
   max-width: 140px;
-}
-
-/* Only scroll when text actually overflows */
-.artistNameContainer.canScroll:hover .artistName {
-  animation: scroll-artist-name 4s linear infinite;
-}
-
-@keyframes scroll-artist-name {
-  0%, 15% { transform: translateX(0); }
-  85%, 100% { transform: translateX(calc(-100% + 80px)); }
 }
 
 /* Artist name below circle */
@@ -156,12 +143,10 @@
   font-weight: 500;
   color: inherit;
   text-align: center;
-  white-space: nowrap;
   cursor: pointer;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   transition: background-color 0.15s ease;
-  display: inline-block;
 }
 
 .artistName:hover {

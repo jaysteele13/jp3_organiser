@@ -6,15 +6,15 @@
  * Uses primary (rose) color scheme.
  */
 
-import React, { useMemo, useState, useEffect, useRef, memo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlayer } from '../../../hooks';
-import { CoverArt } from '../../../components';
+import { CoverArt, ScrollingText } from '../../../components';
 import { addToRecents, RECENT_TYPE } from '../../../services/recentsService';
 import styles from './ListStyles.module.css';
 
 /**
- * Individual album card with overflow detection for scrolling text
+ * Individual album card using ScrollingText for long names
  */
 const AlbumCard = memo(function AlbumCard({ 
   album, 
@@ -24,33 +24,6 @@ const AlbumCard = memo(function AlbumCard({
   onPlayAlbum, 
   onQueueAlbum 
 }) {
-  const [isTitleOverflowing, setIsTitleOverflowing] = useState(false);
-  const [isSubtitleOverflowing, setIsSubtitleOverflowing] = useState(false);
-  const titleRef = useRef(null);
-  const titleContainerRef = useRef(null);
-  const subtitleRef = useRef(null);
-  const subtitleContainerRef = useRef(null);
-
-  // Check if title/subtitle overflow their containers
-  useEffect(() => {
-    const checkOverflow = () => {
-      if (titleRef.current && titleContainerRef.current) {
-        const textWidth = titleRef.current.scrollWidth;
-        const containerWidth = titleContainerRef.current.clientWidth;
-        setIsTitleOverflowing(textWidth > containerWidth);
-      }
-      if (subtitleRef.current && subtitleContainerRef.current) {
-        const textWidth = subtitleRef.current.scrollWidth;
-        const containerWidth = subtitleContainerRef.current.clientWidth;
-        setIsSubtitleOverflowing(textWidth > containerWidth);
-      }
-    };
-    
-    checkOverflow();
-    window.addEventListener('resize', checkOverflow);
-    return () => window.removeEventListener('resize', checkOverflow);
-  }, [album.name, album.artistName]);
-
   return (
     <div
       className={`${styles.albumCardLarge} ${styles.albumCard}`}
@@ -64,18 +37,18 @@ const AlbumCard = memo(function AlbumCard({
           size="xlarge"
         />
       </div>
-      <div 
-        className={`${styles.scrollContainer} ${isTitleOverflowing ? styles.canScroll : ''}`}
-        ref={titleContainerRef}
+      <ScrollingText
+        className={styles.cardTitle}
+        containerClassName={styles.scrollContainer}
       >
-        <span className={styles.cardTitle} ref={titleRef}>{album.name}</span>
-      </div>
-      <div 
-        className={`${styles.scrollContainer} ${isSubtitleOverflowing ? styles.canScroll : ''}`}
-        ref={subtitleContainerRef}
+        {album.name}
+      </ScrollingText>
+      <ScrollingText
+        className={styles.cardSubtitle}
+        containerClassName={styles.scrollContainer}
       >
-        <span className={styles.cardSubtitle} ref={subtitleRef}>{album.artistName}</span>
-      </div>
+        {album.artistName}
+      </ScrollingText>
       <span className={styles.cardMeta}>
         {album.year ? `${album.year} - ` : ''}{albumSongs.length} songs
       </span>

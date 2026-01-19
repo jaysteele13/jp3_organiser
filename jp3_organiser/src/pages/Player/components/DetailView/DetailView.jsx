@@ -16,8 +16,9 @@
  * - renderCoverArt: function - optional function to render custom cover art component
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import { usePlayer } from '../../../../hooks';
+import { ScrollingText } from '../../../../components';
 import { addToRecents, RECENT_TYPE } from '../../../../services/recentsService';
 import PlayerSongCard from '../PlayerSongCard';
 import styles from './DetailView.module.css';
@@ -53,25 +54,6 @@ export default function DetailView({
   renderCoverArt,
 }) {
   const { playTrack, addToQueue, isCurrentTrack } = usePlayer();
-  const [isTitleOverflowing, setIsTitleOverflowing] = useState(false);
-  const titleRef = useRef(null);
-  const titleContainerRef = useRef(null);
-
-  // Check if title overflows its container
-  useEffect(() => {
-    const checkOverflow = () => {
-      if (titleRef.current && titleContainerRef.current) {
-        const textWidth = titleRef.current.scrollWidth;
-        const containerWidth = titleContainerRef.current.clientWidth;
-        setIsTitleOverflowing(textWidth > containerWidth);
-      }
-    };
-    
-    checkOverflow();
-    // Re-check on window resize
-    window.addEventListener('resize', checkOverflow);
-    return () => window.removeEventListener('resize', checkOverflow);
-  }, [title]);
 
   const handlePlayAll = () => {
     if (songs.length > 0) {
@@ -147,12 +129,12 @@ export default function DetailView({
         {/* Info Section */}
         <div className={styles.info}>
           <span className={styles.typeLabel}>{TYPE_LABELS[type]}</span>
-          <div 
-            className={`${styles.scrollContainer} ${isTitleOverflowing ? styles.canScroll : ''}`}
-            ref={titleContainerRef}
+          <ScrollingText
+            className={styles.title}
+            as="h1"
           >
-            <h1 className={styles.title} ref={titleRef}>{title}</h1>
-          </div>
+            {title}
+          </ScrollingText>
           {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
           {meta && <p className={styles.meta}>{meta}</p>}
 

@@ -120,30 +120,11 @@
   color: rgba(0, 0, 0, 0.8);
 }
 
-/* Scroll container for overflow text */
-.scrollContainer {
-  overflow: hidden;
-  position: relative;
-  width: 100%;
-}
-
-/* Only scroll when text actually overflows */
-.scrollContainer.canScroll:hover .title {
-  animation: scroll-title 4s linear infinite;
-}
-
-@keyframes scroll-title {
-  0%, 15% { transform: translateX(0); }
-  85%, 100% { transform: translateX(calc(-100% + 200px)); }
-}
-
 .title {
   font-size: 2.5rem;
   font-weight: 700;
   margin: 0;
   line-height: 1.1;
-  white-space: nowrap;
-  display: inline-block;
 }
 
 .subtitle {
