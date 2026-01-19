@@ -55,6 +55,7 @@ export default function EditSongModal({
               onSave={handleSave}
               onCancel={onCancel}
               yearReadOnly={true}
+              alwaysEnableSuggestions={true}
             />
           </div>
         </LibraryProvider>

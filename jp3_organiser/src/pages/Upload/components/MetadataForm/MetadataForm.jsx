@@ -109,6 +109,7 @@ export default function MetadataForm({
   onCancel,
   onSkip,
   yearReadOnly = false,
+  alwaysEnableSuggestions = false,
 }) {
   // Get library data from context
   const { library } = useLibraryContext();
@@ -233,7 +234,7 @@ export default function MetadataForm({
             libraryEntries={libraryData.titles}
             placeholder="Song title"
             error={errors.title}
-            enableSuggestions={!file?.metadata?.title}
+            enableSuggestions={alwaysEnableSuggestions || !file?.metadata?.title}
           />
           {errors.title && (
             <span className={styles.errorText}>{errors.title}</span>
@@ -253,7 +254,7 @@ export default function MetadataForm({
             libraryEntries={libraryData.artists}
             placeholder="Artist name"
             error={errors.artist}
-            enableSuggestions={!file?.metadata?.artist}
+            enableSuggestions={alwaysEnableSuggestions || !file?.metadata?.artist}
           />
           {errors.artist && (
             <span className={styles.errorText}>{errors.artist}</span>
@@ -273,7 +274,7 @@ export default function MetadataForm({
             libraryEntries={libraryData.albums}
             placeholder="Album name"
             error={errors.album}
-            enableSuggestions={!file?.metadata?.album}
+            enableSuggestions={alwaysEnableSuggestions || !file?.metadata?.album}
           />
           {errors.album && (
             <span className={styles.errorText}>{errors.album}</span>
