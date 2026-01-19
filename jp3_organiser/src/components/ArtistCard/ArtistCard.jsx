@@ -145,15 +145,17 @@ const ArtistCard = memo(function ArtistCard({
         )}
       </div>
       
-      <span 
-        className={styles.artistName}
-        onClick={handleClick}
-        onKeyDown={handleKeyDown}
-        role="button"
-        tabIndex={0}
-      >
-        {artist.name}
-      </span>
+      <div className={styles.artistNameContainer}>
+        <span 
+          className={styles.artistName}
+          onClick={handleClick}
+          onKeyDown={handleKeyDown}
+          role="button"
+          tabIndex={0}
+        >
+          {artist.name}
+        </span>
+      </div>
     </div>
   );
 });

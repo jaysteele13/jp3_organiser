@@ -128,7 +128,9 @@ export default function DetailView({
         {/* Info Section */}
         <div className={styles.info}>
           <span className={styles.typeLabel}>{TYPE_LABELS[type]}</span>
-          <h1 className={styles.title}>{title}</h1>
+          <div className={styles.scrollContainer}>
+            <h1 className={styles.title}>{title}</h1>
+          </div>
           {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
           {meta && <p className={styles.meta}>{meta}</p>}
 
