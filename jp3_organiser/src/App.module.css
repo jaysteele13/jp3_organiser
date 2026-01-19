@@ -9,11 +9,10 @@
   margin-left: 200px;
   flex: 1;
   padding: 2rem;
-  padding-top: 10vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  text-align: center;
+  justify-content: flex-start;
+  text-align: left;
   transition: margin-left 0.25s ease;
 }
 
