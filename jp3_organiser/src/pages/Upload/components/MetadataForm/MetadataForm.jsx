@@ -108,6 +108,7 @@ export default function MetadataForm({
   onSave, 
   onCancel,
   onSkip,
+  yearReadOnly = false,
 }) {
   // Get library data from context
   const { library } = useLibraryContext();
@@ -289,10 +290,15 @@ export default function MetadataForm({
             name="year"
             value={formData.year}
             onChange={handleChange}
-            className={`${styles.input} ${errors.year ? styles.inputError : ''}`}
+            className={`${styles.input} ${errors.year ? styles.inputError : ''} ${yearReadOnly ? styles.inputReadOnly : ''}`}
             placeholder="Release year"
             maxLength={4}
+            disabled={yearReadOnly}
+            title={yearReadOnly ? 'Year is set at the album level. Edit the album to change.' : undefined}
           />
+          {yearReadOnly && (
+            <span className={styles.readOnlyHint}>Edit album to change year</span>
+          )}
           {errors.year && (
             <span className={styles.errorText}>{errors.year}</span>
           )}

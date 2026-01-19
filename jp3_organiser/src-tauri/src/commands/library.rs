@@ -1598,10 +1598,11 @@ pub fn load_library(base_path: String) -> Result<ParsedLibrary, String> {
                 .get(s.artist_id as usize)
                 .map(|ar| ar.name.clone())
                 .unwrap_or_else(|| "Unknown".to_string());
-            let album_name = albums
-                .get(s.album_id as usize)
+            let album = albums.get(s.album_id as usize);
+            let album_name = album
                 .map(|al| al.name.clone())
                 .unwrap_or_else(|| "Unknown".to_string());
+            let year = album.map(|al| al.year).unwrap_or(0);
             ParsedSong {
                 id: i as u32,
                 title: strings
@@ -1612,6 +1613,7 @@ pub fn load_library(base_path: String) -> Result<ParsedLibrary, String> {
                 artist_name,
                 album_id: s.album_id,
                 album_name,
+                year,
                 path: strings
                     .get(s.path_string_id as usize)
                     .cloned()

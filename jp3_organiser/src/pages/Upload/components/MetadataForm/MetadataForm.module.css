@@ -96,6 +96,23 @@
   border-color: var(--primary);
 }
 
+.inputReadOnly {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.inputReadOnly:focus {
+  border-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.readOnlyHint {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}
+
 .errorText {
   font-size: 0.75rem;
   color: var(--primary);

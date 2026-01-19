@@ -54,6 +54,7 @@ export default function EditSongModal({
               file={trackedFile}
               onSave={handleSave}
               onCancel={onCancel}
+              yearReadOnly={true}
             />
           </div>
         </LibraryProvider>
