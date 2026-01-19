@@ -190,12 +190,8 @@ export default function MetadataForm({
       title: formData.title.trim(),
       artist: formData.artist.trim(),
       album: formData.album.trim(),
+      year: formData.year.trim() ? parseInt(formData.year.trim(), 10) : null,
     };
-
-    // Only include year if provided
-    if (formData.year.trim()) {
-      cleanedData.year = parseInt(formData.year.trim(), 10);
-    }
 
     onSave(file.trackingId, cleanedData);
   };
