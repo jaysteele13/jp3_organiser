@@ -30,8 +30,8 @@
   bottom: 80px; /* Above player bar */
   width: 350px;
   max-width: 90vw;
-  background-color: var(--quaternary);
-  border-left: 2px solid var(--quaternary-hover);
+  background-color: var(--bg-base);
+  border-left: 1px solid var(--border-subtle);
   z-index: 901;
   display: flex;
   flex-direction: column;
@@ -56,7 +56,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem;
-  border-bottom: 1px solid var(--quaternary-hover);
+  border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
 
@@ -64,7 +64,7 @@
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .headerActions {
@@ -75,33 +75,34 @@
 
 .clearBtn {
   background-color: transparent;
-  border: 1px solid var(--primary);
-  color: var(--primary);
+  border: 1px solid var(--accent-primary);
+  color: var(--accent-primary);
   padding: 0.3rem 0.6rem;
   font-size: 0.75rem;
   border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .clearBtn:hover {
-  background-color: var(--primary);
-  color: #000;
+  background-color: var(--accent-primary);
+  color: var(--bg-base);
 }
 
 .closeBtn {
   background-color: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #fff;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
   padding: 0.3rem 0.6rem;
   font-size: 0.8rem;
   border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .closeBtn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
 }
 
 /* ============================================
@@ -117,7 +118,7 @@
 .empty {
   padding: 2rem 1rem;
   text-align: center;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   font-size: 0.9rem;
 }
 
@@ -132,20 +133,20 @@
   gap: 0.5rem;
   cursor: pointer;
   transition: background-color 0.15s ease;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .queueItem:hover {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: var(--bg-surface);
 }
 
 .queueItem.current {
-  background-color: rgba(153, 182, 73, 0.2);
-  border-left: 3px solid var(--secondary);
+  background-color: rgba(133, 143, 112, 0.15);
+  border-left: 3px solid var(--accent-secondary);
 }
 
 .queueItem.dragOver {
-  border-top: 2px solid var(--secondary);
+  border-top: 2px solid var(--accent-secondary);
 }
 
 .queueItem.dragging {
@@ -154,7 +155,7 @@
 
 /* Drag Handle */
 .dragHandle {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
   cursor: grab;
   font-size: 0.8rem;
   letter-spacing: -1px;
@@ -169,12 +170,12 @@
 .trackNumber {
   min-width: 24px;
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   text-align: center;
 }
 
 .current .trackNumber {
-  color: var(--secondary);
+  color: var(--accent-secondary);
   font-weight: 600;
 }
 
@@ -189,7 +190,7 @@
 
 .trackTitle {
   font-size: 0.85rem;
-  color: #fff;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -197,7 +198,7 @@
 
 .trackArtist {
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -207,7 +208,7 @@
 .removeBtn {
   background-color: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-tertiary);
   padding: 0.3rem 0.5rem;
   font-size: 0.8rem;
   cursor: pointer;
@@ -221,8 +222,8 @@
 }
 
 .removeBtn:hover {
-  background-color: var(--primary);
-  color: #000;
+  background-color: var(--accent-primary);
+  color: var(--bg-base);
 }
 
 /* ============================================
@@ -231,9 +232,9 @@
 
 .footer {
   padding: 0.75rem 1rem;
-  border-top: 1px solid var(--quaternary-hover);
+  border-top: 1px solid var(--border-subtle);
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-tertiary);
   text-align: center;
   flex-shrink: 0;
 }
@@ -264,7 +265,7 @@
   padding: 0.5rem 1rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -276,7 +277,7 @@
 .clearSectionBtn {
   background-color: transparent;
   border: none;
-  color: var(--primary);
+  color: var(--accent-primary);
   font-size: 0.7rem;
   cursor: pointer;
   padding: 0.2rem 0.4rem;
@@ -290,19 +291,19 @@
 
 /* User Queue Item styling */
 .userQueueItem {
-  background-color: rgba(182, 73, 99, 0.1);
+  background-color: rgba(122, 112, 143, 0.1);
 }
 
 .userQueueItem:hover {
-  background-color: rgba(182, 73, 99, 0.2);
+  background-color: rgba(122, 112, 143, 0.2);
 }
 
 /* Queue Badge */
 .queueBadge {
   font-size: 0.65rem;
   padding: 0.15rem 0.4rem;
-  background-color: var(--primary);
-  color: #000;
+  background-color: var(--accent-primary);
+  color: var(--bg-base);
   border-radius: 3px;
   font-weight: 600;
   text-transform: uppercase;

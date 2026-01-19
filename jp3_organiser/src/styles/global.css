@@ -1,15 +1,22 @@
 /* 
- * Global Color Palette (Tetradic)
+ * Global Color Palette (Minimalistic Dark with Stencil Lines)
  * 
  * Usage:
- *   color: var(--primary);
- *   background-color: var(--secondary);
+ *   color: var(--accent-primary);
+ *   background-color: var(--bg-elevated);
  * 
  * Palette:
- *   --primary:     #B64963 (Rose)
- *   --secondary:   #99B649 (Lime)
- *   --tertiary:    #49B69C (Teal)
- *   --quaternary:  #6649B6 (Purple)
+ *   --accent-primary:   #7A708F (Muted Purple)
+ *   --accent-secondary: #858F70 (Muted Olive)
+ *   --bg-base:          #242424 (Dark background)
+ *   --bg-elevated:      White stencil lines (configurable via --white)
+ *   --bg-surface:       #363636 (Hover states)
+ * 
+ * Text on dark backgrounds: use --text-primary (bright)
+ * Text on light backgrounds: use --text-on-light (dark)
+ * 
+ * Legacy aliases maintained for gradual migration:
+ *   --primary, --secondary, --tertiary, --quaternary
  */
 
 /* ===================
@@ -35,15 +42,50 @@
    CSS VARIABLES
    =================== */
 :root {
-  /* Color Palette */
-  --primary: #B64963;
-  --primary-hover: #9e3d54;
-  --secondary: #99B649;
-  --secondary-hover: #849e3d;
-  --tertiary: #49B69C;
-  --tertiary-hover: #3d9e86;
-  --quaternary: #6649B6;
-  --quaternary-hover: #573d9e;
+  /* ===================
+     CONFIGURABLE WHITE
+     Adjust this single value to control stencil line brightness
+     =================== */
+  --white: #f5f5f5;
+  
+  /* New Minimalistic Palette */
+  --bg-base: #242424;
+  --bg-elevated: var(--white);
+  --bg-surface: #363636;
+  --bg-hover: #404040;
+  
+  --accent-primary: #7A708F;
+  --accent-primary-hover: #8d84a0;
+  --accent-secondary: #858F70;
+  --accent-secondary-hover: #969f81;
+  
+  /* Text on DARK backgrounds (use for most UI) */
+  --text-primary: #f0f0f0;
+  --text-secondary: #a0a0a0;
+  --text-tertiary: #6b6b6b;
+  
+  /* Text on LIGHT backgrounds (for elevated/white surfaces) */
+  --text-on-light: #1a1a1a;
+  --text-on-light-secondary: #4a4a4a;
+  
+  --border: #3a3a3a;
+  --border-subtle: #333333;
+  --border-on-light: #e0e0e0;
+  
+  /* Status colors (muted) */
+  --success: #858F70;
+  --error: #8F7070;
+  --warning: #8F8570;
+  
+  /* Legacy aliases for gradual migration */
+  --primary: #7A708F;
+  --primary-hover: #8d84a0;
+  --secondary: #858F70;
+  --secondary-hover: #969f81;
+  --tertiary: #2d2d2d;
+  --tertiary-hover: #363636;
+  --quaternary: #2d2d2d;
+  --quaternary-hover: #363636;
 
   /* Typography */
   font-family: 'Geist Mono', monospace;
@@ -80,18 +122,24 @@ h1 {
    INPUT STYLES
    =================== */
 input {
-  border-radius: 8px;
-  border: 1px solid var(--quaternary);
+  border-radius: 6px;
+  border: 1px solid var(--border-on-light);
+  background-color: var(--bg-elevated);
+  color: var(--text-on-light);
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
   outline: none;
-  transition: border-color 0.25s;
+  transition: border-color 0.2s ease;
 }
 
 input:focus {
-  border-color: var(--primary);
+  border-color: var(--accent-primary);
+}
+
+input::placeholder {
+  color: var(--text-on-light-secondary);
 }
 
 /* ===================
@@ -99,7 +147,7 @@ input:focus {
    =================== */
 button,
 .btn {
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
   font-size: 1em;
@@ -107,66 +155,82 @@ button,
   font-family: inherit;
   cursor: pointer;
   outline: none;
-  background-color: var(--secondary);
-  color: #fff;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.2s ease, border-color 0.25s;
+  background-color: var(--accent-secondary);
+  color: var(--text-primary);
+  transition: background-color 0.15s ease, opacity 0.15s ease;
 }
 
 button:hover,
 .btn:hover {
-  background-color: var(--primary);
-  border-color: var(--primary);
+  background-color: var(--accent-secondary-hover);
 }
 
 button:active,
 .btn:active {
-  background-color: var(--primary-hover);
+  opacity: 0.9;
 }
 
-/* Button variants - use these classes for different colors */
+/* Button variants */
 .btn-primary {
-  background-color: var(--primary);
+  background-color: var(--accent-primary);
 }
 .btn-primary:hover {
-  background-color: var(--primary-hover);
+  background-color: var(--accent-primary-hover);
 }
 
 .btn-tertiary {
-  background-color: var(--tertiary);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
 }
 .btn-tertiary:hover {
-  background-color: var(--tertiary-hover);
+  background-color: var(--bg-hover);
 }
 
 .btn-quaternary {
-  background-color: var(--quaternary);
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-on-light);
+  color: var(--text-on-light);
 }
 .btn-quaternary:hover {
-  background-color: var(--quaternary-hover);
+  background-color: var(--border-on-light);
+}
+
+/* Ghost button - transparent with border */
+.btn-ghost {
+  background-color: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+.btn-ghost:hover {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
 }
 
 /* ===================
    CARD & SECTION STYLES
    =================== */
 .card {
-  background-color: var(--tertiary);
-  color: #fff;
-  border-radius: 8px;
+  background-color: var(--bg-elevated);
+  color: var(--text-on-light);
+  border-radius: 6px;
+  border: 1px solid var(--border-on-light);
   padding: 1.5rem;
 }
 
 .card-alt {
-  background-color: var(--quaternary);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border);
 }
 
 .section {
-  background-color: var(--quaternary);
-  color: #fff;
-  border-radius: 8px;
+  background-color: var(--bg-elevated);
+  color: var(--text-on-light);
+  border-radius: 6px;
   padding: 2rem;
 }
 
 .section-alt {
-  background-color: var(--tertiary);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
 }
