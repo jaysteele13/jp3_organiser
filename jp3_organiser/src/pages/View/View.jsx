@@ -202,6 +202,12 @@ export default function View() {
     setShowDeleteModal(true);
   };
 
+  // Handle bulk delete request (from multiselect)
+  const handleDeleteSongsRequest = (songs) => {
+    setSongsToDelete(songs);
+    setShowDeleteModal(true);
+  };
+
   const handleConfirmDeleteSong = async () => {
     if (songsToDelete.length === 0 || !libraryPath) return;
 
@@ -464,6 +470,7 @@ export default function View() {
               onClearArtistFilter={() => setArtistFilter(null)}
               onClearPlaylistFilter={() => setPlaylistFilter(null)}
               onDeleteSong={handleDeleteSongRequest}
+              onDeleteSongs={handleDeleteSongsRequest}
               onEditSong={handleEditRequest}
               onDeleteAlbum={handleDeleteAlbumRequest}
               onEditAlbum={handleEditAlbumRequest}

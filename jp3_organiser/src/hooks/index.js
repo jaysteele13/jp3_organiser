@@ -14,3 +14,4 @@ export { usePlayer, PlayerProvider, REPEAT_MODE } from './usePlayerContext.jsx';
 export { useRecents, RECENT_TYPE } from './useRecents';
 export { usePlayerKeyboardShortcuts } from './player/usePlayerKeyboardShortcuts';
 export { useLibrarySearch, SEARCH_CATEGORY } from './useLibrarySearch';
+export { useMultiSelect } from './useMultiSelect';

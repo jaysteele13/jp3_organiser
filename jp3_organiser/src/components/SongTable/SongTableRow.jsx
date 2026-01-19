@@ -15,6 +15,9 @@
  * - onArtistClick: Optional callback when artist name is clicked
  * - onAlbumClick: Optional callback when album name is clicked
  * - renderActions: Function to render action buttons
+ * - showCheckbox: Whether to show selection checkbox
+ * - isSelected: Whether this row is selected
+ * - onCheckboxToggle: Callback when checkbox is toggled
  */
 
 import React, { memo } from 'react';
@@ -31,6 +34,9 @@ function SongTableRow({
   onArtistClick,
   onAlbumClick,
   renderActions,
+  showCheckbox = false,
+  isSelected = false,
+  onCheckboxToggle,
 }) {
   const handleClick = () => {
     if (onRowClick) {
@@ -65,6 +71,13 @@ function SongTableRow({
     }
   };
 
+  const handleCheckboxClick = (e) => {
+    e.stopPropagation();
+    if (onCheckboxToggle) {
+      onCheckboxToggle(e);
+    }
+  };
+
   const isClickable = Boolean(onRowClick);
   const hasTitleLink = Boolean(onTitleClick);
   // Check for undefined/null, but allow 0 as a valid ID
@@ -73,12 +86,24 @@ function SongTableRow({
 
   return (
     <tr
-      className={`${styles.tableRow} ${isHighlighted ? styles.highlighted : ''} ${isClickable ? styles.clickable : ''}`}
+      className={`${styles.tableRow} ${isHighlighted ? styles.highlighted : ''} ${isClickable ? styles.clickable : ''} ${isSelected ? styles.selected : ''}`}
       onClick={isClickable ? handleClick : undefined}
       onKeyDown={isClickable ? handleKeyDown : undefined}
       tabIndex={isClickable ? 0 : undefined}
       role={isClickable ? 'button' : undefined}
     >
+      {showCheckbox && (
+        <td className={styles.cellCheckbox}>
+          <input
+            type="checkbox"
+            className={styles.checkbox}
+            checked={isSelected}
+            onChange={handleCheckboxClick}
+            onClick={(e) => e.stopPropagation()}
+            aria-label={`Select ${song.title || 'song'}`}
+          />
+        </td>
+      )}
       <td className={styles.cellIndex}>{index + 1}</td>
       
       {columns.includes('title') && (

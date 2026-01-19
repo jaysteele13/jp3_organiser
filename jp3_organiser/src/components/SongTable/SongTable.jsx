@@ -42,6 +42,13 @@ export default function SongTable({
   showTrackNumber = false,
   cardSubtitle,
   renderCard,
+  // Multiselect props
+  showCheckboxes = false,
+  isSelected,
+  onCheckboxToggle,
+  allSelected = false,
+  someSelected = false,
+  onSelectAllToggle,
 }) {
   const state = useSongTableState({
     songs,
@@ -88,6 +95,20 @@ export default function SongTable({
           <table className={styles.table}>
             <thead>
               <tr>
+                {showCheckboxes && (
+                  <th className={styles.thCheckbox}>
+                    <input
+                      type="checkbox"
+                      className={styles.checkbox}
+                      checked={allSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = someSelected;
+                      }}
+                      onChange={onSelectAllToggle}
+                      aria-label="Select all"
+                    />
+                  </th>
+                )}
                 <th className={styles.thIndex}>#</th>
                 {columns.includes('title') && <th className={styles.thTitle}>{COLUMN_LABELS.title}</th>}
                 {columns.includes('artist') && <th className={styles.thArtist}>{COLUMN_LABELS.artist}</th>}
@@ -112,6 +133,9 @@ export default function SongTable({
                   onArtistClick={onArtistClick}
                   onAlbumClick={onAlbumClick}
                   renderActions={renderActions}
+                  showCheckbox={showCheckboxes}
+                  isSelected={isSelected?.(song.id)}
+                  onCheckboxToggle={(event) => onCheckboxToggle?.(song, getDisplayIndex(index), event)}
                 />
               ))}
             </tbody>

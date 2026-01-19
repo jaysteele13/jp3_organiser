@@ -171,7 +171,31 @@
   background-color: var(--quaternary-hover);
 }
 
+.tableRow.selected {
+  background-color: rgba(182, 73, 99, 0.15);
+}
+
+.tableRow.selected:hover {
+  background-color: rgba(182, 73, 99, 0.2);
+}
+
 /* Column-specific styles */
+.thCheckbox {
+  width: 40px;
+  text-align: center;
+}
+
+.cellCheckbox {
+  text-align: center;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
 .thIndex {
   width: 50px;
   text-align: center;
