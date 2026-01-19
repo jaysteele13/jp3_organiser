@@ -63,8 +63,9 @@
   width: 100%;
 }
 
-.scrollContainer:hover .cardTitleLink,
-.scrollContainer:hover .cardSubtitleLink {
+/* Only scroll when text actually overflows */
+.scrollContainer.canScroll:hover .cardTitleLink,
+.scrollContainer.canScroll:hover .cardSubtitleLink {
   animation: scroll-text 4s linear infinite;
 }
 
