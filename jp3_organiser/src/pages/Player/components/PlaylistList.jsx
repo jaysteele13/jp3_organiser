@@ -3,14 +3,81 @@
  * 
  * Displays playlists as cards in a flex grid layout.
  * Clicking a card navigates to the playlist detail page.
+ * Right-click shows context menu with "View in Library" option.
  * Uses secondary (lime) color scheme.
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlayer } from '../../../hooks';
+import { ContextMenu } from '../../../components';
 import { addToRecents, RECENT_TYPE } from '../../../services/recentsService';
+import { TABS } from '../../../utils/enums';
 import styles from './ListStyles.module.css';
+
+/**
+ * Individual playlist card with context menu support
+ */
+const PlaylistCard = memo(function PlaylistCard({
+  playlist,
+  playlistSongs,
+  onCardClick,
+  onPlayPlaylist,
+  onQueuePlaylist,
+  onViewInLibrary
+}) {
+  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 });
+
+  const handleContextMenu = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ visible: true, x: e.clientX, y: e.clientY });
+  }, []);
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenu({ visible: false, x: 0, y: 0 });
+  }, []);
+
+  return (
+    <>
+      <div
+        className={`${styles.card} ${styles.playlistCard}`}
+        onClick={() => onCardClick(playlist)}
+        onContextMenu={handleContextMenu}
+      >
+        <span className={styles.cardTitle}>{playlist.name}</span>
+        <span className={styles.cardMeta}>
+          {playlistSongs.length} songs
+        </span>
+        <div className={styles.cardActions}>
+          <button
+            className={styles.cardBtn}
+            onClick={(e) => onPlayPlaylist(playlist, e)}
+            disabled={playlistSongs.length === 0}
+          >
+            Play
+          </button>
+          <button
+            className={`${styles.cardBtn} ${styles.queue}`}
+            onClick={(e) => onQueuePlaylist(playlist, e)}
+            disabled={playlistSongs.length === 0}
+          >
+            Queue
+          </button>
+        </div>
+      </div>
+      
+      <ContextMenu
+        visible={contextMenu.visible}
+        position={{ x: contextMenu.x, y: contextMenu.y }}
+        items={[
+          { label: 'View in Library', onClick: () => onViewInLibrary(playlist) }
+        ]}
+        onClose={closeContextMenu}
+      />
+    </>
+  );
+});
 
 export default function PlaylistList({ playlists, songs }) {
   const navigate = useNavigate();
@@ -56,38 +123,31 @@ export default function PlaylistList({ playlists, songs }) {
     addToQueue(playlistSongs);
   };
 
+  const handleViewInLibrary = (playlist) => {
+    navigate('/view', { 
+      state: { 
+        tab: TABS.PLAYLISTS,
+        filterPlaylist: playlist,
+        fromPlayer: true
+      } 
+    });
+  };
+
   return (
     <div className={styles.cardGrid}>
       {playlists.map((playlist) => {
         const playlistSongs = getPlaylistSongs(playlist);
 
         return (
-          <div
+          <PlaylistCard
             key={playlist.id}
-            className={`${styles.card} ${styles.playlistCard}`}
-            onClick={() => handleCardClick(playlist)}
-          >
-            <span className={styles.cardTitle}>{playlist.name}</span>
-            <span className={styles.cardMeta}>
-              {playlistSongs.length} songs
-            </span>
-            <div className={styles.cardActions}>
-              <button
-                className={styles.cardBtn}
-                onClick={(e) => handlePlayPlaylist(playlist, e)}
-                disabled={playlistSongs.length === 0}
-              >
-                Play
-              </button>
-              <button
-                className={`${styles.cardBtn} ${styles.queue}`}
-                onClick={(e) => handleQueuePlaylist(playlist, e)}
-                disabled={playlistSongs.length === 0}
-              >
-                Queue
-              </button>
-            </div>
-          </div>
+            playlist={playlist}
+            playlistSongs={playlistSongs}
+            onCardClick={handleCardClick}
+            onPlayPlaylist={handlePlayPlaylist}
+            onQueuePlaylist={handleQueuePlaylist}
+            onViewInLibrary={handleViewInLibrary}
+          />
         );
       })}
     </div>

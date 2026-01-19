@@ -126,6 +126,10 @@ export default function View() {
         clearAllFilters();
         setArtistFilter(state.filterArtist);
         setActiveTab(TABS.ARTISTS);
+      } else if (state.filterPlaylist) {
+        clearAllFilters();
+        setPlaylistFilter(state.filterPlaylist);
+        setActiveTab(TABS.PLAYLISTS);
       }
       
       // Clear navigation state to prevent re-applying on refresh

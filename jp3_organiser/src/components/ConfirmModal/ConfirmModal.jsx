@@ -85,6 +85,7 @@ export default function ConfirmModal({
         )}
 
         <div className={styles.actions}>
+          {cancelLabel && (
           <button 
             className={styles.cancelBtn} 
             onClick={onCancel}
@@ -92,6 +93,7 @@ export default function ConfirmModal({
           >
             {cancelLabel}
           </button>
+          )}
           <button 
             className={`${styles.confirmBtn} ${confirmBtnClass}`}
             onClick={onConfirm}
