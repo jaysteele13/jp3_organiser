@@ -3,12 +3,14 @@
  * 
  * Displays artists as circular cards in a grid layout using ArtistGrid.
  * Clicking a card navigates directly to the artist detail page.
+ * Right-click shows context menu with "View in Library" option.
  * Uses quaternary (purple) color scheme with xlarge cover art.
  */
 
 import { useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArtistGrid } from '../../../components';
+import { TABS } from '../../../utils/enums';
 
 export default function ArtistList({ artists, songs, libraryPath }) {
   const navigate = useNavigate();
@@ -46,12 +48,24 @@ export default function ArtistList({ artists, songs, libraryPath }) {
     navigate(`/player/artist/${artist.id}`);
   }, [navigate]);
 
+  // Navigate to View page with artist filter
+  const handleViewInLibrary = useCallback((artist) => {
+    navigate('/view', { 
+      state: { 
+        tab: TABS.ARTISTS,
+        filterArtist: artist,
+        fromPlayer: true
+      } 
+    });
+  }, [navigate]);
+
   return (
     <ArtistGrid
       artists={artists}
       libraryPath={libraryPath}
       artistCounts={artistCounts}
       onArtistClick={handleArtistClick}
+      onViewInLibrary={handleViewInLibrary}
       cardSize={250}
       coverSize="xlarge"
       variant="purple"

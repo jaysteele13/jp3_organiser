@@ -4,6 +4,7 @@
  * Reusable song row for Player lists (SongList, AlbumList, ArtistList, PlaylistList).
  * Click the row to play, use Queue button to add to queue.
  * Artist and album names are clickable links that navigate to their detail pages.
+ * Right-click shows context menu with "View in Library" option.
  * 
  * Props:
  * - song: Song object with title, artistName, albumName, artistId, albumId, trackNumber
@@ -16,8 +17,10 @@
  * Memoized to prevent unnecessary re-renders in large lists.
  */
 
-import React, { memo } from 'react';
+import React, { memo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ContextMenu } from '../../../../components';
+import { TABS } from '../../../../utils/enums';
 import styles from './PlayerSongCard.module.css';
 
 function PlayerSongCard({ 
@@ -29,6 +32,27 @@ function PlayerSongCard({
   subtitle
 }) {
   const navigate = useNavigate();
+  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 });
+
+  const handleContextMenu = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ visible: true, x: e.clientX, y: e.clientY });
+  }, []);
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenu({ visible: false, x: 0, y: 0 });
+  }, []);
+
+  const handleViewInLibrary = useCallback(() => {
+    navigate('/view', { 
+      state: { 
+        tab: TABS.SONGS,
+        filterSong: song,
+        fromPlayer: true
+      } 
+    });
+  }, [navigate, song]);
 
   const handleQueue = (e) => {
     e.stopPropagation();
@@ -68,6 +92,7 @@ function PlayerSongCard({
       <div 
         className={`${styles.row} ${isPlaying ? styles.playing : ''}`}
         onClick={handleRowClick}
+        onContextMenu={handleContextMenu}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => e.key === 'Enter' && handleRowClick()}
@@ -125,6 +150,15 @@ function PlayerSongCard({
           </button>
         </div>
       </div>
+      
+      <ContextMenu
+        visible={contextMenu.visible}
+        position={{ x: contextMenu.x, y: contextMenu.y }}
+        items={[
+          { label: 'View in Library', onClick: handleViewInLibrary }
+        ]}
+        onClose={closeContextMenu}
+      />
     </div>
   );
 }
