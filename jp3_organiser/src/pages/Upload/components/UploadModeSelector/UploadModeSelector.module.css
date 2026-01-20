@@ -18,7 +18,7 @@
 /* Grid of mode cards */
 .modeGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
   width: 100%;
   max-width: 700px;
@@ -59,6 +59,14 @@
   font-size: 2rem;
   line-height: 1;
   color: rgba(255, 255, 255, 0.8);
+}
+
+/* Image used for still/gif swap */
+.modeImage {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  
 }
 
 /* Mode label */

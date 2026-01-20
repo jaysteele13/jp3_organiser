@@ -19,13 +19,13 @@ import { LoadingState, ErrorState, EmptyState, LibrarySearch } from '../../compo
 import StatsBar from '../View/components/StatsBar'
 import styles from './Player.module.css';
 
-import { TABS } from '../../utils/enums';
+import {  PLAYER_TABS } from '../../utils/enums';
 import TabSelector from '../View/components/Tabs/TabSelector';
 import TabContent from './components/TabContent';
 import PlayerHeader from './components/PlayerHeader';
 
 // Valid tab values for URL parameter validation
-const VALID_TABS = Object.values(TABS);
+const VALID_TABS = Object.values(PLAYER_TABS);
 
 export default function Player() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -37,13 +37,13 @@ export default function Player() {
   
   // Read tab from URL, default to HOME if invalid or missing
   const tabParam = searchParams.get('tab');
-  const initialTab = VALID_TABS.includes(tabParam) ? tabParam : TABS.HOME;
+  const initialTab = VALID_TABS.includes(tabParam) ? tabParam : PLAYER_TABS.HOME;
   const [activeTab, setActiveTab] = useState(initialTab);
 
   // Sync tab state with URL parameter
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    if (tab === TABS.HOME) {
+    if (tab === PLAYER_TABS.HOME) {
       // Remove tab param for home (clean URL)
       searchParams.delete('tab');
       setSearchParams(searchParams, { replace: true });
@@ -124,7 +124,7 @@ export default function Player() {
 
       {library && !isLoading && (
         <>
-          {activeTab == TABS.HOME && (
+          {activeTab == PLAYER_TABS.HOME && (
                <PlayerHeader />
           )}
        
@@ -134,7 +134,7 @@ export default function Player() {
             <TabSelector 
               activeTab={activeTab}
               setActiveTab={handleTabChange}
-              tabs={TABS}
+              tabs={PLAYER_TABS}
             />
             <div className={styles.searchWrapper}>
               <LibrarySearch

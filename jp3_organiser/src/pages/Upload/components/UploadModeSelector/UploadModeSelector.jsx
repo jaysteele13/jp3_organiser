@@ -15,6 +15,11 @@
  */
 
 import styles from './UploadModeSelector.module.css';
+import ModeImage from './ModeImage';
+
+import { useState } from 'react';
+
+import { TAB_IMAGES } from '../../../../utils/enums';
 
 export default function UploadModeSelector({ 
   onSelectSongs, 
@@ -22,57 +27,63 @@ export default function UploadModeSelector({
   onSelectArtist,
   onSelectPlaylist,
 }) {
+  const [hovered, setHovered] = useState(null);
+
   return (
     <div className={styles.container}>
       <h3 className={styles.title}>How would you like to add music?</h3>
-      
+
       <div className={styles.modeGrid}>
         {/* Add Songs - default behavior */}
-        <button 
-          className={`${styles.modeCard}`}
+        <button
+          className={styles.modeCard}
           onClick={onSelectSongs}
+          onMouseEnter={() => setHovered('songs')}
+          onMouseLeave={() => setHovered(null)}
+          onFocus={() => setHovered('songs')}
+          onBlur={() => setHovered(null)}
+          onTouchStart={() => setHovered(h => (h === 'songs' ? null : 'songs'))}
         >
-          <span className={styles.modeIcon}>♪</span>
-          <span className={styles.modeLabel}>Add Songs</span>
-          <span className={styles.modeDescription}>
-            Auto-detect metadata via audio fingerprinting
-          </span>
+          <ModeImage still={TAB_IMAGES.SONGS.still_w} gif={TAB_IMAGES.SONGS.gif_w} alt={"Add Songs"} className={styles.modeImage} playing={hovered === 'songs'} />
         </button>
 
         {/* Add Album */}
-        <button 
-          className={`${styles.modeCard}`}
+        <button
+          className={styles.modeCard}
           onClick={onSelectAlbum}
+          onMouseEnter={() => setHovered('album')}
+          onMouseLeave={() => setHovered(null)}
+          onFocus={() => setHovered('album')}
+          onBlur={() => setHovered(null)}
+          onTouchStart={() => setHovered(h => (h === 'album' ? null : 'album'))}
         >
-          <span className={styles.modeIcon}>○</span>
-          <span className={styles.modeLabel}>Add Album</span>
-          <span className={styles.modeDescription}>
-            You specify album and artist
-          </span>
+          <ModeImage still={TAB_IMAGES.ALBUMS.still_w} gif={TAB_IMAGES.ALBUMS.gif_w} alt={"Add Album"} className={styles.modeImage} playing={hovered === 'album'} />
         </button>
 
         {/* Add Artist */}
-        <button 
-          className={`${styles.modeCard}`}
+        <button
+          className={styles.modeCard}
           onClick={onSelectArtist}
+          onMouseEnter={() => setHovered('artist')}
+          onMouseLeave={() => setHovered(null)}
+          onFocus={() => setHovered('artist')}
+          onBlur={() => setHovered(null)}
+          onTouchStart={() => setHovered(h => (h === 'artist' ? null : 'artist'))}
         >
-          <span className={styles.modeIcon}>♫</span>
-          <span className={styles.modeLabel}>Add Artist</span>
-          <span className={styles.modeDescription}>
-            You specify artist only
-          </span>
+          <ModeImage still={TAB_IMAGES.ARTISTS.still_w} gif={TAB_IMAGES.ARTISTS.gif_w} alt={"Add Artist"} className={styles.modeImage} playing={hovered === 'artist'} />
         </button>
 
         {/* Add Playlist */}
-        <button 
-          className={`${styles.modeCard}`}
+        <button
+          className={styles.modeCard}
           onClick={onSelectPlaylist}
+          onMouseEnter={() => setHovered('playlist')}
+          onMouseLeave={() => setHovered(null)}
+          onFocus={() => setHovered('playlist')}
+          onBlur={() => setHovered(null)}
+          onTouchStart={() => setHovered(h => (h === 'playlist' ? null : 'playlist'))}
         >
-          <span className={styles.modeIcon}>☰</span>
-          <span className={styles.modeLabel}>Add Playlist</span>
-          <span className={styles.modeDescription}>
-            Create a new playlist with songs
-          </span>
+          <ModeImage still={TAB_IMAGES.PLAYLISTS.still_w} gif={TAB_IMAGES.PLAYLISTS.gif_w} alt={"Add Playlist"} className={styles.modeImage} playing={hovered === 'playlist'} />
         </button>
       </div>
 
