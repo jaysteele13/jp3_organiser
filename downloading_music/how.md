@@ -12,4 +12,13 @@ to run the web client we must install it through pip (`pip install spotdl`)
 
 then run `spotdl web`
 
-This is handy as supposedly this also populate mp3 files with ID3 data. Which I have a function for to extract if present to not constantly using the AcousticID Fingerprint.
+This is handy as supposedly this also populate mp3 files wACith ID3 data. Which I have a function for to extract if present to not constantly using the AcousticID Fingerprint.
+
+---
+
+As of 05/-1/2026 Sptofy has Messed up Developer tools so using Sptofy won't work.
+---
+
+I have resulted in using a GUI wrapper for yt-dlp: https://github.com/dsymbol/yt-dlp-gui
+
+I must go to my dir where it lives to spin this up: Documents/code/other_projects/yt-dlp-gui && python app.py
