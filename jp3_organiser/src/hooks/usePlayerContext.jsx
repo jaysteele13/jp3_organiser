@@ -2,7 +2,7 @@
  * usePlayerContext - Global Audio Player Context
  * 
  * Orchestrates the audio player by composing:
- * - useAudioElement: Audio element lifecycle and controls
+ * - useAudioEngine: Web Audio API engine for playback control
  * - useQueueManager: Queue state and navigation (context + user queue)
  * 
  * Provides a unified API for the entire app to control playback.
@@ -13,7 +13,7 @@
  */
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import { useAudioElement } from './player/useAudioElement';
+import { useAudioEngine } from './player/useAudioEngine';
 import { useQueueManager } from './player/useQueueManager';
 import { REPEAT_MODE } from './player/playerUtils';
 import { addToRecents, RECENT_TYPE } from '../services/recentsService';
@@ -80,8 +80,8 @@ export function PlayerProvider({ children }) {
     nextTrack();
   }, [repeatMode, nextTrack]);
 
-  // Audio element management
-  const audioElement = useAudioElement({
+  // Audio engine management
+  const audioElement = useAudioEngine({
     onEnded: handleTrackEnded,
     volume,
   });

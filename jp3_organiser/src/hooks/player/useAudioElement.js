@@ -16,6 +16,8 @@ export function useAudioElement({ onEnded, volume = 1 }) {
   const blobUrlRef = useRef(null);
   const isChangingSourceRef = useRef(false);
   const abortControllerRef = useRef(null); // AbortController for cancelling pending loads
+  const loadVersionRef = useRef(0);
+
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -26,6 +28,7 @@ export function useAudioElement({ onEnded, volume = 1 }) {
   // Initialize audio element once
   useEffect(() => {
     const audio = new Audio();
+    console.log('Audio object created once in audio element hook');
     audio.preload = 'auto';
     audio.volume = volume;
     audioRef.current = audio;
@@ -55,7 +58,7 @@ export function useAudioElement({ onEnded, volume = 1 }) {
       audio.pause();
       audio.src = '';
       if (blobUrlRef.current) {
-        URL.revokeObjectURL(blobUrlRef.current);
+        //URL.revokeObjectURL(blobUrlRef.current);
       }
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
@@ -63,7 +66,7 @@ export function useAudioElement({ onEnded, volume = 1 }) {
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('error', handleError);
     };
-  }, []);
+  }, []); // Ensure this effect runs only once
 
   // Attach onEnded callback (changes with queue state)
   useEffect(() => {
@@ -92,132 +95,110 @@ export function useAudioElement({ onEnded, volume = 1 }) {
     return blobUrl;
   }, []);
 
-  // Load and play a track
-  const loadAndPlay = useCallback(async (filePath) => {
-    const audio = audioRef.current;
-    if (!audio || !filePath) return;
-    
-    // Abort any previous pending load
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
+const loadAndPlay = useCallback(async (filePath) => {
+  const audio = audioRef.current;
+  if (!audio || !filePath) return;
+
+  // Increment version (invalidates older loads)
+  const version = ++loadVersionRef.current;
+
+  // Abort previous load
+  abortControllerRef.current?.abort();
+  const abortController = new AbortController();
+  abortControllerRef.current = abortController;
+
+  try {
+    setError(null);
+    setIsLoading(true);
+    setIsPlaying(false);
+
+    isChangingSourceRef.current = true;
+    audio.pause();
+    isChangingSourceRef.current = false;
+
+    const newBlobUrl = await loadAudioAsBlob(filePath);
+
+    // Ignore stale loads
+    if (abortController.signal.aborted || version !== loadVersionRef.current) {
+      return;
     }
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
 
-    try {
-      setError(null);
-      setIsLoading(true);
-      setIsPlaying(false);
+    const oldBlobUrl = blobUrlRef.current;
+    blobUrlRef.current = newBlobUrl;
 
-      isChangingSourceRef.current = true;
-      audio.pause();
-      audio.src = '';
-      audio.currentTime = 0;
-      isChangingSourceRef.current = false;
-      
-      // Check if this request was aborted
-      if (abortController.signal.aborted) {
-        return;
-      }
+    await new Promise((resolve, reject) => {
+      let resolved = false;
 
-      const newBlobUrl = await loadAudioAsBlob(filePath);
-      
-      // Check again after async operation
-      if (abortController.signal.aborted) {
-        URL.revokeObjectURL(newBlobUrl);
-        return;
-      }
-      
-      // Revoke the OLD blob only after we have the new one ready
-      const oldBlobUrl = blobUrlRef.current;
-      blobUrlRef.current = newBlobUrl;
-      
-      // Wait for audio to be fully buffered before playing
-      // canplaythrough fires when browser estimates it can play through without stopping
-      await new Promise((resolve, reject) => {
-        // Check if already aborted
-        if (abortController.signal.aborted) {
-          resolve();
-          return;
-        }
-        
-        let resolved = false;
-        
-        const cleanup = () => {
-          audio.removeEventListener('canplaythrough', onReady);
-          audio.removeEventListener('error', onError);
-          abortController.signal.removeEventListener('abort', onAbort);
-        };
-        
-        const onReady = () => { 
-          if (!resolved) { 
-            resolved = true; 
-            cleanup(); 
-            resolve(); 
-          } 
-        };
-        
-        const onError = () => { 
-          if (!resolved) { 
-            resolved = true; 
-            cleanup();
-            if (!abortController.signal.aborted) {
-              reject(new Error('Audio failed to load')); 
-            } else {
-              resolve();
-            }
-          }
-        };
-        
-        const onAbort = () => {
-          if (!resolved) {
-            resolved = true;
-            cleanup();
-            resolve();
-          }
-        };
+      const cleanup = () => {
+        audio.removeEventListener("canplaythrough", onReady);
+        audio.removeEventListener("error", onError);
+        abortController.signal.removeEventListener("abort", onAbort);
+      };
 
-        // Add listeners BEFORE setting src
-        audio.addEventListener('canplaythrough', onReady);
-        audio.addEventListener('error', onError);
-        abortController.signal.addEventListener('abort', onAbort);
-        
-        // Now set the source
-        audio.src = newBlobUrl;
-        audio.load();
-        
-        // Check if already fully buffered (can happen synchronously for cached/small files)
-        // readyState 4 = HAVE_ENOUGH_DATA (can play through)
-        if (audio.readyState >= 4) {
+      const onReady = () => {
+        if (!resolved) {
           resolved = true;
           cleanup();
           resolve();
-          return;
         }
-      });
+      };
 
-      // Final check before playing
-      if (abortController.signal.aborted) {
-        return;
-      }
+      const onError = () => {
+        if (!resolved) {
+          resolved = true;
+          cleanup();
+          reject(new Error("Audio failed to load"));
+        }
+      };
 
-      // Now safe to revoke the old blob
-      if (oldBlobUrl) {
-        URL.revokeObjectURL(oldBlobUrl);
-      }
+      const onAbort = () => {
+        if (!resolved) {
+          resolved = true;
+          cleanup();
+          resolve();
+        }
+      };
 
-      audio.currentTime = 0;
-      await audio.play();
-      setIsLoading(false);
-    } catch (err) {
-      if (!abortController.signal.aborted) {
-        console.error('Playback error:', err);
-        setError(`Playback error: ${err.message}`);
-        setIsPlaying(false);
-        setIsLoading(false);
+      audio.addEventListener("canplaythrough", onReady);
+      audio.addEventListener("error", onError);
+      abortController.signal.addEventListener("abort", onAbort);
+
+      // Atomic swap
+      isChangingSourceRef.current = true;
+      audio.src = newBlobUrl;
+      audio.load();
+      isChangingSourceRef.current = false;
+
+      if (audio.readyState >= 4) {
+        resolved = true;
+        cleanup();
+        resolve();
       }
+    });
+
+    if (abortController.signal.aborted || version !== loadVersionRef.current) {
+      return;
     }
-  }, [loadAudioAsBlob]);
+
+    // Revoke old blob AFTER successful swap
+    if (oldBlobUrl) {
+      // URL.revokeObjectURL(oldBlobUrl);
+    }
+
+    audio.currentTime = 0;
+    await audio.play();
+
+    setIsLoading(false);
+  } catch (err) {
+    if (!abortController.signal.aborted) {
+      console.error("Playback error:", err);
+      setError(`Playback error: ${err.message}`);
+      setIsPlaying(false);
+      setIsLoading(false);
+    }
+  }
+}, [loadAudioAsBlob]);
+
 
   const pause = useCallback(() => audioRef.current?.pause(), []);
 
