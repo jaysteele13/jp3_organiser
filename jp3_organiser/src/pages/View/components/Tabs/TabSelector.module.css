@@ -29,3 +29,11 @@
 .tabActive:hover {
   background-color: var(--primary-hover);
 }
+
+/* Small image inside tabs */
+.tabImage {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  pointer-events: none;
+}

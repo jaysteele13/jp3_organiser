@@ -15,19 +15,11 @@
  */
 
 import styles from './UploadModeSelector.module.css';
-import songGif from '../../../../assets/categories/song_w_noBG.gif'
-import artistGif from '../../../../assets/categories/artist_w_noBG.gif'
-import albumGif from '../../../../assets/categories/album_w_noBG.gif'
-import playlistGif from '../../../../assets/categories/playlist_w_noBG.gif'
-
-import songStill from '../../../../assets/categories/song_still.png'
-import artistStill from '../../../../assets/categories/artist_still.png'
-import albumStill from '../../../../assets/categories/album_still.png'
-import playlistStill from '../../../../assets/categories/playlist_still.png'
-
 import ModeImage from './ModeImage';
 
 import { useState } from 'react';
+
+import { TAB_IMAGES } from '../../../../utils/enums';
 
 export default function UploadModeSelector({ 
   onSelectSongs, 
@@ -52,7 +44,7 @@ export default function UploadModeSelector({
           onBlur={() => setHovered(null)}
           onTouchStart={() => setHovered(h => (h === 'songs' ? null : 'songs'))}
         >
-          <ModeImage still={songStill} gif={songGif} alt={"Add Songs"} className={styles.modeImage} playing={hovered === 'songs'} />
+          <ModeImage still={TAB_IMAGES.SONGS.still_w} gif={TAB_IMAGES.SONGS.gif_w} alt={"Add Songs"} className={styles.modeImage} playing={hovered === 'songs'} />
         </button>
 
         {/* Add Album */}
@@ -65,7 +57,7 @@ export default function UploadModeSelector({
           onBlur={() => setHovered(null)}
           onTouchStart={() => setHovered(h => (h === 'album' ? null : 'album'))}
         >
-          <ModeImage still={albumStill} gif={albumGif} alt={"Add Album"} className={styles.modeImage} playing={hovered === 'album'} />
+          <ModeImage still={TAB_IMAGES.ALBUMS.still_w} gif={TAB_IMAGES.ALBUMS.gif_w} alt={"Add Album"} className={styles.modeImage} playing={hovered === 'album'} />
         </button>
 
         {/* Add Artist */}
@@ -78,7 +70,7 @@ export default function UploadModeSelector({
           onBlur={() => setHovered(null)}
           onTouchStart={() => setHovered(h => (h === 'artist' ? null : 'artist'))}
         >
-          <ModeImage still={artistStill} gif={artistGif} alt={"Add Artist"} className={styles.modeImage} playing={hovered === 'artist'} />
+          <ModeImage still={TAB_IMAGES.ARTISTS.still_w} gif={TAB_IMAGES.ARTISTS.gif_w} alt={"Add Artist"} className={styles.modeImage} playing={hovered === 'artist'} />
         </button>
 
         {/* Add Playlist */}
@@ -91,7 +83,7 @@ export default function UploadModeSelector({
           onBlur={() => setHovered(null)}
           onTouchStart={() => setHovered(h => (h === 'playlist' ? null : 'playlist'))}
         >
-          <ModeImage still={playlistStill} gif={playlistGif} alt={"Add Playlist"} className={styles.modeImage} playing={hovered === 'playlist'} />
+          <ModeImage still={TAB_IMAGES.PLAYLISTS.still_w} gif={TAB_IMAGES.PLAYLISTS.gif_w} alt={"Add Playlist"} className={styles.modeImage} playing={hovered === 'playlist'} />
         </button>
       </div>
 
