@@ -35,6 +35,21 @@ export function useAudioEngine({ onEnded, volume = 1 }) {
     };
   }, []);
 
+
+  /* ENsure only one isntance at a time */
+  const stopSource = () => {
+  if (sourceRef.current) {
+    try {
+      sourceRef.current.onended = null;
+      sourceRef.current.stop();
+      sourceRef.current.disconnect();
+    } catch {}
+    sourceRef.current = null;
+  }
+};
+
+
+
   /* ---------- Volume ---------- */
   useEffect(() => {
     if (gainRef.current) {
@@ -71,81 +86,84 @@ const stopPositionTracking = () => {
   /* ---------- Core controls ---------- */
   
 
-  const stop = useCallback(() => {
-  if (sourceRef.current) {
-    endedNaturallyRef.current = false;
-    sourceRef.current.stop();
-    sourceRef.current = null;
-  }
+const stop = useCallback(() => {
+  endedNaturallyRef.current = false;
+  stopSource();
   pauseOffsetRef.current = 0;
   setIsPlaying(false);
   stopPositionTracking();
 }, []);
 
 
-  const pause = useCallback(() => {
-  if (!isPlaying || !sourceRef.current) return;
+
+ const pause = useCallback(() => {
+  if (!isPlaying) return;
 
   const ctx = ctxRef.current;
   pauseOffsetRef.current = ctx.currentTime - startTimeRef.current;
 
   endedNaturallyRef.current = false;
-  sourceRef.current.stop();
-  sourceRef.current = null;
+  stopSource();
 
   setIsPlaying(false);
   stopPositionTracking();
 }, [isPlaying]);
 
 
+
   const resume = useCallback(() => {
     if (!bufferRef.current || isPlaying) return;
+
+    
     playFromOffset(pauseOffsetRef.current);
   }, [isPlaying]);
 
-    const playFromOffset = (offset) => {
-    const ctx = ctxRef.current;
+const playFromOffset = (offset) => {
+  const ctx = ctxRef.current;
+  if (!bufferRef.current) return;
 
-    const source = ctx.createBufferSource();
-    source.buffer = bufferRef.current;
+  // 🔴 STOP ANY EXISTING SOURCE FIRST
+  stopSource();
 
+  const source = ctx.createBufferSource();
+  source.buffer = bufferRef.current;
+  source.connect(gainRef.current);
 
-    source.connect(gainRef.current);
+  endedNaturallyRef.current = true;
 
-    // Mark this playback as a "real" play
-    endedNaturallyRef.current = true;
+  source.onended = () => {
+    if (!endedNaturallyRef.current) return;
 
-    source.onended = () => {
-        stopPositionTracking();
-        setIsPlaying(false);
+    stopPositionTracking();
+    setIsPlaying(false);
+    pauseOffsetRef.current = 0;
+    onEnded?.();
+  };
 
-        // Only advance queue if this ended naturally
-        if (endedNaturallyRef.current) {
-        endedNaturallyRef.current = false;
-        pauseOffsetRef.current = 0;
-        onEnded?.();
-        }
-    };
+  source.start(0, offset);
 
-    source.start(0, offset);
+  sourceRef.current = source;
+  startTimeRef.current = ctx.currentTime - offset;
+  setIsPlaying(true);
+  startPositionTracking();
+};
 
-    sourceRef.current = source;
-    startTimeRef.current = ctx.currentTime - offset;
-    setIsPlaying(true);
-    startPositionTracking();
-    };
 
 
   const seek = useCallback((seconds) => {
-    if (!bufferRef.current) return;
-    pauseOffsetRef.current = Math.max(0, Math.min(seconds, duration));
-    if (isPlaying) {
-      stop();
-      playFromOffset(pauseOffsetRef.current);
-    } else {
-      setPosition(pauseOffsetRef.current);
-    }
-  }, [isPlaying, duration, stop]);
+  if (!bufferRef.current) return;
+
+  const clamped = Math.max(0, Math.min(seconds, duration));
+  pauseOffsetRef.current = clamped;
+
+  if (isPlaying) {
+    endedNaturallyRef.current = false; // prevent queue advance
+    playFromOffset(clamped);
+  } else {
+    setPosition(clamped);
+  }
+}, [isPlaying, duration]);
+
 
   /* ---------- Load & play ---------- */
 
