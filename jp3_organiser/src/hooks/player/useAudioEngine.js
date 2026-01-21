@@ -6,6 +6,8 @@ export function useAudioEngine({ onEnded, volume = 1 }) {
   const gainRef = useRef(null);
   const sourceRef = useRef(null);
   const bufferRef = useRef(null);
+  const endedNaturallyRef = useRef(false);
+
 
   const startTimeRef = useRef(0);
   const pauseOffsetRef = useRef(0);
@@ -41,62 +43,98 @@ export function useAudioEngine({ onEnded, volume = 1 }) {
   }, [volume]);
 
   /* ---------- RAF position tracking ---------- */
-  const startPositionTracking = () => {
-    cancelAnimationFrame(rafRef.current);
-    const tick = () => {
-      if (!isPlaying) return;
-      const ctx = ctxRef.current;
-      setPosition(Math.min(ctx.currentTime - startTimeRef.current, duration));
-      rafRef.current = requestAnimationFrame(tick);
-    };
+const isPlayingRef = useRef(false);
+
+useEffect(() => {
+  isPlayingRef.current = isPlaying;
+}, [isPlaying]);
+
+const startPositionTracking = () => {
+  cancelAnimationFrame(rafRef.current);
+
+  const tick = () => {
+    if (!isPlayingRef.current) return;
+
+    const ctx = ctxRef.current;
+    const pos = ctx.currentTime - startTimeRef.current;
+
+    setPosition(Math.min(pos, duration));
     rafRef.current = requestAnimationFrame(tick);
   };
 
-  const stopPositionTracking = () => {
-    cancelAnimationFrame(rafRef.current);
-  };
+  rafRef.current = requestAnimationFrame(tick);
+};
 
+const stopPositionTracking = () => {
+  cancelAnimationFrame(rafRef.current);
+};
   /* ---------- Core controls ---------- */
+  
 
   const stop = useCallback(() => {
-    sourceRef.current?.stop();
+  if (sourceRef.current) {
+    endedNaturallyRef.current = false;
+    sourceRef.current.stop();
     sourceRef.current = null;
-    pauseOffsetRef.current = 0;
-    setIsPlaying(false);
-    stopPositionTracking();
-  }, []);
+  }
+  pauseOffsetRef.current = 0;
+  setIsPlaying(false);
+  stopPositionTracking();
+}, []);
+
 
   const pause = useCallback(() => {
-    if (!isPlaying) return;
-    const ctx = ctxRef.current;
-    pauseOffsetRef.current = ctx.currentTime - startTimeRef.current;
-    stop();
-  }, [isPlaying, stop]);
+  if (!isPlaying || !sourceRef.current) return;
+
+  const ctx = ctxRef.current;
+  pauseOffsetRef.current = ctx.currentTime - startTimeRef.current;
+
+  endedNaturallyRef.current = false;
+  sourceRef.current.stop();
+  sourceRef.current = null;
+
+  setIsPlaying(false);
+  stopPositionTracking();
+}, [isPlaying]);
+
 
   const resume = useCallback(() => {
     if (!bufferRef.current || isPlaying) return;
     playFromOffset(pauseOffsetRef.current);
   }, [isPlaying]);
 
-  const playFromOffset = (offset) => {
+    const playFromOffset = (offset) => {
     const ctx = ctxRef.current;
+
     const source = ctx.createBufferSource();
     source.buffer = bufferRef.current;
+
+
     source.connect(gainRef.current);
 
+    // Mark this playback as a "real" play
+    endedNaturallyRef.current = true;
+
     source.onended = () => {
-      if (pauseOffsetRef.current >= duration) return;
-      setIsPlaying(false);
-      stopPositionTracking();
-      onEnded?.();
+        stopPositionTracking();
+        setIsPlaying(false);
+
+        // Only advance queue if this ended naturally
+        if (endedNaturallyRef.current) {
+        endedNaturallyRef.current = false;
+        pauseOffsetRef.current = 0;
+        onEnded?.();
+        }
     };
 
     source.start(0, offset);
+
     sourceRef.current = source;
     startTimeRef.current = ctx.currentTime - offset;
     setIsPlaying(true);
     startPositionTracking();
-  };
+    };
+
 
   const seek = useCallback((seconds) => {
     if (!bufferRef.current) return;

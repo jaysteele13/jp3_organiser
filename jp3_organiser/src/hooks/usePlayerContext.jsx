@@ -132,14 +132,12 @@ export function PlayerProvider({ children }) {
 
   // Handle repeat one - seek to start when track ends
   useEffect(() => {
-    if (repeatMode === REPEAT_MODE.ONE && !isPlaying && position > 0 && duration > 0) {
-      // Track ended with repeat one - restart it
-      if (position >= duration - 0.5) {
-        seek(0);
-        resume();
-      }
-    }
-  }, [repeatMode, isPlaying, position, duration, seek, resume]);
+  if (repeatMode === REPEAT_MODE.ONE && !isPlaying && position >= duration && duration > 0) {
+    seek(0);
+    resume();
+  }
+}, [repeatMode, isPlaying, position, duration, seek, resume]);
+
 
   // ============================================
   // PUBLIC API
