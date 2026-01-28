@@ -57,6 +57,9 @@ export default function VolumeControl({ volume, onVolumeChange, disabled }) {
         disabled={disabled}
         title={`Volume: ${volumePercent}%`}
         aria-label="Volume"
+        style={{
+          '--progress': `${volume * 100}%`
+        }}
       />
     </div>
   );

@@ -18,7 +18,7 @@
   background-color: var(--quaternary);
   border-top: 2px solid var(--quaternary-hover);
   z-index: 1000;
-  padding: 0 1rem;
+  padding: 0 0.5rem;
 }
 
 .container {
@@ -26,9 +26,10 @@
   align-items: center;
   justify-content: space-between;
   height: 100%;
-  max-width: 1400px;
+  max-width: 100%;
   margin: 0 auto;
-  gap: 1rem;
+  gap: 0.8rem;
+  padding: 0 0.5rem;
 }
 
 /* ============================================
@@ -39,9 +40,10 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-width: 180px;
-  max-width: 250px;
+  min-width: 140px;
+  max-width: 200px;
   overflow: hidden;
+  flex-shrink: 1;
 }
 
 .trackTitle {
@@ -85,7 +87,7 @@
   align-items: center;
   justify-content: center;
   flex: 1;
-  max-width: 600px;
+  min-width: 0; /* Allow flex shrinking */
   gap: 0.25rem;
 }
 
@@ -97,14 +99,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .controlBtn {
   background-color: transparent;
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: #fff;
-  padding: 0.4rem 0.8rem;
+  padding: 0.35rem 0.7rem;
   font-size: 0.75rem;
   border-radius: 4px;
   cursor: pointer;
@@ -135,7 +137,7 @@
 .playBtn {
   background-color: var(--secondary);
   border-color: var(--secondary);
-  padding: 0.5rem 1.2rem;
+  padding: 0.45rem 1rem;
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -146,21 +148,24 @@
 }
 
 /* ============================================
-   PROGRESS SLIDER
-   ============================================ */
+    PROGRESS SLIDER
+    ============================================ */
 
 .progress {
   display: flex;
   align-items: center;
   width: 100%;
-  gap: 0.5rem;
+  min-width: 0; /* Allow flex shrinking */
+  gap: 0.4rem;
 }
 
 .time {
   font-size: 0.7rem;
   color: rgba(255, 255, 255, 0.7);
-  min-width: 40px;
+  min-width: 35px;
+  max-width: 45px;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .slider {
@@ -168,34 +173,85 @@
   height: 4px;
   -webkit-appearance: none;
   appearance: none;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
+  background: transparent;
   outline: none;
   cursor: pointer;
+  position: relative;
+  transition: height 0.2s ease;
 }
 
+.slider:hover {
+  height: 6px;
+}
+
+/* Filled progress bar using background gradient */
+.slider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    var(--secondary) 0%,
+    var(--secondary) var(--progress),
+    rgba(255, 255, 255, 0.2) var(--progress),
+    rgba(255, 255, 255, 0.2) 100%
+  );
+  border-radius: 2px;
+  border: none;
+}
+
+.slider::-moz-range-track {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    var(--secondary) 0%,
+    var(--secondary) var(--progress),
+    rgba(255, 255, 255, 0.2) var(--progress),
+    rgba(255, 255, 255, 0.2) 100%
+  );
+  border-radius: 2px;
+  border: none;
+}
+
+/* Hide the thumb but keep it functional */
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--secondary);
+  width: 0;
+  height: 0;
+  background: transparent;
   cursor: pointer;
-  transition: transform 0.1s ease;
-}
-
-.slider::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
+  opacity: 0;
 }
 
 .slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--secondary);
+  width: 0;
+  height: 0;
+  background: transparent;
   cursor: pointer;
   border: none;
+  opacity: 0;
+}
+
+/* Show thumb on hover */
+.slider:hover::-webkit-slider-thumb {
+  opacity: 1;
+  width: 12px;
+  height: 12px;
+  background: var(--secondary);
+  border-radius: 50%;
+  margin-top: -4px;
+  transition: all 0.2s ease;
+}
+
+.slider:hover::-moz-range-thumb {
+  opacity: 1;
+  width: 12px;
+  height: 12px;
+  background: var(--secondary);
+  border-radius: 50%;
+  border: none;
+  transition: all 0.2s ease;
 }
 
 .slider:disabled {
@@ -203,16 +259,25 @@
   cursor: not-allowed;
 }
 
+.slider:disabled::-webkit-slider-runnable-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.slider:disabled::-moz-range-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 /* ============================================
    RIGHT SECTION (Volume + Queue Button)
    ============================================ */
 
 .right {
-  min-width: 220px;
+  min-width: 180px;
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 1rem;
+  gap: 0.8rem;
+  flex-shrink: 1;
 }
 
 /* ============================================
@@ -253,43 +318,103 @@
 }
 
 .volumeSlider {
-  width: 80px;
+  width: 60px;
   height: 4px;
   -webkit-appearance: none;
   appearance: none;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
+  background: transparent;
   outline: none;
   cursor: pointer;
+  position: relative;
+  transition: height 0.2s ease;
+  flex-shrink: 1;
 }
 
+.volumeSlider:hover {
+  height: 6px;
+}
+
+/* Filled volume bar using background gradient */
+.volumeSlider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    var(--primary) 0%,
+    var(--primary) var(--progress),
+    rgba(255, 255, 255, 0.2) var(--progress),
+    rgba(255, 255, 255, 0.2) 100%
+  );
+  border-radius: 2px;
+  border: none;
+}
+
+.volumeSlider::-moz-range-track {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    var(--primary) 0%,
+    var(--primary) var(--progress),
+    rgba(255, 255, 255, 0.2) var(--progress),
+    rgba(255, 255, 255, 0.2) 100%
+  );
+  border-radius: 2px;
+  border: none;
+}
+
+/* Hide the thumb but keep it functional */
 .volumeSlider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--secondary);
+  width: 0;
+  height: 0;
+  background: transparent;
   cursor: pointer;
-  transition: transform 0.1s ease;
-}
-
-.volumeSlider::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
+  opacity: 0;
 }
 
 .volumeSlider::-moz-range-thumb {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--secondary);
+  width: 0;
+  height: 0;
+  background: transparent;
   cursor: pointer;
   border: none;
+  opacity: 0;
+}
+
+/* Show thumb on hover */
+.volumeSlider:hover::-webkit-slider-thumb {
+  opacity: 1;
+  width: 10px;
+  height: 10px;
+  background: var(--primary);
+  border-radius: 50%;
+  margin-top: -3px;
+  transition: all 0.2s ease;
+}
+
+.volumeSlider:hover::-moz-range-thumb {
+  opacity: 1;
+  width: 10px;
+  height: 10px;
+  background: var(--primary);
+  border-radius: 50%;
+  border: none;
+  transition: all 0.2s ease;
 }
 
 .volumeSlider:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.volumeSlider:disabled::-webkit-slider-runnable-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.volumeSlider:disabled::-moz-range-track {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .queueBtn {

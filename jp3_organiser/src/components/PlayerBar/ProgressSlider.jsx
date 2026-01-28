@@ -17,10 +17,11 @@ export default function ProgressSlider({
 }) {
   const progress = duration > 0 ? (position / duration) * 100 : 0;
 
-  const handleChange = useCallback((e) => {
-    const newPosition = (parseFloat(e.target.value) / 100) * duration;
-    onSeek(newPosition);
-  }, [duration, onSeek]);
+const handleChange = useCallback((e) => {
+  const pct = parseFloat(e.target.value) / 100;
+  const newPosition = Math.max(0, Math.min(pct * duration, duration));
+  onSeek(newPosition);
+}, [duration, onSeek]);
 
   return (
     <div className={styles.progress}>
@@ -35,6 +36,9 @@ export default function ProgressSlider({
         disabled={disabled || duration === 0}
         className={styles.slider}
         aria-label="Seek"
+        style={{
+          '--progress': `${progress}%`
+        }}
       />
       <span className={styles.time}>{formatDuration(duration)}</span>
     </div>
