@@ -99,6 +99,7 @@ const stop = useCallback(() => {
   endedNaturallyRef.current = false;
   stopSource();
   pauseOffsetRef.current = 0;
+  setPosition(0); // Reset position when stopping
   setIsPlaying(false);
   stopPositionTracking();
 }, []);
@@ -106,17 +107,19 @@ const stop = useCallback(() => {
 
 
  const pause = useCallback(() => {
-  if (!isPlaying) return;
+   if (!isPlaying) return;
 
-  const ctx = ctxRef.current;
-  pauseOffsetRef.current = ctx.currentTime - startTimeRef.current;
+   const ctx = ctxRef.current;
+   pauseOffsetRef.current = ctx.currentTime - startTimeRef.current;
 
-  endedNaturallyRef.current = false;
-  stopSource();
+   endedNaturallyRef.current = false;
+   stopSource();
 
-  setIsPlaying(false);
-  stopPositionTracking();
-}, [isPlaying]);
+   // Update position to match pause point
+   setPosition(pauseOffsetRef.current);
+   setIsPlaying(false);
+   stopPositionTracking();
+ }, [isPlaying]);
 
 
 
@@ -152,6 +155,9 @@ const playFromOffset = (offset) => {
 
   // Set timing BEFORE starting playback
   startTimeRef.current = ctx.currentTime - offset;
+  
+  // Immediately set position for immediate UI update
+  setPosition(offset);
   
   source.start(0, offset);
 
@@ -200,6 +206,7 @@ const playFromOffset = (offset) => {
 
       bufferRef.current = buffer;
       setDuration(buffer.duration);
+      setPosition(0); // Reset position when new song loads
       pauseOffsetRef.current = 0;
 
       // Ensure audio context is running
