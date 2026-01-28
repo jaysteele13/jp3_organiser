@@ -31,9 +31,10 @@
 
 .uploadContainer {
   width: 100%;
-  background-color: var(--tertiary);
-  border-radius: 8px;
-  color: #fff;
+  background-color: transparent;
+  border-radius: 0px;
+  color: var(--primary);
+  border: 1px solid var(--primary);
 }
 
 .header {
@@ -356,7 +357,7 @@
   background-color: var(--secondary);
   border-radius: 8px;
   padding: 1.5rem;
-  color: #fff;
+  color: var(--primary);
 }
 
 .completeHeader {

@@ -44,7 +44,7 @@ export default function UploadModeSelector({
           onBlur={() => setHovered(null)}
           onTouchStart={() => setHovered(h => (h === 'songs' ? null : 'songs'))}
         >
-          <ModeImage still={TAB_IMAGES.SONGS.still_w} gif={TAB_IMAGES.SONGS.gif_w} alt={"Add Songs"} className={styles.modeImage} playing={hovered === 'songs'} />
+          <ModeImage still={TAB_IMAGES.SONGS.still_b} gif={TAB_IMAGES.SONGS.gif_b} alt={"Add Songs"} className={styles.modeImage} playing={hovered === 'songs'} />
         </button>
 
         {/* Add Album */}
@@ -57,7 +57,7 @@ export default function UploadModeSelector({
           onBlur={() => setHovered(null)}
           onTouchStart={() => setHovered(h => (h === 'album' ? null : 'album'))}
         >
-          <ModeImage still={TAB_IMAGES.ALBUMS.still_w} gif={TAB_IMAGES.ALBUMS.gif_w} alt={"Add Album"} className={styles.modeImage} playing={hovered === 'album'} />
+          <ModeImage still={TAB_IMAGES.ALBUMS.still_b} gif={TAB_IMAGES.ALBUMS.gif_b} alt={"Add Album"} className={styles.modeImage} playing={hovered === 'album'} />
         </button>
 
         {/* Add Artist */}
@@ -70,7 +70,7 @@ export default function UploadModeSelector({
           onBlur={() => setHovered(null)}
           onTouchStart={() => setHovered(h => (h === 'artist' ? null : 'artist'))}
         >
-          <ModeImage still={TAB_IMAGES.ARTISTS.still_w} gif={TAB_IMAGES.ARTISTS.gif_w} alt={"Add Artist"} className={styles.modeImage} playing={hovered === 'artist'} />
+          <ModeImage still={TAB_IMAGES.ARTISTS.still_b} gif={TAB_IMAGES.ARTISTS.gif_b} alt={"Add Artist"} className={styles.modeImage} playing={hovered === 'artist'} />
         </button>
 
         {/* Add Playlist */}
@@ -83,7 +83,7 @@ export default function UploadModeSelector({
           onBlur={() => setHovered(null)}
           onTouchStart={() => setHovered(h => (h === 'playlist' ? null : 'playlist'))}
         >
-          <ModeImage still={TAB_IMAGES.PLAYLISTS.still_w} gif={TAB_IMAGES.PLAYLISTS.gif_w} alt={"Add Playlist"} className={styles.modeImage} playing={hovered === 'playlist'} />
+          <ModeImage still={TAB_IMAGES.PLAYLISTS.still_b} gif={TAB_IMAGES.PLAYLISTS.gif_b} alt={"Add Playlist"} className={styles.modeImage} playing={hovered === 'playlist'} />
         </button>
       </div>
 
