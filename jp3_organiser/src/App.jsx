@@ -15,7 +15,7 @@ import { useKeyboardShortcut, UploadCacheProvider, PlayerProvider } from './hook
  */
 function AppContent({ isNavCollapsed, onToggle }) {
   return (
-    <div className={styles.appLayout}>
+    <div className={`${styles.appLayout} ${styles.app}`}>
       <Navbar isCollapsed={isNavCollapsed} onToggle={onToggle} />
       <main className={`
         ${styles.content} 

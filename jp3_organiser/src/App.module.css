@@ -5,6 +5,53 @@
   min-height: 100vh;
 }
 
+.app {
+  position: relative;
+  background: var(--sketch-bg); /* sketch background */
+  min-height: 100vh;
+}
+
+.app::after {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background-image: 
+    url("/assets/textures/grain.png"),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 1px,
+      rgba(0, 0, 0, 0.91) 1px,
+      rgba(0, 0, 0, 0.91) 2px
+    );
+  background-repeat: repeat;
+  opacity: 0.30;
+  mix-blend-mode: multiply;
+  z-index: 0;
+}
+
+/* Fallback for browsers without mix-blend-mode support */
+@supports not (mix-blend-mode: multiply) {
+  .app::after {
+    opacity: 0.05;
+  }
+}
+
+/* Fallback if grain image fails to load */
+@supports not (background-image: url("/assets/textures/grain.png")) {
+  .app::after {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 1px,
+      rgba(0, 0, 0, 0.02) 1px,
+      rgba(0, 0, 0, 0.02) 2px
+    );
+    opacity: 0.08;
+  }
+}
+
 .content {
   margin-left: 200px;
   flex: 1;
@@ -14,6 +61,8 @@
   justify-content: flex-start;
   text-align: left;
   transition: margin-left 0.25s ease;
+  position: relative;
+  z-index: 2;
 }
 
 .contentCollapsed {
