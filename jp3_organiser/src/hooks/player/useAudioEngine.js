@@ -64,7 +64,7 @@ useEffect(() => {
   isPlayingRef.current = isPlaying;
 }, [isPlaying]);
 
-const startPositionTracking = () => {
+ const startPositionTracking = () => {
   // Cancel any existing RAF first
   cancelAnimationFrame(rafRef.current);
   rafRef.current = null;
@@ -78,8 +78,11 @@ const startPositionTracking = () => {
 
     const ctx = ctxRef.current;
     const pos = ctx.currentTime - startTimeRef.current;
+    // Always use buffer duration directly to avoid state race condition
+    const currentDuration = bufferRef.current?.duration || duration;
+    const newPos = Math.min(pos, currentDuration);
 
-    setPosition(Math.min(pos, duration));
+    setPosition(newPos);
     rafRef.current = requestAnimationFrame(tick);
   };
 
@@ -132,7 +135,10 @@ const stop = useCallback(() => {
 
 const playFromOffset = (offset) => {
   const ctx = ctxRef.current;
-  if (!bufferRef.current || !ctx) return;
+  if (!bufferRef.current || !ctx) {
+    console.log('🎵 playFromOffset failed - missing buffer or context');
+    return;
+  }
 
   // 🔴 STOP ANY EXISTING SOURCE FIRST
   stopSource();
@@ -146,7 +152,6 @@ const playFromOffset = (offset) => {
 
   source.onended = () => {
     if (!endedNaturallyRef.current) return;
-
     stopPositionTracking();
     setIsPlaying(false);
     pauseOffsetRef.current = 0;
@@ -158,7 +163,7 @@ const playFromOffset = (offset) => {
   
   // Immediately set position for immediate UI update
   setPosition(offset);
-  
+
   source.start(0, offset);
 
   sourceRef.current = source;
@@ -205,7 +210,10 @@ const playFromOffset = (offset) => {
       if (version !== loadVersionRef.current) return;
 
       bufferRef.current = buffer;
-      setDuration(buffer.duration);
+      const bufferDuration = buffer.duration;
+      
+      setDuration(bufferDuration);
+      
       setPosition(0); // Reset position when new song loads
       pauseOffsetRef.current = 0;
 
@@ -214,10 +222,12 @@ const playFromOffset = (offset) => {
         await ctx.resume();
       }
 
+      // Small delay to ensure state updates are processed
+      await new Promise(resolve => setTimeout(resolve, 10));
       playFromOffset(0);
       setIsLoading(false);
     } catch (err) {
-      console.error(err);
+      console.error('🎵 loadAndPlay error:', err);
       setError(err.message || "Failed to load audio");
       setIsLoading(false);
     }
