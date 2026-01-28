@@ -16,8 +16,10 @@
   right: 0;
   height: 80px;
   background-color: var(--sketch-bg);
-  border: 1px solid var(--sketch-border);
+  border-top: 1px solid var(--sketch-border);
   border-bottom: none;
+  border-right: none;
+  border-left: none;
   z-index: 1000;
   padding: 0 0.5rem;
 }
