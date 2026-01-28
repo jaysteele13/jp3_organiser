@@ -65,10 +65,16 @@ useEffect(() => {
 }, [isPlaying]);
 
 const startPositionTracking = () => {
+  // Cancel any existing RAF first
   cancelAnimationFrame(rafRef.current);
+  rafRef.current = null;
 
   const tick = () => {
-    if (!isPlayingRef.current) return;
+    // Double-check state before proceeding
+    if (!isPlayingRef.current || !ctxRef.current) {
+      rafRef.current = null;
+      return;
+    }
 
     const ctx = ctxRef.current;
     const pos = ctx.currentTime - startTimeRef.current;
@@ -81,7 +87,10 @@ const startPositionTracking = () => {
 };
 
 const stopPositionTracking = () => {
-  cancelAnimationFrame(rafRef.current);
+  if (rafRef.current) {
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+  }
 };
   /* ---------- Core controls ---------- */
   
@@ -120,10 +129,11 @@ const stop = useCallback(() => {
 
 const playFromOffset = (offset) => {
   const ctx = ctxRef.current;
-  if (!bufferRef.current) return;
+  if (!bufferRef.current || !ctx) return;
 
   // 🔴 STOP ANY EXISTING SOURCE FIRST
   stopSource();
+  stopPositionTracking(); // Ensure tracking is stopped before starting new
 
   const source = ctx.createBufferSource();
   source.buffer = bufferRef.current;
@@ -140,12 +150,16 @@ const playFromOffset = (offset) => {
     onEnded?.();
   };
 
+  // Set timing BEFORE starting playback
+  startTimeRef.current = ctx.currentTime - offset;
+  
   source.start(0, offset);
 
   sourceRef.current = source;
-  startTimeRef.current = ctx.currentTime - offset;
   setIsPlaying(true);
-  startPositionTracking();
+  
+  // Start tracking after state is set
+  requestAnimationFrame(() => startPositionTracking());
 };
 
 
@@ -187,6 +201,11 @@ const playFromOffset = (offset) => {
       bufferRef.current = buffer;
       setDuration(buffer.duration);
       pauseOffsetRef.current = 0;
+
+      // Ensure audio context is running
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
+      }
 
       playFromOffset(0);
       setIsLoading(false);
