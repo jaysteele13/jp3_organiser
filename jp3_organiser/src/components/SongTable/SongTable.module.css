@@ -164,11 +164,11 @@
 }
 
 .tableRow.highlighted {
-  background-color: var(--quaternary);
+  background-color: var(--secondary);
 }
 
 .tableRow.highlighted:hover {
-  background-color: var(--quaternary-hover);
+  background-color: var(--tertiary);
 }
 
 .tableRow.selected {
@@ -323,12 +323,12 @@
 }
 
 .cardHighlighted {
-  background-color: var(--quaternary);
+  background-color: var(--secondary);
 }
 
 .cardHighlighted:hover,
 .cardHighlighted:focus {
-  background-color: var(--quaternary-hover);
+  background-color: var(--tertiary);
 }
 
 .cardInfo {

@@ -10,7 +10,7 @@ const NAV_ITEMS = [
 
 export default function Navbar({ isCollapsed, onToggle }) {
     return (
-        <nav className={`${styles.navbar} ${isCollapsed ? styles.collapsed : ''}`}>
+        <nav className={`${styles.navbar} ${isCollapsed ? styles.collapsed : ''} textured-purple`}>
             <div className={styles.header}>
                 <div className={styles.logo}>
                     {isCollapsed ? 'JP3' : 'JP3 Organiser'}

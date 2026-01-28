@@ -17,7 +17,7 @@
   padding: 0.5rem 0.85rem;
   font-size: 0.8rem;
   font-weight: 500;
-  background-color: var(--quaternary);
+  background-color: var(--secondary);
   border: none;
   color: #fff;
   border-radius: 6px;
@@ -26,7 +26,7 @@
 }
 
 .changeModeButton:hover {
-  background-color: var(--quaternary-hover);
+  background-color: var(--tertiary);
 }
 
 .uploadContainer {

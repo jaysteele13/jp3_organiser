@@ -199,12 +199,12 @@
    ======================================== */
 
 .artistCard {
-  background-color: var(--quaternary);
-  border-left: 4px solid var(--quaternary-hover);
+  background-color: var(--secondary);
+  border-left: 4px solid var(--tertiary);
 }
 
 .artistCard:hover {
-  background-color: var(--quaternary-hover);
+  background-color: var(--tertiary);
 }
 
 .artistCard .cardTitle,
@@ -218,7 +218,7 @@
 
 .artistCard .cardBtn {
   background-color: rgba(255, 255, 255, 0.9);
-  color: var(--quaternary-hover);
+  color: var(--tertiary);
 }
 
 .artistCard .cardBtn:hover {

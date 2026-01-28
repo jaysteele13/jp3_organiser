@@ -1,7 +1,7 @@
 /* ReviewScreen component styles */
 
 .container {
-  background-color: var(--quaternary);
+  background-color: var(--secondary);
   border-radius: 8px;
   padding: 1.5rem;
   color: #fff;

@@ -1,7 +1,7 @@
 /* MetadataForm component styles */
 
 .formContainer {
-  background-color: var(--quaternary);
+  background-color: var(--secondary);
   border-radius: 8px;
   padding: 1.25rem;
   margin-top: 1rem;

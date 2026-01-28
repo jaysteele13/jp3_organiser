@@ -46,7 +46,7 @@
 }
 
 .header.artist {
-  background: linear-gradient(135deg, var(--quaternary) 0%, var(--quaternary-hover) 100%);
+  background: linear-gradient(135deg, var(--secondary) 0%, var(--tertiary) 100%);
 }
 
 .header.playlist {

@@ -41,15 +41,15 @@
 
 /* Purple variant - quaternary color outline */
 .purpleVariant {
-  box-shadow: 0 0 0 3px var(--quaternary, #6649B6);
+  box-shadow: 0 0 0 3px var(--secondary);
 }
 
 .purpleVariant:hover {
-  box-shadow: 0 0 0 3px var(--quaternary-hover, #5339a6), 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 3px var(--tertiary-hover), 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .purpleVariant:focus {
-  outline: 2px solid var(--quaternary, #6649B6);
+  outline: 2px solid var(--secondary);
   outline-offset: 2px;
 }
 

@@ -1,15 +1,16 @@
 /* 
- * Global Color Palette (Tetradic)
+ * Global Color Palette (Sketch Theme)
  * 
  * Usage:
  *   color: var(--primary);
  *   background-color: var(--secondary);
  * 
  * Palette:
- *   --primary:     #B64963 (Rose)
- *   --secondary:   #99B649 (Lime)
- *   --tertiary:    #49B69C (Teal)
- *   --quaternary:  #6649B6 (Purple)
+ *   --primary:     #242424 (Charcoal - main color)
+ *   --secondary:   #6649B6 (Textured Purple - accent)
+ *   --tertiary:    #B64963 (Rose - accent)
+ *   --quaternary:  #99B649 (Lime - accent)
+ *   --sketch-bg:   #F5F5F1 (Off-white sketch background)
  */
 
 /* ===================
@@ -35,15 +36,17 @@
    CSS VARIABLES
    =================== */
 :root {
-  /* Color Palette */
-  --primary: #B64963;
-  --primary-hover: #9e3d54;
-  --secondary: #99B649;
-  --secondary-hover: #849e3d;
-  --tertiary: #49B69C;
-  --tertiary-hover: #3d9e86;
-  --quaternary: #6649B6;
-  --quaternary-hover: #573d9e;
+  /* Sketch Theme Color Palette */
+  --primary: #242424;
+  --primary-hover: #1a1a1a;
+  --secondary: #6649B6;
+  --secondary-hover: #573d9e;
+  --secondary-textured: #6649B6;
+  --tertiary: #B64963;
+  --tertiary-hover: #9e3d54;
+  --sketch-bg: #F5F5F1;
+  --sketch-border: #000000;
+  --sketch-text: #242424;
 
   /* Typography */
   font-family: 'Geist Mono', monospace;
@@ -57,6 +60,19 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+}
+
+/* Global background with sketch texture */
+body {
+  margin: 0;
+  background-color: var(--sketch-bg);
+  background-image: 
+    repeating-linear-gradient(0deg, transparent, transparent 49px, rgba(0, 0, 0, 0.01) 49px, rgba(0, 0, 0, 0.01) 50px),
+    repeating-linear-gradient(90deg, transparent, transparent 49px, rgba(0, 0, 0, 0.01) 49px, rgba(0, 0, 0, 0.01) 50px),
+    radial-gradient(circle at 25% 75%, rgba(102, 73, 182, 0.01) 0%, transparent 50%),
+    radial-gradient(circle at 75% 25%, rgba(102, 73, 182, 0.008) 0%, transparent 50%);
+  background-blend-mode: multiply;
+  min-height: 100vh;
 }
 
 /* ===================
@@ -80,14 +96,15 @@ h1 {
    INPUT STYLES
    =================== */
 input {
-  border-radius: 8px;
-  border: 1px solid var(--quaternary);
+  border-radius: 0;
+  border: 1px solid var(--sketch-border);
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
   outline: none;
   transition: border-color 0.25s;
+  background-color: var(--sketch-bg);
 }
 
 input:focus {
@@ -139,12 +156,7 @@ button:active,
   background-color: var(--tertiary-hover);
 }
 
-.btn-quaternary {
-  background-color: var(--quaternary);
-}
-.btn-quaternary:hover {
-  background-color: var(--quaternary-hover);
-}
+
 
 /* ===================
    CARD & SECTION STYLES
@@ -157,16 +169,86 @@ button:active,
 }
 
 .card-alt {
-  background-color: var(--quaternary);
+  background-color: var(--secondary);
 }
 
 .section {
-  background-color: var(--quaternary);
+  background-color: var(--secondary);
   color: #fff;
-  border-radius: 8px;
+  border-radius: 0;
   padding: 2rem;
+  border: 1px solid var(--sketch-border);
 }
 
 .section-alt {
   background-color: var(--tertiary);
+  border: 1px solid var(--sketch-border);
+}
+
+/* ===================
+   SKETCH THEME UTILITIES
+   =================== */
+
+/* Texture overlays for sketch aesthetic */
+.sketch-texture {
+  position: relative;
+  background-image: 
+    radial-gradient(circle at 15% 85%, rgba(102, 73, 182, 0.02) 0%, transparent 40%),
+    radial-gradient(circle at 85% 15%, rgba(102, 73, 182, 0.03) 0%, transparent 40%),
+    radial-gradient(circle at 45% 55%, rgba(102, 73, 182, 0.015) 0%, transparent 35%);
+  background-blend-mode: multiply;
+}
+
+.sketch-texture::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(102, 73, 182, 0.008) 3px, rgba(102, 73, 182, 0.008) 6px),
+    repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(102, 73, 182, 0.006) 3px, rgba(102, 73, 182, 0.006) 6px),
+    repeating-linear-gradient(90deg, transparent, transparent 25px, rgba(0, 0, 0, 0.015) 25px, rgba(0, 0, 0, 0.015) 26px);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.6;
+}
+
+.sketch-border {
+  border: 2px solid var(--sketch-border);
+  border-radius: 0;
+  box-shadow: 
+    1px 1px 0 rgba(0, 0, 0, 0.3),
+    -1px -1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.sketch-bg {
+  background-color: var(--sketch-bg);
+}
+
+.sketch-text {
+  color: var(--sketch-text);
+}
+
+.textured-purple {
+  background: linear-gradient(135deg, #6649B6 0%, #573d9e 100%);
+  background-blend-mode: multiply;
+  position: relative;
+}
+
+.textured-purple::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255, 255, 255, 0.04) 2px, rgba(255, 255, 255, 0.04) 4px),
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 255, 255, 0.025) 2px, rgba(255, 255, 255, 0.025) 4px),
+    repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(102, 73, 182, 0.06) 8px, rgba(102, 73, 182, 0.06) 10px);
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0.7;
 }

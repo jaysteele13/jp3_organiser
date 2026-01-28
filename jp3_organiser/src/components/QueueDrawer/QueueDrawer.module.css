@@ -30,8 +30,8 @@
   bottom: 80px; /* Above player bar */
   width: 350px;
   max-width: 90vw;
-  background-color: var(--quaternary);
-  border-left: 2px solid var(--quaternary-hover);
+  background-color: var(--secondary);
+  border-left: 2px solid var(--tertiary);
   z-index: 901;
   display: flex;
   flex-direction: column;
@@ -56,7 +56,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem;
-  border-bottom: 1px solid var(--quaternary-hover);
+  border-bottom: 1px solid var(--tertiary);
   flex-shrink: 0;
 }
 
@@ -231,7 +231,7 @@
 
 .footer {
   padding: 0.75rem 1rem;
-  border-top: 1px solid var(--quaternary-hover);
+  border-top: 1px solid var(--tertiary);
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.6);
   text-align: center;

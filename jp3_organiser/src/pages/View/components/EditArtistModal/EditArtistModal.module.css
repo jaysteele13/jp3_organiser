@@ -24,7 +24,7 @@
   max-height: 80vh;
   overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  border: 1px solid var(--quaternary);
+  border: 1px solid var(--secondary);
   position: relative;
 }
 
@@ -32,7 +32,7 @@
 .title {
   margin: 0 0 0.5rem 0;
   font-size: 1.25rem;
-  color: var(--quaternary);
+  color: var(--secondary);
 }
 
 /* Info message */
@@ -73,7 +73,7 @@
 
 .input:focus {
   outline: none;
-  border-color: var(--quaternary);
+  border-color: var(--secondary);
 }
 
 .input:disabled {
@@ -109,12 +109,12 @@
 }
 
 .saveButton {
-  background-color: var(--quaternary);
+  background-color: var(--secondary);
   color: #fff;
 }
 
 .saveButton:hover:not(:disabled) {
-  background-color: var(--quaternary-hover);
+  background-color: var(--tertiary);
 }
 
 .saveButton:disabled,

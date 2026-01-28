@@ -36,12 +36,12 @@
 }
 
 .selectModeBtn.selectModeActive {
-  background-color: var(--quaternary);
-  border-color: rgba(0, 0, 0, 0.2);
+  background-color: var(--primary);
+  border-color: var(--sketch-border);
 }
 
 .selectModeBtn.selectModeActive:hover {
-  background-color: var(--quaternary-hover);
+  background-color: var(--primary-hover);
 }
 
 .selectionInfo {

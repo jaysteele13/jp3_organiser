@@ -108,7 +108,7 @@ export default function QueueDrawer({ isOpen, onClose }) {
       <div className={styles.backdrop} onClick={onClose} />
       
       {/* Drawer */}
-      <div className={styles.drawer}>
+      <div className={`${styles.drawer} sketch-texture`}>
         {/* Header */}
         <div className={styles.header}>
           <h3 className={styles.title}>Queue</h3>

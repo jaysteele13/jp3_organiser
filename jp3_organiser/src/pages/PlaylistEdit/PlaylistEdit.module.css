@@ -229,7 +229,7 @@
 
 .searchInput:focus {
   outline: none;
-  border-color: var(--quaternary);
+  border-color: var(--secondary);
 }
 
 .searchInput::placeholder {
@@ -463,7 +463,7 @@
 
 .renameInput:focus {
   outline: none;
-  border-color: var(--quaternary);
+  border-color: var(--secondary);
 }
 
 .renameInput::placeholder {
