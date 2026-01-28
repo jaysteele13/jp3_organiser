@@ -60,6 +60,40 @@
   background-color: var(--secondary-hover);
 }
 
+.buttonGroup {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.clearCacheButton {
+  padding: 0.6rem 1.2rem;
+  background-color: var(--tertiary);
+  color: #fff;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+}
+
+.clearCacheButton:hover {
+  background-color: var(--tertiary-hover);
+}
+
+.clearCacheButton:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.refreshButton {
+  padding: 0.6rem 1.2rem;
+  background-color: var(--secondary);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.refreshButton:hover {
+  background-color: var(--secondary-hover);
+}
+
 .refreshButton:disabled {
   opacity: 0.7;
   cursor: wait;

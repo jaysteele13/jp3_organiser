@@ -152,6 +152,43 @@ export async function getArtistCoverBlobUrl(basePath, artist) {
 }
 
 /**
+ * Clear all cached cover art for albums and artists
+ * 
+ * This safely removes all cached cover images from:
+ * - {library_path}/jp3/assets/albums/
+ * - {library_path}/jp3/assets/artists/
+ * 
+ * AND clears the not-found store that prevents repeated API calls.
+ * The directories are preserved (only .jpg files are deleted).
+ * Useful when API keys were incorrect or corrupted cache needs clearing.
+ * 
+ * @param {string} basePath - Library base path
+ * @returns {Promise<{success: boolean, albumsCleared: number, artistsCleared: number, notFoundEntriesCleared: number, error?: string}>}
+ */
+export async function clearCoverCache(basePath) {
+  // Import here to avoid circular dependencies
+  const { clearNotFoundCache } = await import('./coverArtNotFoundStore');
+  
+  const result = await invoke('clear_cover_cache', { basePath });
+  
+  // Also clear the not-found store
+  try {
+    await clearNotFoundCache();
+    return {
+      ...result,
+      notFoundEntriesCleared: true
+    };
+  } catch (error) {
+    console.error('[coverArtService] Failed to clear not-found store:', error);
+    return {
+      ...result,
+      notFoundEntriesCleared: false,
+      notFoundError: error.message
+    };
+  }
+}
+
+/**
  * Convert raw bytes to a blob URL
  * @param {Uint8Array|number[]} bytes - Image bytes
  * @returns {string|null} Blob URL or null if conversion fails
