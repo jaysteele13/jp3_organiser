@@ -23,7 +23,6 @@ const handleChange = useCallback((e) => {
   onSeek(newPosition);
 }, [duration, onSeek]);
 
-
   return (
     <div className={styles.progress}>
       <span className={styles.time}>{formatDuration(position)}</span>
@@ -37,6 +36,9 @@ const handleChange = useCallback((e) => {
         disabled={disabled || duration === 0}
         className={styles.slider}
         aria-label="Seek"
+        style={{
+          '--progress': `${progress}%`
+        }}
       />
       <span className={styles.time}>{formatDuration(duration)}</span>
     </div>
