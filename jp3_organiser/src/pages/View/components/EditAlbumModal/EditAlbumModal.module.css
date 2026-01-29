@@ -16,7 +16,7 @@
 
 /* Modal card */
 .modal {
-  background-color: #1a1a1a;
+  background-color: var(--primary);
   border-radius: 12px;
   padding: 1.5rem;
   min-width: 400px;

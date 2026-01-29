@@ -17,7 +17,7 @@
 .label {
   font-size: 0.85rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--primary);
   min-height: 1.2rem;
   display: block;
   white-space: normal; /* Preserve spaces */
@@ -36,21 +36,21 @@
 .input {
   padding: 0.6rem 0.75rem;
   font-size: 0.9rem;
-  background-color: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  color: #fff;
+  background-color: transparent;
+  border: 1px solid var(--primary);
+
+  color: var(--primary);
   transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .input:focus {
   outline: none;
   border-color: var(--tertiary);
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: rgba(255, 255, 255, 0.8);
 }
 
 /* Library suggestion focus - secondary (lime) */
@@ -59,12 +59,12 @@
 }
 
 .inputError {
-  border-color: var(--primary);
+  border-color: var(--tertiary);
 }
 
 .errorText {
   font-size: 0.75rem;
-  color: var(--primary);
+  color: var(--tertiary);
 }
 
 /* Autofill suggestion styles - matching MetadataForm */
@@ -88,7 +88,7 @@
   color: var(--secondary);
   background-color: rgba(153, 182, 73, 0.15);
   padding: 0.1rem 0.3rem;
-  border-radius: 3px;
+
   pointer-events: none;
 }
 
@@ -129,7 +129,7 @@
 .hint {
   margin: 0.5rem 0 0 0;
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--primary);
   line-height: 1.4;
 }
 
@@ -176,9 +176,8 @@
   padding: 0.6rem 1rem;
   margin-top: 0.5rem;
   background-color: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 6px;
-  color: rgba(255, 255, 255, 0.8);
+  border: 1px dashed var(--primary);
+  color: var(--primary);
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
@@ -186,9 +185,9 @@
 }
 
 .createEmptyBtn:hover {
-  border-color: var(--secondary);
-  color: var(--secondary);
-  background-color: rgba(153, 182, 73, 0.1);
+  border-color: var(--sketch-bg);
+  color: var(--sketch-bg);
+  background-color:var(--primary);
 }
 
 /* Radio button group for playlist options */
@@ -223,5 +222,5 @@
 
 .radioText {
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--primary);
 }

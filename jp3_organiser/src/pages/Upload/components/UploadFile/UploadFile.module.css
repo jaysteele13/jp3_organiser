@@ -17,16 +17,16 @@
   padding: 0.5rem 0.85rem;
   font-size: 0.8rem;
   font-weight: 500;
-  background-color: var(--secondary);
-  border: none;
-  color: #fff;
-  border-radius: 6px;
+  background-color: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
 
 .changeModeButton:hover {
   background-color: var(--tertiary);
+  color: var(--sketch-bg);
 }
 
 .uploadContainer {
