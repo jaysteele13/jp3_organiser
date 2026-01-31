@@ -22,6 +22,10 @@ import { MetadataStatus } from '../../../../services';
 import { useUploadCache } from '../../../../hooks';
 import { UPLOAD_MODE } from '../../../../utils';
 import styles from './ProcessFile.module.css';
+import ModeImage from '../UploadModeSelector/ModeImage';
+import { REVIEW_IMAGES } from '../../../../utils/enums';
+
+import { useState } from 'react';
 
 /**
  * Format processing progress for display.
@@ -41,17 +45,20 @@ function FileSection({ title, files, className }) {
   
   return (
     <div className={styles.fileSection}>
-      <h4 className={`${styles.sectionTitle} ${className || ''}`}>
+      <h3 className={`${styles.sectionTitle} ${className || ''}`}>
         {title} ({files.length})
-      </h4>
+      </h3>
       <ul className={styles.fileList}>
-        {files.map((file) => (
-          <li className={styles.fileItem} key={file.trackingId}>
+        {files.map((file, index) => (
+          <li
+            className={`${styles.fileItem} ${index === files.length-1 ? styles.allowBottomBorder : ''}`}
+            key={file.trackingId}
+          >
             <div className={styles.fileInfo}>
               <span className={styles.fileName}>{file.fileName}</span>
               <span className={styles.fileMeta}>
                 {file.metadata?.artist && `${file.metadata.artist}`}
-                {file.metadata?.title && ` - ${file.metadata.title}`}
+                {file.metadata?.title && `- ${file.metadata.title}`}
                 {file.metadataSource && file.metadataSource !== 'unknown' && (
                   <span className={styles.sourceTag}>
                     {file.metadataSource === 'id3' && ' (ID3)'}
@@ -66,6 +73,7 @@ function FileSection({ title, files, className }) {
             </div>
           </li>
         ))}
+
       </ul>
     </div>
   );
@@ -87,6 +95,8 @@ export default function ProcessFile({ onStartReview }) {
 
   // Get upload mode and context from cache
   const { uploadMode, uploadContext } = cache;
+
+  const [hovered, setHovered] = useState(null);
 
   // Format context for display
   const contextLabel = useMemo(() => {
@@ -207,15 +217,25 @@ export default function ProcessFile({ onStartReview }) {
             {formatProgress(processingProgress)}
           </button>
         )}
+{/* Review {stats.total} File(s) */}
 
-        {/* Review button - when files ready */}
+        
+          {/* Review button - when files ready */}
         {showReviewPrompt && (
-          <button 
-            className={styles.reviewButton}
+          
+        <button 
+            className={styles.reviewEyesButton}
             onClick={handleStartReview}
+            onMouseEnter={() => setHovered('review')}
+            onMouseLeave={() => setHovered(null)}
+            onFocus={() => setHovered('review')}
+            onBlur={() => setHovered(null)}
+            onTouchStart={() => setHovered(h => (h === 'review' ? null : 'review'))}
           >
-            Review {stats.total} File(s)
+             <ModeImage still={REVIEW_IMAGES.REVIEW.still} gif={REVIEW_IMAGES.REVIEW.gif} alt={"Review Files"} className={styles.modeImage} playing={hovered === 'review'} />
+           
           </button>
+          
         )}
         
         {/* Clear/Cancel button */}
@@ -235,7 +255,7 @@ export default function ProcessFile({ onStartReview }) {
       {/* File list section */}
       {hasFiles && (
         <div className={styles.fileListContainer}>
-          <FileStats stats={stats} isProcessing={isProcessing} />
+ 
 
           {/* Grouped file sections */}
           <div className={styles.fileSections}>

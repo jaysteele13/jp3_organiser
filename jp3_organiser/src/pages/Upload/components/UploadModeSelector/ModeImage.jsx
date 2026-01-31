@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 
-export default function ModeImage({ still, gif, alt, className, preload = true, playing: playingProp = false }) {
+export default function ModeImage({
+  still,
+  gif,
+  alt,
+  className,
+  preload = true,
+  playing: playingProp = false,
+}) {
   useEffect(() => {
     if (preload && gif) {
       const img = new Image();
@@ -8,14 +15,16 @@ export default function ModeImage({ still, gif, alt, className, preload = true, 
     }
   }, [gif, preload]);
 
-  const prefersReducedMotion = typeof window !== 'undefined' &&
+  const prefersReducedMotion =
+    typeof window !== "undefined" &&
     window.matchMedia &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const shouldPlay = playingProp && !prefersReducedMotion;
 
   return (
     <img
+      key={shouldPlay ? "gif" : "still"}   
       src={shouldPlay ? gif : still}
       alt={alt}
       className={className}

@@ -21,6 +21,13 @@ export const VIEW_TABS = {
   PLAYLISTS: TABS.PLAYLISTS
 }
 
+export const REVIEW_IMAGES = {
+  REVIEW: {
+    still: '/src/assets/review_files/eyes_search_b_still.png',
+    gif: '/src/assets/review_files/eyes_search_b.gif',
+  }
+}
+
 // Map tab keys to image assets (still + variants)
 export const TAB_IMAGES = {
     HOME: {
