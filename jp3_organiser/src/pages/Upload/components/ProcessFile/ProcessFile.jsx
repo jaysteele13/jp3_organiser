@@ -46,7 +46,7 @@ function FileSection({ title, files, className }) {
   return (
     <div className={styles.fileSection}>
       <h3 className={`${styles.sectionTitle} ${className || ''}`}>
-        {title} ({files.length})
+        {title} {files.length}
       </h3>
       <ul className={styles.fileList}>
         {files.map((file, index) => (
@@ -164,7 +164,7 @@ export default function ProcessFile({ onStartReview }) {
     }
   };
 
-  // Determine what state we're in
+  // Determine what state we're in -> to test UI conditions
   const hasFiles = trackedFiles.length > 0;
   const showSelectButton = !hasFiles && !isProcessing;
   const showProcessingButton = isProcessing;
@@ -219,7 +219,7 @@ export default function ProcessFile({ onStartReview }) {
         )}
 {/* Review {stats.total} File(s) */}
 
-        
+        <div className={styles.reviewLayout}>
           {/* Review button - when files ready */}
         {showReviewPrompt && (
           
@@ -240,13 +240,24 @@ export default function ProcessFile({ onStartReview }) {
         
         {/* Clear/Cancel button */}
         {(hasFiles || isProcessing) && (
+          <div className={styles.reviewSecondRow}>
+          <span 
+            className={styles.noOfFiles}
+            aria-label={`Number of files: ${stats.total}`}
+            title={`Number of files: ${stats.total}`}
+          >
+            {stats.total}
+          </span>
+
           <button 
             className={styles.clearButton}
             onClick={handleClearOrCancel}
           >
             {isProcessing ? 'Cancel' : 'Clear'}
           </button>
+          </div>
         )}
+        </div>
       </div>
 
       {/* Error message */}
@@ -265,7 +276,7 @@ export default function ProcessFile({ onStartReview }) {
               className={styles.sectionConfirmed}
             />
             <FileSection 
-              title="Automated" 
+              title="" 
               files={groupedFiles.automated} 
               className={styles.sectionAutomated}
             />

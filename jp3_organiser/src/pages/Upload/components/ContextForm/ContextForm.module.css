@@ -28,7 +28,7 @@
 }
 
 .optional {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--primary);
   font-weight: 400;
   font-size: 0.75rem;
 }
@@ -44,7 +44,7 @@
 }
 
 .input::placeholder {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--primary);
 }
 
 .input:focus {
@@ -105,6 +105,7 @@
   pointer-events: none;
   border-radius: 5px;
   overflow: hidden;
+  color: var(--primary);
 }
 
 /* Invisible text matching what user typed (for alignment) */
@@ -117,7 +118,7 @@
 
 /* Visible completion text (the suggested part) */
 .completionText {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--primary-light, 0.8);
   font-size: 0.9rem;
   font-family: inherit;
   white-space: nowrap;

@@ -37,7 +37,7 @@
   flex: 1;
   background: transparent;
   border: none;
-  color: var(--sketch-bg);
+  color: var(--primary);
   font-size: 0.9rem;
   outline: none;
   padding: 0;
@@ -54,7 +54,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #fff;
+  color: var(--primary);
   cursor: pointer;
   min-width: 0;
 }
@@ -68,6 +68,7 @@
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: start;
   white-space: nowrap;
 }
 
@@ -139,12 +140,11 @@
 
 .dropdown::-webkit-scrollbar-track {
   background: #2a2a2a;
-  border-radius: 3px;
+  
 }
 
 .dropdown::-webkit-scrollbar-thumb {
   background-color: #555;
-  border-radius: 3px;
 }
 
 .dropdown::-webkit-scrollbar-thumb:hover {
@@ -158,10 +158,10 @@
   gap: 0.5rem;
   padding: 0.5rem 0.6rem;
   cursor: pointer;
-  border-radius: 6px;
   transition: background-color 0.15s ease;
   line-height: 1.3;
   min-height: 0; /* Prevent flexbox height issues */
+   background-color: transparent;
 }
 
 .item:last-child {
@@ -170,12 +170,11 @@
 
 .item:hover,
 .item.highlighted {
-  background-color: #2a2a2a;
+  background-color: var(--primary);
+  color: var(--sketch-bg)
 }
 
-.item.selected {
-  background-color: rgba(73, 182, 156, 0.2);
-}
+
 
 .item.selected .playlistIcon {
   color: var(--tertiary);

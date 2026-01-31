@@ -154,7 +154,6 @@ export default function PlaylistComboBox({
         
         {selectedPlaylist && !isOpen ? (
           <div className={styles.selectedValue} onClick={openDropdown}>
-            <span className={styles.playlistIcon}>&#9835;</span>
             <span className={styles.playlistName}>{selectedPlaylist.name}</span>
             <span className={styles.songCount}>({selectedPlaylist.songCount})</span>
             <button 
@@ -210,7 +209,7 @@ export default function PlaylistComboBox({
                 onClick={() => handleSelect(playlist)}
                 onMouseEnter={() => setHighlightedIndex(index)}
               >
-                <span className={styles.playlistIcon}>&#9835;</span>
+
                 <span className={styles.playlistName}>{playlist.name}</span>
                 <span className={styles.songCount}>({playlist.songCount})</span>
               </li>

@@ -9,28 +9,31 @@
 /* Context badge for Album/Artist mode */
 .contextBadge {
   display: flex;
+  width: fit-content;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 1rem;
   padding: 0.5rem 0.75rem;
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 6px;
+  border-radius: 0px;
+  border-top: 1px solid var(--primary);
+  border-bottom: 1px solid var(--primary);
   font-size: 0.85rem;
 }
 
 .modeLabel {
   padding: 0.15rem 0.5rem;
   background-color: var(--secondary);
-  border-radius: 4px;
+  border-radius: 0px;
   font-weight: 600;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  color: var(--sketch-bg)
 }
 
 .contextLabel {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--primary);
   font-weight: 500;
 }
 
@@ -54,6 +57,7 @@
 /* Actions row */
 .actions {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 0.75rem;
 }
@@ -76,16 +80,32 @@
   cursor: wait;
 }
 
-.clearButton {
-  padding: 0.75rem 1.5rem;
+.noOfFiles {
+  padding: 0.5rem 1rem;
+  font-weight: 800;
+  font-size: larger;
+  color: var(--primary);
   background-color: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid  var(--primary);
+  border-right: none;
+  border-top: none;
+}
+
+
+
+.clearButton {
+  padding: 0.5rem 1rem;
+  background-color: transparent;
+  
+  border: 1px solid  var(--primary);
+  border-top: none;
+  color: var(--primary);
 }
 
 .clearButton:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.5);
+  background-color: var(--tertiary);
+  
+  color: var(--sketch-bg)
 }
 
 /* Error message */
@@ -93,7 +113,7 @@
   margin-top: 1rem;
   padding: 0.75rem 1rem;
   background-color: var(--primary);
-  border-radius: 6px;
+  border-radius: 0px;
   font-size: 0.9rem;
 }
 
@@ -110,27 +130,47 @@
   margin-bottom: 1rem;
   padding: 1rem;
   background-color: var(--secondary);
-  border-radius: 6px;
+  border-radius: 0px;
   text-align: center;
 }
 
-.reviewMessage {
-  margin: 0 0 0.75rem 0;
-  font-size: 0.9rem;
+.reviewLayout {
+  display: flex;
+  flex-direction: column;   /* 1 column layout */
+ 
+  gap: var(--spacing-md);
 }
 
-.reviewEyesButton .modeImage{
+/* Row 1: full width */
+.reviewEyesButton {
+  width: 100%;
+  background-color: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0;
+  display: flex;
+  justify-content: center; /* optional */
+}
+
+/* Row 2: two equal columns */
+.reviewSecondRow {
+  display: flex;
+  width: 100%;
+  gap: var(--spacing-md);
+}
+
+/* Make both children 50% width */
+.reviewSecondRow > span,
+.reviewSecondRow > button {
+  flex: 1;              /* each takes 50% */
+  text-align: center;   /* optional */
+}
+
+/* Your existing image styles */
+.reviewEyesButton .modeImage {
   background-color: transparent !important;
   height: 80px;
   width: 200px;
-  padding: 0 !important;
-  margin: 0;
-
-}
-
-.reviewEyesButton {
-  background-color: transparent !important;
-  border: none !important;
   padding: 0 !important;
   margin: 0;
 }
@@ -246,7 +286,7 @@
 }
 
 .sectionAutomated {
-  color: var(--tertiary-light, #a0d1f1);
+  color: var(--tertiary);
 }
 
 .sectionIncomplete {
