@@ -43,7 +43,8 @@ export default function NavigationControls({ navigation }) {
 
       </div>
 
-      {/* Navigation arrows */}
+      {   totalFiles > 1 && (
+
       <div className={styles.navArrows}>
         <button 
           className={styles.navButton}
@@ -62,6 +63,7 @@ export default function NavigationControls({ navigation }) {
           Next &rarr;
         </button>
       </div>
+      )}
 
       {/* Action buttons */}
       <div className={styles.actionButtons}>
