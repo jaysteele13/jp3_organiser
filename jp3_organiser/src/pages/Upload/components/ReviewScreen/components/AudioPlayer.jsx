@@ -55,7 +55,6 @@ export default function AudioPlayer({ filePath, fallbackDuration, audio }) {
 
   return (
     <div className={styles.audioPlayer}>
-      <div className={styles.playerLabel}>Preview Audio</div>
       
       <div className={styles.playerControls}>
         <button 

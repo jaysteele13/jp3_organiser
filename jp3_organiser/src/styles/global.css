@@ -39,14 +39,18 @@
   /* Sketch Theme Color Palette */
   --primary: #242424;
   --primary-hover: #1a1a1a;
-  --secondary: #6649B6;
+  --secondary: #8167c9;
+  --secondary-washed: color-mix(in srgb, var(--secondary) 35%, white);
   --secondary-hover: #573d9e;
-  --secondary-textured: #6649B6;
-  --tertiary: #B64963;
+  --tertiary: #598b5e;
   --tertiary-hover: #9e3d54;
   --sketch-bg: #F5F5F1;
   --sketch-border: #000000;
   --sketch-text: #242424;
+
+  --automated-status: #5bc0de;
+  --incomplete-status: #f0ad4e;
+  
 
   /* Typography */
   font-family: 'Geist Mono', monospace;
@@ -150,6 +154,7 @@ button:active,
 .btn-tertiary:hover {
   background-color: var(--tertiary-hover);
 }
+
 
 
 
