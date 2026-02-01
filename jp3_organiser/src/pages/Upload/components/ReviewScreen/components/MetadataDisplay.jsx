@@ -87,16 +87,7 @@ export default function MetadataDisplay({ file }) {
         )}
       </div>
 
-      {/* Status indicator */}
-      {statusDisplay.label == 'Confirmed' && (
-
-      
-      <div className={styles.statusRow}>
-        <span className={`${styles.statusBadge} ${styles[statusDisplay.className]}`}>
-          {statusDisplay.label}
-        </span>
-      </div>
-      )}
+    
     </div>
   );
 }

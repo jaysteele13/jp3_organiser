@@ -17,11 +17,17 @@ import styles from '../ReviewScreen.module.css';
 
 
 
+/**
+ * Get human-readable label for metadata source.
+ * @param {string} source - Metadata source value
+ * @returns {string} Display label
+ */
+
+
+
 export default function SongCard({ file, audio }) {
   if (!file) return null;
 
-
-   
 function getStatusDisplay(metadataStatus, isConfirmed) {
   if (isConfirmed) {
     return { label: 'Confirmed', className: 'statusconfirmed' };
@@ -31,27 +37,37 @@ function getStatusDisplay(metadataStatus, isConfirmed) {
   }
   return { label: 'Incomplete', className: 'statusincomplete' };
 }
-   const { metadata, metadataSource, metadataStatus, isConfirmed } = file;
+
+  const { metadataSource, metadataStatus, isConfirmed } = file;
   const isAutomated = metadataSource === 'id3' || metadataSource === 'fingerprint';
-  const statusDisplay = getStatusDisplay(metadataStatus, isConfirmed);
+    const statusDisplay = getStatusDisplay(metadataStatus, isConfirmed);
 
   return (
     <div className={styles.songCard}>
       {/* File header and status */}
       <div className={styles.songHeader}>
-        <h3 className={styles.songFileName}>{file.fileName}</h3>
-        <span className={styles.songFileInfo}>
-          {file.fileExtension.toUpperCase()} &bull; {formatFileSize(file.fileSize)}
-        </span>
-        {/* Automated indicator */}
-            <div className={styles.sourceIndicator}>
-              <span className={`${styles.sourceTag} ${isAutomated ? styles.sourceAutomated : styles.sourceManual}`}>
-                {isAutomated ? 'Automated' : 'Manual'}
-              </span>
-              <span className={styles.sourceDetail}>
-                via {getSourceLabel(metadataSource)}
-              </span>
+        <div className={styles.songFileInfoRow}>
+          <div className={styles.songFileNameColumn}>
+            <h3 className={styles.songFileName}>{file.fileName}</h3>
+            <span className={styles.songFileInfo}>
+              {file.fileExtension.toUpperCase()} &bull; {formatFileSize(file.fileSize)}
+            </span>
+          </div>
+          {/* Automated indicator */}
+          <div className={styles.songFileSourceColumn}>
+          <div className={styles.sourceIndicator}>
+            {statusDisplay.label == 'Confirmed' && (
+            <span className={`${styles.sourceTag} ${styles.sourceConfirmed}`}>
+              Confirmed
+            </span>
+             )}
+            <span className={`${styles.sourceTag} ${isAutomated ? styles.sourceAutomated : styles.sourceManual}`}>
+              {isAutomated ? 'Automated' : 'Manual'}
+            </span>
+             
             </div>
+          </div>
+        </div>
       </div>
 
       {/* Metadata display */}

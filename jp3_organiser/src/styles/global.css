@@ -42,14 +42,14 @@
   --secondary: #8167c9;
   --secondary-washed: color-mix(in srgb, var(--secondary) 35%, white);
   --secondary-hover: #573d9e;
-  --tertiary: #598b5e;
+  --tertiary: #598b5e; /* previous B64963*/
   --tertiary-hover: #9e3d54;
   --sketch-bg: #F5F5F1;
   --sketch-border: #000000;
   --sketch-text: #242424;
 
   --automated-status: #5bc0de;
-  --incomplete-status: #f0ad4e;
+  --incomplete-status: #FFEE8C;
   
 
   /* Typography */

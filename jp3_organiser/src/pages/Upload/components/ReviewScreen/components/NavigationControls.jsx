@@ -38,11 +38,9 @@ export default function NavigationControls({ navigation }) {
           File {currentPosition} of {totalFiles}
         </span>
         <span className={styles.confirmProgress}>
-          ({confirmedCount} of {totalFiles} confirmed)
+          (<b>{confirmedCount}</b> of {totalFiles} confirmed)
         </span>
-        {isConfirmed && (
-          <span className={styles.confirmedBadge}>Confirmed</span>
-        )}
+
       </div>
 
       {/* Navigation arrows */}

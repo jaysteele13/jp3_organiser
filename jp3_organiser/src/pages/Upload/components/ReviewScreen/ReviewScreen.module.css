@@ -161,7 +161,10 @@
 .songHeader {
   margin-bottom: 1.25rem;
   padding-bottom: 1rem;
+  display: flex;
+  justify-content: center;   /* centers the inner row horizontally */
 }
+
 
 .songFileName {
   margin: 0 0 0.25rem 0;
@@ -174,6 +177,27 @@
   font-size: 0.8rem;
   opacity: 0.6;
 }
+.songFileInfoRow {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  width: fit-content;
+  margin: 0 auto;
+  justify-content: center;
+}
+
+.songFileNameColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sourceIndicator {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
 
 /* Metadata Display */
 .metadataDisplay {
@@ -183,13 +207,12 @@
 .sourceIndicator {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+ 
 }
 
 .sourceTag {
   padding: 0.25rem 0.75rem;
-  border-radius: 4px;
+  border: 1px solid var(--primary);
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -197,14 +220,34 @@
 }
 
 .sourceAutomated {
-  border: 3px dashed var(--automated-status);
-  background-color: var(--automated-status, 0.1);
-  color: #fff;
+  border: 1px solid var(--primary);
+  background-color: transparent;
+  border-left-color: var(--automated-status);
+  text-decoration-color: var(--automated-status);
+  border-left-width: 3px;
+  border-left-style: groove;
+  color: var(--primary);
 }
 
 .sourceManual {
-  background-color: var(--incomplete-status);
-  color: #000;
+    border: 1px solid var(--primary);
+  background-color: transparent;
+  border-left-color: var(--incomplete-status);
+  text-decoration-color: var(--incomplete-status);
+  border-left-width: 3px;
+  border-left-style: groove;
+  color: var(--primary);
+}
+
+.sourceConfirmed {
+  border: 1px solid var(--primary);
+  background-color: transparent;
+  border-left-color: var(--secondary);
+  text-decoration-color: var(--secondary);
+  border-left-width: 3px;
+  border-left-style: groove;
+  border-bottom: none;
+  color: var(--primary);
 }
 
 .sourceDetail {
@@ -295,16 +338,19 @@
 .playButton {
   flex: 1;
   padding: 0.75rem 1rem;
-  background-color: var(--tertiary);
+  background-color: transparent;
   font-size: 0.9rem;
+  color: var(--primary);
 }
 
 .playButton:hover {
-  background-color: var(--tertiary-hover);
+  background-color: var(--tertiary);
+  color: var(--sketch-bg);
 }
 
 .playButtonActive {
   background-color: var(--primary);
+  color: var(--sketch-bg);
 }
 
 .playButtonActive:hover {
@@ -451,15 +497,21 @@
 
 .navButton {
   padding: 0.6rem 1.5rem;
-  background-color: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: var(--primary);
+  border: 1px solid var(--primary);
   color: #fff;
   font-size: 0.9rem;
 }
 
+.navButton:hover {
+  background-color: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+
 .navButton:hover:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
+  background-color: transparent;
+  border-color: none;
 }
 
 .navButton:disabled {
@@ -475,13 +527,13 @@
 .confirmButton {
   flex: 2;
   padding: 0.85rem 1.5rem;
-  background-color: var(--secondary);
+  background-color: var(--tertiary);
   font-size: 1rem;
   font-weight: 600;
 }
 
 .confirmButton:hover {
-  background-color: var(--secondary-hover);
+  background-color: var(--tertiary-hover);
 }
 
 .unconfirmButton {
@@ -502,13 +554,13 @@
 .editButton {
   flex: 1;
   padding: 0.85rem 1rem;
-  background-color: #f0ad4e;
+  background-color: transparent;
   color: #000;
   font-size: 0.9rem;
 }
 
 .editButton:hover:not(:disabled) {
-  background-color: #ec971f;
+  background-color: var(--incomplete-status);
 }
 
 .editButton:disabled {
