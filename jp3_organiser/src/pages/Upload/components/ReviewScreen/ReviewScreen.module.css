@@ -526,13 +526,13 @@
 .confirmButton {
   flex: 2;
   padding: 0.85rem 1.5rem;
-  background-color: var(--tertiary);
+  background-color: var(--secondary);
   font-size: 1rem;
   font-weight: 600;
 }
 
 .confirmButton:hover {
-  background-color: var(--tertiary-hover);
+  background-color: var(--secondary-hover);
 }
 
 .unconfirmButton {
@@ -546,7 +546,7 @@
 }
 
 .unconfirmButton:hover {
-  background-color: var(--secondary);
+  background-color: var(--primary);
   color: #fff;
 }
 

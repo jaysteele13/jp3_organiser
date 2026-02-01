@@ -48,10 +48,12 @@
   --sketch-border: #000000;
   --sketch-text: #242424;
 
+  --primary-fade: rgba(0,0,0, 0.25);
   --sketch-bg-fade: rgba(255, 255, 255, 0.25);
 
   --automated-status: #5bc0de;
   --incomplete-status: #FFEE8C;
+  --incomplete-status-text: #a08800;
   
 
   /* Typography */

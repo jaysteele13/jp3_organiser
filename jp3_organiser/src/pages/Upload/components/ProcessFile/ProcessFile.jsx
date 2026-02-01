@@ -271,7 +271,7 @@ export default function ProcessFile({ onStartReview }) {
           {/* Grouped file sections */}
           <div className={styles.fileSections}>
             <FileSection 
-              title="Confirmed" 
+              title="" 
               files={groupedFiles.confirmed} 
               className={styles.sectionConfirmed}
             />
@@ -281,7 +281,7 @@ export default function ProcessFile({ onStartReview }) {
               className={styles.sectionAutomated}
             />
             <FileSection 
-              title="Incomplete" 
+              title="" 
               files={groupedFiles.incomplete} 
               className={styles.sectionIncomplete}
             />

@@ -124,7 +124,7 @@
 }
 
 .statIncomplete {
-  color: #f0ad4e;
+  color: var(--incomplete-status);
 }
 
 .statError {
@@ -287,7 +287,7 @@
 }
 
 .statusIncomplete {
-  background-color: #f0ad4e;
+  background-color: var(--incomplete-status);
   color: #000;
 }
 

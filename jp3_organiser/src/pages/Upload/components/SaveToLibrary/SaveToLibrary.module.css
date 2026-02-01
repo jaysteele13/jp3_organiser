@@ -17,8 +17,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.65rem 0.85rem;
-  background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
+  
+  border: 1px dashed var(--primary-fade);
   margin-bottom: 0.5rem;
   gap: 1rem;
   transition: background-color 0.15s ease;
@@ -62,10 +62,9 @@
 /* Complete stage styles */
 .completeContainer {
   margin-top: 1rem;
-  background-color: var(--secondary);
-  border-radius: 8px;
+  background-color: transparent;
   padding: 1.5rem;
-  color: #fff;
+  color: var(--primary);
 }
 
 .completeHeader {
@@ -93,16 +92,16 @@
 .saveButton {
   flex: 2;
   padding: 0.85rem 1.5rem;
-  background-color: #fff;
+  background-color: var(--sketch-bg);
   color: var(--secondary);
   font-size: 1rem;
   font-weight: 600;
 }
 
 .saveButton:hover {
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: var(--tertiary);
+  color: var(--sketch-bg);
 }
-
 .saveButton:disabled {
   opacity: 0.7;
   cursor: wait;
@@ -112,30 +111,38 @@
   flex: 1;
   padding: 0.85rem 1rem;
   background-color: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  color: #fff;
+  border: 1px solid var(--primary);
+  color: var(--primary);
 }
 
 .backButton:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--primary);
+  color: var(--sketch-bg);
 }
 
 .resetButton {
-  flex: 1;
+
+
+   flex: 1;
   padding: 0.85rem 1rem;
   background-color: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--primary);
+  color: var(--primary);
 }
 
 .resetButton:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.5);
+  background-color: var(--primary);
+  color: var(--sketch-bg);
+  border: 1px solid var(--primary);
 }
 
 .confirmedList {
-  background-color: rgba(0, 0, 0, 0.15);
-  border-radius: 6px;
+  border: 1px solid var(--primary);
+  background-color: var(--sketch-bg);
+  border-left-color: var(--secondary);
+
+  border-left-width: 3px;
+  border-left-style: groove;
   padding: 1rem;
 }
 

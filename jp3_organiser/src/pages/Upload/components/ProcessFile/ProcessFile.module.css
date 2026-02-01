@@ -239,8 +239,9 @@
 }
 
 .sourceTag {
-  color: var(--secondary);
+  color: var(--primary);
   font-weight: 500;
+  font-style: italic;
 }
 
 .fileStatus {
@@ -291,7 +292,7 @@
 }
 
 .sectionIncomplete {
-  color: #f0ad4e;
+  color: var(--incomplete-status-text);
 }
 
 .sectionError {
