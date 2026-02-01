@@ -9,10 +9,10 @@
 }
 
 .card {
-  background-color: var(--secondary);
-  border-radius: 8px;
+  background-color: transparent;
   padding: 1.5rem;
-  color: #fff;
+  color: var(--primary);
+  border: 1px solid var(--primary);
 }
 
 .title {
@@ -28,17 +28,19 @@
 }
 
 .structurePreview {
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 6px;
+  background-color: var(--sketch-bg);
   padding: 0.75rem 1rem;
   margin-bottom: 1.25rem;
+   border: 1px solid var(--primary);
 }
 
 .structureTitle {
   display: block;
   font-size: 0.8rem;
+  font-weight: bold;
   opacity: 0.7;
   margin-bottom: 0.5rem;
+  color: #000;
 }
 
 .structureCode {
@@ -60,11 +62,13 @@
   width: 100%;
   padding: 1rem 1.5rem;
   font-size: 1.1rem;
-  background-color: var(--tertiary);
+  background-color: transparent;
+  color: var(--primary);
 }
 
 .selectButton:hover {
   background-color: var(--tertiary-hover);
+  color: var(--sketch-bg);
 }
 
 .selectButton:disabled {
