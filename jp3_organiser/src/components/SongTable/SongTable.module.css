@@ -40,7 +40,7 @@
   font-family: inherit;
   background-color: var(--tertiary);
   border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 6px;
+
   color: #000;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -68,7 +68,7 @@
   color: #666;
   background: transparent;
   border: none;
-  border-radius: 50%;
+  
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -103,7 +103,7 @@
   color: #666;
   font-size: 0.95rem;
   background-color: var(--tertiary);
-  border-radius: 8px;
+
 }
 
 /* ========================================
@@ -112,8 +112,8 @@
 
 .tableContainer {
   overflow-x: auto;
-  background-color: var(--tertiary);
-  border-radius: 8px;
+  background-color: transparent;
+   border: 1px solid var(--primary);
   
 }
 
@@ -126,7 +126,7 @@
 }
 
 .table thead {
-  background-color: rgba(0, 0, 0, 0.15);
+  background-color: rgba(255, 255, 255, 0.35);
 }
 
 .table th {
@@ -134,14 +134,16 @@
   padding: 0.75rem 1rem;
   font-weight: 600;
   color: #000;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid var(--primary);
   white-space: nowrap;
+
 }
 
 .table td {
   padding: 0.65rem 1rem;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   color: #000;
+  background-color: var(--sketch-bg);
 }
 
 /* Table rows */
@@ -187,14 +189,16 @@
 
 .cellCheckbox {
   text-align: center;
+ 
 }
 
 .checkbox {
   width: 16px;
   height: 16px;
   cursor: pointer;
-  accent-color: var(--primary);
+  accent-color: var(--secondary);
 }
+
 
 .thIndex {
   width: 50px;
@@ -305,7 +309,7 @@
   align-items: center;
   padding: 0.75rem 1rem;
   background-color: var(--tertiary);
-  border-radius: 6px;
+  
   transition: background-color 0.15s ease;
 }
 
@@ -435,7 +439,7 @@
   font-family: inherit;
   background-color: var(--tertiary);
   border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
+  
   color: #000;
   cursor: pointer;
 }
@@ -454,7 +458,6 @@
   color: #000;
   background-color: var(--tertiary);
   border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease;
   display: flex;

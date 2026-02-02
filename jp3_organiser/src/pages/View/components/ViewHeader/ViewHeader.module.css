@@ -1,7 +1,8 @@
 .header {
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 1.5rem;
   gap: 1rem;
 }
@@ -25,13 +26,14 @@
 }
 
 .headerInfo {
-  flex: 1;
+  text-align: center;
 }
 
 .title {
   margin: 0 0 0.5rem 0;
   font-size: 1.75rem;
   font-weight: 600;
+  color: var(--primary);
   
 }
 
@@ -51,13 +53,14 @@
 
 .refreshButton {
   padding: 0.6rem 1.2rem;
-  background-color: var(--secondary);
-  color: #fff;
+  background-color: transparent;
+  color: var(--primary);
   flex-shrink: 0;
 }
 
 .refreshButton:hover {
-  background-color: var(--secondary-hover);
+  background-color: var(--primary);
+  color: var(--sketch-bg);
 }
 
 .buttonGroup {
@@ -83,16 +86,6 @@
   cursor: wait;
 }
 
-.refreshButton {
-  padding: 0.6rem 1.2rem;
-  background-color: var(--secondary);
-  color: #fff;
-  flex-shrink: 0;
-}
-
-.refreshButton:hover {
-  background-color: var(--secondary-hover);
-}
 
 .refreshButton:disabled {
   opacity: 0.7;

@@ -86,8 +86,8 @@ export default function StatsBar({ stats, libraryPath, onCompacted }) {
         
         {needsCompaction && (
           <div className={styles.compactWarning}>
-            <span className={styles.warningText}>
-              {deletedSongs} deleted song{deletedSongs !== 1 ? 's' : ''} pending cleanup
+            <span className={styles.warningText} title={`${deletedSongs} deleted songs need compaction`}>
+              {deletedSongs}
             </span>
             <button 
               className={styles.compactBtn}

@@ -23,15 +23,15 @@
   font-family: inherit;
   font-weight: 500;
   color: #000;
-  background-color: var(--tertiary);
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 6px;
+  background-color: var(--secondary);
+  border: 1px solid var(--primary);
   cursor: pointer;
+  color: var(--sketch-bg);
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .selectModeBtn:hover {
-  background-color: var(--tertiary-hover);
+  background-color: var(--secondary-hover);
   border-color: rgba(0, 0, 0, 0.25);
 }
 
@@ -61,67 +61,15 @@
   font-size: 0.8rem;
   font-family: inherit;
   font-weight: 500;
-  color: #fff;
-  background-color: var(--primary);
-  border: none;
-  border-radius: 6px;
+  color: var(--primary);
+  background-color: transparent;
+  border: 1px solid var(--primary);
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
 
 .deleteSelectedBtn:hover {
-  background-color: var(--primary-hover);
+  background-color: var(--primary);
+  color: var(--sketch-bg);
 }
 
-/* ========================================
-   Legacy Table styles (kept for reference)
-   ======================================== */
-
-.tableContainer {
-  overflow-x: auto;
-  background-color: var(--tertiary);
-  border-radius: 8px;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.table thead {
-  background-color: rgba(0, 0, 0, 0.2);
-}
-
-.table th {
-  text-align: left;
-  padding: 0.75rem 1rem;
-  font-weight: 600;
-  color: #000;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.table td {
-  padding: 0.65rem 1rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  color: #000;
-}
-
-.table tbody tr:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-/* Actions column */
-.actionsHeader {
-  width: 60px;
-}
-
-.cellActions {
-  text-align: center;
-}
-
-.emptyTable {
-  padding: 2rem;
-  text-align: center;
-  color: #666;
-}

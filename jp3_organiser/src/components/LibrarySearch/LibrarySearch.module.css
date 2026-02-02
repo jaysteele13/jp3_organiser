@@ -25,9 +25,8 @@
   padding: 0.5rem 2.25rem 0.5rem 0.75rem;
   font-size: 0.875rem;
   font-family: inherit;
-  background-color: var(--tertiary);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 6px;
+  background-color: transparent;
+  border: 1px solid var(--primary);
   color: #000;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -54,8 +53,8 @@
   font-weight: 500;
   color: #666;
   background: transparent;
+  
   border: none;
-  border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -65,6 +64,7 @@
 
 .clearBtn:hover {
   color: #000;
+  border: 1px solid var(--primary);
   background-color: rgba(0, 0, 0, 0.08);
 }
 
@@ -79,9 +79,9 @@
   right: 0;
   max-height: 400px;
   overflow-y: auto;
-  background-color: var(--tertiary);
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 8px;
+  background-color: var(--sketch-bg);
+  border: 1px solid var(--primary);
+  
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   z-index: 1000;
 }
@@ -156,7 +156,7 @@
   width: 40px;
   height: 40px;
   background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
+  
   display: flex;
   align-items: center;
   justify-content: center;

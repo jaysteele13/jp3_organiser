@@ -39,9 +39,9 @@
   /* Sketch Theme Color Palette */
   --primary: #242424;
   --primary-hover: #1a1a1a;
-  --secondary: #8167c9;
+  --secondary: #8167c9; /* previous teal 49B69C;*/
   --secondary-washed: color-mix(in srgb, var(--secondary) 35%, white);
-  --secondary-hover: #573d9e;
+  --secondary-hover: #573d9e; /* #49B69Cdd; previous*/
   --tertiary: #598b5e; /* previous B64963*/
   --tertiary-hover: #9e3d54;
   --sketch-bg: #F5F5F1;

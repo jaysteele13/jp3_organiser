@@ -18,6 +18,7 @@ export default function ViewHeader({
 }) {
   const toast = useToast(5000);
   const [isClearingCache, setIsClearingCache] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
 
   const handleClearCache = async () => {
     if (!libraryPath) {
@@ -70,22 +71,30 @@ export default function ViewHeader({
                     &larr;
                   </button>
                 )}
+                {/* Library in Primary Font bigger On hover display path. Comment out the debugging lcear cache. Keep Refresh */}
                 <div className={styles.headerInfo}>
-                  <h1 className={styles.title}>Library</h1>
-                  <p className={styles.subtitle}>
-                    Parsed from: <code>{libraryPath}/jp3/metadata/library.bin</code>
-                  </p>
+                  <h1 className={styles.title} 
+                  onMouseEnter={() => setIsHovering(true)}
+                  onMouseLeave={() => setIsHovering(false)}
+                  >Library</h1>
+                  {isHovering && (
+                    <div className={styles.libraryPathDisplay}>
+                      <p className={styles.subtitle}>
+                        Parsed from: <code>{libraryPath}/jp3/metadata/library.bin</code>
+                      </p>
+                    </div>
+                  )}
                 </div>
                 {/* REFRESH BUTTON FOR CACHE REMOVE BEFORE FINISHED in CoverArtService.js lib.rs and cover_art.rs */}
                 <div className={styles.buttonGroup}>
-                  <button 
+                  {/* <button 
                     className={styles.clearCacheButton} 
                     onClick={handleClearCache}
                     disabled={isClearingCache || !libraryPath}
                     title="Clear cached cover images and reset not-found cache (useful after API key changes)"
                   >
                     {isClearingCache ? 'Clearing...' : 'Clear Cache'}
-                  </button>
+                  </button> */}
                   <button 
                     className={styles.refreshButton} 
                     onClick={handleRefresh}
