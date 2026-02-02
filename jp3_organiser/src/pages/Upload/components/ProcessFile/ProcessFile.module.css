@@ -81,6 +81,23 @@
   cursor: wait;
 }
 
+
+.processButton {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--secondary);
+  /* eashed out purple?*/
+}
+
+.processButton:hover {
+  background-color: var(--secondary-hover);
+}
+
+.processButton:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
 .noOfFiles {
   padding: 0.5rem 1rem;
   font-weight: 800;
@@ -92,6 +109,15 @@
   border-top: none;
 }
 
+.noOfFilesProcessing {
+  padding: 0.5rem 1rem;
+  font-weight: 800;
+  font-size: larger;
+  color: var(--primary);
+  background-color: transparent;
+  border: 1px solid  var(--primary);
+
+}
 
 
 .clearButton {
@@ -104,6 +130,20 @@
 }
 
 .clearButton:hover {
+  background-color: var(--tertiary);
+  
+  color: var(--sketch-bg)
+}
+
+.clearButtonPressing {
+  padding: 0.5rem 1rem;
+  background-color: transparent;
+  
+  border: 1px solid  var(--primary);
+  color: var(--primary);
+}
+
+.clearButtonPressing:hover {
   background-color: var(--tertiary);
   
   color: var(--sketch-bg)

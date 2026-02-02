@@ -211,7 +211,7 @@ export default function ProcessFile({ onStartReview }) {
         {/* Processing indicator */}
         {showProcessingButton && (
           <button 
-            className={styles.selectButton} 
+            className={styles.processButton} 
             disabled
           >
             {formatProgress(processingProgress)}
@@ -242,7 +242,7 @@ export default function ProcessFile({ onStartReview }) {
         {(hasFiles || isProcessing) && (
           <div className={styles.reviewSecondRow}>
           <span 
-            className={styles.noOfFiles}
+            className={isProcessing ? styles.noOfFilesProcessing : styles.noOfFiles}
             aria-label={`Number of files: ${stats.total}`}
             title={`Number of files: ${stats.total}`}
           >
@@ -250,7 +250,7 @@ export default function ProcessFile({ onStartReview }) {
           </span>
 
           <button 
-            className={styles.clearButton}
+            className={isProcessing ? styles.clearButtonProcessing : styles.clearButton}
             onClick={handleClearOrCancel}
           >
             {isProcessing ? 'Cancel' : 'Clear'}

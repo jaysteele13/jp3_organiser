@@ -9,7 +9,7 @@
   min-width: 300px;
   max-width: 600px;
   padding: 1rem 1.25rem;
-  border-radius: 8px;
+    border: 1px solid var(--primary);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   animation: slideDown 0.3s ease-out;
 }
@@ -44,8 +44,7 @@
   height: 24px;
   padding: 0;
   background: rgba(255, 255, 255, 0.2);
-  border: none;
-  border-radius: 50%;
+  border: 1px solid var(--primary);
   color: inherit;
   font-size: 1.25rem;
   line-height: 1;
@@ -62,8 +61,8 @@
 
 /* Variants */
 .success {
-  background-color: var(--secondary);
-  color: #fff;
+  background-color: var(--sketch-bg);
+  color: var(--primary);
 }
 
 .error {
