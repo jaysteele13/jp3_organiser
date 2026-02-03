@@ -106,6 +106,7 @@ const CoverArt = memo(function CoverArt({
   size = 'medium',
   className = '',
   fallbackIcon = '💿',
+  borderRadius = false,
   imageCoverType = IMAGE_COVER_TYPE.ALBUM,
   circular = null, // null = auto (circular for artists, square for albums)
 }) {
@@ -360,6 +361,7 @@ const CoverArt = memo(function CoverArt({
     styles.container,
     styles[size],
     isCircular ? styles.circular : '',
+    !borderRadius ? styles.noRadius : '',
     className,
   ].filter(Boolean).join(' ');
   

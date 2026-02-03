@@ -458,7 +458,6 @@ export default function View() {
             </div>
             
           </div>
-          <hr className={styles.divider}/>
           <div className={styles.content}>
             <TabContent 
               activeTab={activeTab} 
