@@ -74,7 +74,7 @@
   border-radius: 6px;
   margin-bottom: 1rem;
   font-size: 0.9rem;
-  color: #ccc;
+  color: var(--primary);
 }
 
 .infoBox ul {
@@ -93,7 +93,7 @@
   border-radius: 6px;
   margin-bottom: 1rem;
   font-size: 0.9rem;
-  color: #ccc;
+  color: var(--primary);
 }
 
 .resultBox p {

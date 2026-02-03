@@ -34,7 +34,7 @@
 /* Message text */
 .message {
   margin: 0 0 1rem 0;
-  color: #aaa;
+  color: var(--primary);
   font-size: 0.9rem;
   line-height: 1.5;
 }

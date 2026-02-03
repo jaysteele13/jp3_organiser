@@ -16,15 +16,14 @@
 
 /* Modal card */
 .modal {
-  background-color: #1a1a1a;
-  border-radius: 12px;
+  background-color: var(--sketch-bg);
   padding: 1.5rem;
   min-width: 400px;
   max-width: 500px;
   max-height: 80vh;
   overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  border: 1px solid var(--secondary);
+  border: 1px solid var(--primary);
   position: relative;
 }
 
@@ -38,7 +37,7 @@
 /* Info message */
 .info {
   margin: 0 0 1rem 0;
-  color: #aaa;
+  color: var(--primary);
   font-size: 0.9rem;
   line-height: 1.4;
 }
@@ -58,15 +57,15 @@
 
 .label {
   font-size: 0.85rem;
-  color: #999;
+  color: var(--primary);
 }
 
 .input {
   padding: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  background-color: rgba(255, 255, 255, 0.05);
-  color: #fff;
+  border: 1px solid var(--primary);
+
+  background-color: #fff;
+  color: var(--primary);
   font-size: 1rem;
   font-family: inherit;
 }
@@ -91,8 +90,7 @@
 .saveButton {
   flex: 1;
   padding: 0.75rem 1rem;
-  border: none;
-  border-radius: 6px;
+  border: 1px solid var(--primary);
   font-size: 0.9rem;
   font-family: inherit;
   cursor: pointer;
@@ -100,12 +98,13 @@
 }
 
 .cancelButton {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background-color: transparent;
+  color: var(--primary);
 }
 
 .cancelButton:hover:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: var(--primary);
+  color: var(--sketch-bg);
 }
 
 .saveButton {
