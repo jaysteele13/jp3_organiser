@@ -163,7 +163,9 @@
 }
 
 .icon {
-  font-size: 1.25rem;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .resultInfo {

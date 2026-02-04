@@ -12,6 +12,7 @@ import { memo } from 'react';
 import { CoverArt } from '../../components';
 import { IMAGE_COVER_TYPE } from '../../utils/enums';
 import { SEARCH_CATEGORY } from '../../hooks/useLibrarySearch';
+import playlistPlaceholder from '../../assets/icon_placeholder/playlist_placeholder.png';
 import styles from './LibrarySearch.module.css';
 
 const SearchResultCard = memo(function SearchResultCard({
@@ -39,7 +40,7 @@ const SearchResultCard = memo(function SearchResultCard({
       case SEARCH_CATEGORY.PLAYLIST:
         return (
           <div className={styles.iconThumbnail}>
-            <span className={styles.icon}>📋</span>
+            <img src={playlistPlaceholder} alt="Playlist" className={styles.icon} />
           </div>
         );
       

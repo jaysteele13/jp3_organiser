@@ -21,13 +21,14 @@ import { usePlayer } from '../../../../hooks';
 import { ScrollingText } from '../../../../components';
 import { addToRecents, RECENT_TYPE } from '../../../../services/recentsService';
 import PlayerSongCard from '../PlayerSongCard';
+import playlistPlaceholder from '../../../../assets/icon_placeholder/playlist_placeholder.png';
 import styles from './DetailView.module.css';
 
 // Type-specific icons
 const TYPE_ICONS = {
   album: '💿',
   artist: '🎤',
-  playlist: '📋',
+  playlist: playlistPlaceholder,
 };
 
 const TYPE_LABELS = {
@@ -54,6 +55,10 @@ export default function DetailView({
   renderCoverArt,
 }) {
   const { playTrack, addToQueue, isCurrentTrack } = usePlayer();
+
+  // Check if icon is an image path
+  const icon = TYPE_ICONS[type];
+  const isImageIcon = typeof icon === 'string' && (icon.endsWith('.png') || icon.endsWith('.jpg') || icon.endsWith('.jpeg') || icon.endsWith('.svg'));
 
   const handlePlayAll = () => {
     if (songs.length > 0) {
@@ -121,8 +126,10 @@ export default function DetailView({
         <div className={styles.coverArt}>
           {renderCoverArt ? (
             renderCoverArt()
+          ) : isImageIcon ? (
+            <img src={icon} alt={TYPE_LABELS[type]} className={styles.icon} />
           ) : (
-            <span className={styles.icon}>{TYPE_ICONS[type]}</span>
+            <span className={styles.icon}>{icon}</span>
           )}
         </div>
 
