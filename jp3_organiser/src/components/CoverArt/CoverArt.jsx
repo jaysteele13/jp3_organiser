@@ -43,6 +43,9 @@ import artistPlaceholder1 from '../../assets/artist_placeholders/1.png';
 import artistPlaceholder2 from '../../assets/artist_placeholders/2.png';
 import artistPlaceholder3 from '../../assets/artist_placeholders/3.png';
 
+// Album placeholder image
+import albumPlaceholder from '../../assets/icon_placeholder/album_placeholder.png';
+
 // Size configurations
 const SIZES = {
   small: 40,
@@ -369,7 +372,7 @@ const CoverArt = memo(function CoverArt({
 
   // Show fallback while loading, on error, or when no image
   if (isLoading || hasError || !imageUrl) {
-    // For artists, use placeholder image; for albums, use emoji fallback
+    // For artists, use placeholder image; for albums, use album placeholder image
     if (isArtistCover && artistPlaceholder) {
       return (
         <div className={containerClass} style={containerStyle}>
@@ -383,7 +386,11 @@ const CoverArt = memo(function CoverArt({
     }
     return (
       <div className={containerClass} style={containerStyle}>
-        <span className={styles.fallback}>{fallbackIcon}</span>
+        <img
+          src={albumPlaceholder}
+          alt={`${album} placeholder`}
+          className={styles.image}
+        />
       </div>
     );
   }
