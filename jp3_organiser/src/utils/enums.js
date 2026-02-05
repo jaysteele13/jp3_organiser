@@ -81,4 +81,5 @@ export const UPLOAD_MODE = {
 export const IMAGE_COVER_TYPE = {
   ALBUM: 'Album',
   ARTIST: 'Artist',
+  SONG: 'Song',
 };

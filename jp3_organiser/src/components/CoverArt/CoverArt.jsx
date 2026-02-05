@@ -46,6 +46,8 @@ import artistPlaceholder3 from '../../assets/artist_placeholders/3.png';
 // Album placeholder image
 import albumPlaceholder from '../../assets/icon_placeholder/album_placeholder.png';
 
+
+
 // Size configurations
 const SIZES = {
   small: 40,
@@ -384,6 +386,19 @@ const CoverArt = memo(function CoverArt({
         </div>
       );
     }
+
+    if (imageCoverType === IMAGE_COVER_TYPE.SONG) {
+      return (
+        <div className={containerClass} style={containerStyle}>
+          <img
+            src={songPlaceholder}
+            alt={`${album} song placeholder`}
+            className={styles.image}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className={containerClass} style={containerStyle}>
         <img

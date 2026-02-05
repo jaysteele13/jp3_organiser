@@ -153,9 +153,8 @@
 }
 
 .iconThumbnail {
-  width: 40px;
-  height: 40px;
-  background-color: rgba(0, 0, 0, 0.1);
+  width: fit-content;
+  padding: 0.5rem;
   
   display: flex;
   align-items: center;
