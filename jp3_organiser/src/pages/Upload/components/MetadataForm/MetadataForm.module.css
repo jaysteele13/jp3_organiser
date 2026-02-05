@@ -73,7 +73,7 @@
 .input:focus {
   outline: none;
   border-color: var(--tertiary);
-  background-color: transparent
+  background-color: #fff
 }
 
 /* Filename/heuristic suggestion focus - tertiary (teal) */
@@ -103,7 +103,7 @@
 
 .readOnlyHint {
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--primary);
   font-style: italic;
 }
 
