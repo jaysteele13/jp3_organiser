@@ -15,12 +15,19 @@ import { addToRecents, RECENT_TYPE } from '../../../services/recentsService';
 import { TABS } from '../../../utils/enums';
 import styles from './ListStyles.module.css';
 
+const COLOR_VARIANTS = ['color1', 'color2', 'color3'];
+
+const getColorVariant = (index) => {
+  return COLOR_VARIANTS[index % COLOR_VARIANTS.length];
+};
+
 /**
  * Individual playlist card with context menu support
  */
 const PlaylistCard = memo(function PlaylistCard({
   playlist,
   playlistSongs,
+  cardColor,
   onCardClick,
   onPlayPlaylist,
   onQueuePlaylist,
@@ -41,7 +48,7 @@ const PlaylistCard = memo(function PlaylistCard({
   return (
     <>
       <div
-        className={`${styles.card} ${styles.playlistCard}`}
+        className={`${styles.card} ${styles.playlistCard} ${styles[cardColor]}`}
         onClick={() => onCardClick(playlist)}
         onContextMenu={handleContextMenu}
       >
@@ -135,7 +142,7 @@ export default function PlaylistList({ playlists, songs }) {
 
   return (
     <div className={styles.cardGrid}>
-      {playlists.map((playlist) => {
+      {playlists.map((playlist, index) => {
         const playlistSongs = getPlaylistSongs(playlist);
 
         return (
@@ -143,6 +150,7 @@ export default function PlaylistList({ playlists, songs }) {
             key={playlist.id}
             playlist={playlist}
             playlistSongs={playlistSongs}
+            cardColor={getColorVariant(index)}
             onCardClick={handleCardClick}
             onPlayPlaylist={handlePlayPlaylist}
             onQueuePlaylist={handleQueuePlaylist}

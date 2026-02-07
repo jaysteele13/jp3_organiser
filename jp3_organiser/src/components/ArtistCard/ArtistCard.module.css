@@ -40,9 +40,6 @@
 }
 
 /* Purple variant - quaternary color outline */
-.purpleVariant {
-  box-shadow: 0 0 0 3px var(--secondary);
-}
 
 .purpleVariant:hover {
   box-shadow: 0 0 0 3px var(--tertiary-hover), 0 4px 16px rgba(0, 0, 0, 0.3);
@@ -58,7 +55,7 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   align-items: center;

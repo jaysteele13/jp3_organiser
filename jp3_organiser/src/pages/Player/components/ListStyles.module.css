@@ -35,8 +35,7 @@
 /* Album-specific grid: 4 cards per row, centered */
 .albumGrid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 1.0rem;
+  grid-template-columns: repeat(7, 1fr);
   /* justify-items: center; */
   /* max-width: 1200px; */
   margin: 0 auto;
@@ -56,7 +55,6 @@
 .card {
   width: 180px;
   padding: 1rem;
-  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -82,12 +80,12 @@
 .albumCardLarge:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  color: var(--sketch-bg);
 }
 
 .card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
 }
 
 .card.expanded {
@@ -168,21 +166,31 @@
   color: var(--sketch-bg);
 }
 
-.albumCard .cardTitle,
-.albumCard .cardSubtitle {
+.albumCard:hover .cardTitle,
+.albumCard:hover .cardSubtitle,
+.albumCard:hover .cardMeta  {
+   color: var(--sketch-bg);
 }
 
-.albumCard .cardMeta {
+.albumCard:hover .cardBtn.queue,
+.albumCard:hover .cardBtn{
+  border: 1px solid var(--sketch-bg);
+  color: var(--sketch-bg);
 }
 
+.albumCard .cardBtn.queue,
 .albumCard .cardBtn {
-}
-
-
-.albumCard .cardBtn.queue {
   background-color: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--primary);
+  color: var(--primary);
 }
+
+.albumCard .cardBtn.queue:hover,
+.albumCard .cardBtn:hover{
+  background-color: var(--sketch-bg);
+  color: var(--primary);
+}
+
 
 
 /* ========================================
@@ -190,8 +198,8 @@
    ======================================== */
 
 .artistCard {
-  background-color: var(--secondary);
-  border-left: 4px solid var(--tertiary);
+  background-color: var(--primary);
+  border-left: 4px solid var(--primary);
 }
 
 .artistCard:hover {
@@ -231,37 +239,57 @@
    ======================================== */
 
 .playlistCard {
-  background-color: var(--secondary);
-  border-left: 4px solid var(--secondary-hover);
+  background-color: transparent;
+  border: 1px solid var(--primary);
+  border-left: 4px groove var(--incomplete-status);
+}
+
+.playlistCard.color1 {
+  border-left-color: var(--incomplete-status);
+}
+
+.playlistCard.color2 {
+  border-left-color: var(--primary);
+}
+
+.playlistCard.color3 {
+  border-left-color: var(--tertiary);
 }
 
 .playlistCard:hover {
-  background-color: var(--secondary-hover);
+  background-color: var(--primary);
+}
+
+
+.playlistCard:hover .cardTitle,
+.playlistCard:hover .cardSubtitle,
+.playlistCard:hover .cardMeta  {
+   color: var(--sketch-bg);
+}
+
+.playlistCard:hover .cardBtn.queue,
+.playlistCard:hover .cardBtn{
+  border: 1px solid var(--sketch-bg);
+  color: var(--sketch-bg);
+}
+
+.playlistCard .cardBtn.queue,
+.playlistCard .cardBtn {
+  background-color: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+}
+
+.playlistCard .cardBtn.queue:hover,
+.playlistCard .cardBtn:hover{
+  background-color: var(--sketch-bg);
+  color: var(--primary);
 }
 
 .playlistCard .cardTitle,
 .playlistCard .cardSubtitle,
 .playlistCard .cardMeta {
-  color: #000;
-}
-
-.playlistCard .cardBtn {
-  background-color: rgba(0, 0, 0, 0.1);
-  color: #000;
-}
-
-.playlistCard .cardBtn:hover {
-  background-color: rgba(0, 0, 0, 0.2);
-}
-
-.playlistCard .cardBtn.queue {
-  background-color: transparent;
-  border: 1px solid rgba(0, 0, 0, 0.3);
-  color: #000;
-}
-
-.playlistCard .cardBtn.queue:hover {
-  background-color: rgba(0, 0, 0, 0.1);
+  color: var(--primary);
 }
 
 /* ========================================
@@ -273,7 +301,6 @@
   margin-top: 1rem;
   padding: 1rem;
   background-color: rgba(0, 0, 0, 0.03);
-  border-radius: 8px;
   border-left: 3px solid var(--tertiary);
 }
 
@@ -298,7 +325,6 @@
   background-color: transparent;
   border: 1px solid rgba(0, 0, 0, 0.3);
   color: #000;
-  border-radius: 4px;
   cursor: pointer;
 }
 
@@ -328,7 +354,6 @@
   background-color: var(--secondary);
   border: none;
   color: #000;
-  border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.15s ease;
   box-shadow: none;
@@ -378,7 +403,6 @@
   /* Album grid: 2 cards per row on tablet */
   .albumGrid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
   }
 
   .albumCardLarge {

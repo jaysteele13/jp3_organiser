@@ -53,6 +53,7 @@ export default function DetailView({
   songs = [],
   onBack,
   renderCoverArt,
+  colorVariant = 'color1',
 }) {
   const { playTrack, addToQueue, isCurrentTrack } = usePlayer();
 
@@ -121,7 +122,7 @@ export default function DetailView({
       </button>
 
       {/* Header Section */}
-      <div className={`${styles.header} ${styles[type]}`}>
+      <div className={`${styles.header} ${styles[type]} ${type === 'playlist' ? styles[colorVariant] : ''}`}>
         {/* Cover Art */}
         <div className={styles.coverArt}>
           {renderCoverArt ? (

@@ -17,6 +17,12 @@ import DetailView from '../DetailView';
 import { formatDuration } from '../../../../utils/formatters';
 import { TABS } from '../../../../utils/enums';
 
+const COLOR_VARIANTS = ['color1', 'color2', 'color3'];
+
+const getPlaylistColorVariant = (index) => {
+  return COLOR_VARIANTS[index % COLOR_VARIANTS.length];
+};
+
 export default function PlaylistDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -27,11 +33,14 @@ export default function PlaylistDetail() {
   // Parse playlist ID
   const playlistId = parseInt(id, 10);
 
-  // Find playlist
-  const playlist = useMemo(() => {
-    if (!library?.playlists) return null;
-    return library.playlists.find(p => p.id === playlistId);
+  // Find playlist and its index in the array
+  const { playlist: foundPlaylist, index } = useMemo(() => {
+    if (!library?.playlists) return { playlist: null, index: 0 };
+    const idx = library.playlists.findIndex(p => p.id === playlistId);
+    return { playlist: library.playlists[idx], index: idx >= 0 ? idx : 0 };
   }, [library, playlistId]);
+
+  const playlist = foundPlaylist;
 
   // Build song map for quick lookup
   const songMap = useMemo(() => {
@@ -98,6 +107,7 @@ export default function PlaylistDetail() {
       subtitle=""
       meta={meta}
       songs={playlistSongs}
+      colorVariant={getPlaylistColorVariant(index)}
       onBack={handleBack}
     />
   );
