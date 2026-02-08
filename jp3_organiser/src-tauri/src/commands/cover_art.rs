@@ -409,3 +409,141 @@ pub struct AlbumQuery {
     pub artist: String,
     pub album: String,
 }
+
+/// Result of clearing cover cache
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClearCoverCacheResult {
+    /// Whether the operation was successful
+    pub success: bool,
+    /// Number of album covers cleared
+    pub albums_cleared: u32,
+    /// Number of artist covers cleared  
+    pub artists_cleared: u32,
+    /// Error message (if failed)
+    pub error: Option<String>,
+}
+
+/// Clear all cached cover art for albums and artists.
+///
+/// This safely removes all cached cover images from:
+/// - {library_path}/jp3/assets/albums/
+/// - {library_path}/jp3/assets/artists/
+///
+/// The directories are preserved (only .jpg files are deleted).
+/// This is useful when API keys were incorrect or corrupted cache needs clearing.
+///
+/// # Arguments
+/// * `base_path` - Library base path
+#[tauri::command]
+pub fn clear_cover_cache(base_path: String) -> ClearCoverCacheResult {
+    log::info!("clear_cover_cache called for base_path: {}", base_path);
+
+    let albums_dir = Path::new(&base_path).join("jp3").join("assets").join("albums");
+    let artists_dir = Path::new(&base_path).join("jp3").join("assets").join("artists");
+
+    let mut albums_cleared = 0u32;
+    let mut artists_cleared = 0u32;
+
+    // Clear album covers
+    if albums_dir.exists() {
+        match std::fs::read_dir(&albums_dir) {
+            Ok(entries) => {
+                for entry in entries {
+                    if let Ok(entry) = entry {
+                        let path = entry.path();
+                        if path.is_file() {
+                            if let Some(extension) = path.extension() {
+                                if extension == "jpg" {
+                                    match std::fs::remove_file(&path) {
+                                        Ok(_) => {
+                                            albums_cleared += 1;
+                                            log::debug!("Removed album cover: {:?}", path);
+                                        }
+                                        Err(e) => {
+                                            log::error!("Failed to remove album cover {:?}: {}", path, e);
+                                            return ClearCoverCacheResult {
+                                                success: false,
+                                                albums_cleared: 0,
+                                                artists_cleared: 0,
+                                                error: Some(format!("Failed to remove album cover: {}", e)),
+                                            };
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                log::info!("Cleared {} album covers from {:?}", albums_cleared, albums_dir);
+            }
+            Err(e) => {
+                log::error!("Failed to read albums directory {:?}: {}", albums_dir, e);
+                return ClearCoverCacheResult {
+                    success: false,
+                    albums_cleared: 0,
+                    artists_cleared: 0,
+                    error: Some(format!("Failed to read albums directory: {}", e)),
+                };
+            }
+        }
+    } else {
+        log::info!("Albums directory does not exist: {:?}", albums_dir);
+    }
+
+    // Clear artist covers
+    if artists_dir.exists() {
+        match std::fs::read_dir(&artists_dir) {
+            Ok(entries) => {
+                for entry in entries {
+                    if let Ok(entry) = entry {
+                        let path = entry.path();
+                        if path.is_file() {
+                            if let Some(extension) = path.extension() {
+                                if extension == "jpg" {
+                                    match std::fs::remove_file(&path) {
+                                        Ok(_) => {
+                                            artists_cleared += 1;
+                                            log::debug!("Removed artist cover: {:?}", path);
+                                        }
+                                        Err(e) => {
+                                            log::error!("Failed to remove artist cover {:?}: {}", path, e);
+                                            return ClearCoverCacheResult {
+                                                success: false,
+                                                albums_cleared,
+                                                artists_cleared,
+                                                error: Some(format!("Failed to remove artist cover: {}", e)),
+                                            };
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                log::info!("Cleared {} artist covers from {:?}", artists_cleared, artists_dir);
+            }
+            Err(e) => {
+                log::error!("Failed to read artists directory {:?}: {}", artists_dir, e);
+                return ClearCoverCacheResult {
+                    success: false,
+                    albums_cleared,
+                    artists_cleared: 0,
+                    error: Some(format!("Failed to read artists directory: {}", e)),
+                };
+            }
+        }
+    } else {
+        log::info!("Artists directory does not exist: {:?}", artists_dir);
+    }
+
+    let total_cleared = albums_cleared + artists_cleared;
+    log::info!("Cover cache clear complete: {} total files cleared", total_cleared);
+
+    ClearCoverCacheResult {
+        success: true,
+        albums_cleared,
+        artists_cleared,
+        error: None,
+    }
+}

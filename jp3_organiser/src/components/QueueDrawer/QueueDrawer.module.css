@@ -30,8 +30,9 @@
   bottom: 80px; /* Above player bar */
   width: 350px;
   max-width: 90vw;
-  background-color: var(--quaternary);
-  border-left: 2px solid var(--quaternary-hover);
+  background-color: var(--sketch-bg);
+  border-left: 3px groove var(--secondary);
+  color: var(--primary);
   z-index: 901;
   display: flex;
   flex-direction: column;
@@ -56,7 +57,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem;
-  border-bottom: 1px solid var(--quaternary-hover);
+  border-bottom: 1px solid var(--primary);
   flex-shrink: 0;
 }
 
@@ -64,7 +65,7 @@
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #fff;
+
 }
 
 .headerActions {
@@ -78,30 +79,29 @@
   border: 1px solid var(--primary);
   color: var(--primary);
   padding: 0.3rem 0.6rem;
-  font-size: 0.75rem;
-  border-radius: 4px;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .clearBtn:hover {
   background-color: var(--primary);
-  color: #000;
+  color: var(--sketch-bg);
 }
 
 .closeBtn {
   background-color: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #fff;
+  border: 1px solid var(--primary);
   padding: 0.3rem 0.6rem;
   font-size: 0.8rem;
-  border-radius: 4px;
+  color: var(--primary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .closeBtn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--primary);
+  color: var(--sketch-bg);
 }
 
 /* ============================================
@@ -117,7 +117,7 @@
 .empty {
   padding: 2rem 1rem;
   text-align: center;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--primary);
   font-size: 0.9rem;
 }
 
@@ -141,7 +141,8 @@
 
 .queueItem.current {
   background-color: rgba(153, 182, 73, 0.2);
-  border-left: 3px solid var(--secondary);
+  border-bottom: 3px groove var(--secondary);
+  border-top: 3px groove var(--secondary);
 }
 
 .queueItem.dragOver {
@@ -154,7 +155,7 @@
 
 /* Drag Handle */
 .dragHandle {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--primary);
   cursor: grab;
   font-size: 0.8rem;
   letter-spacing: -1px;
@@ -169,7 +170,7 @@
 .trackNumber {
   min-width: 24px;
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--primary-fade);
   text-align: center;
 }
 
@@ -189,7 +190,6 @@
 
 .trackTitle {
   font-size: 0.85rem;
-  color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -197,7 +197,7 @@
 
 .trackArtist {
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -206,14 +206,12 @@
 /* Remove Button */
 .removeBtn {
   background-color: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--primary);
+  color: var(--primary);
   padding: 0.3rem 0.5rem;
   font-size: 0.8rem;
   cursor: pointer;
-  border-radius: 4px;
   transition: all 0.15s ease;
-  opacity: 0;
 }
 
 .queueItem:hover .removeBtn {
@@ -222,7 +220,7 @@
 
 .removeBtn:hover {
   background-color: var(--primary);
-  color: #000;
+  color: var(--sketch-bg);
 }
 
 /* ============================================
@@ -231,7 +229,7 @@
 
 .footer {
   padding: 0.75rem 1rem;
-  border-top: 1px solid var(--quaternary-hover);
+  border-top: 1px solid var(--tertiary);
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.6);
   text-align: center;
@@ -264,7 +262,7 @@
   padding: 0.5rem 1rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -284,14 +282,13 @@
 }
 
 .clearSectionBtn:hover {
-  opacity: 0.8;
-  text-decoration: underline;
+  background-color: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
 }
 
 /* User Queue Item styling */
-.userQueueItem {
-  background-color: rgba(182, 73, 99, 0.1);
-}
+
 
 .userQueueItem:hover {
   background-color: rgba(182, 73, 99, 0.2);

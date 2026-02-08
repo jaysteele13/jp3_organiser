@@ -9,7 +9,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
  * @returns {Object} Toast state and controls
  * @returns {boolean} .visible - Whether the toast is visible
  * @returns {string} .message - The current message
- * @returns {string} .variant - The current variant ('success', 'error', 'info')
+ * @returns {string} .variant - The current variant ('success', 'error', 'info')se
  * @returns {function} .showToast - Function to show a toast (message, variant?)
  * @returns {function} .hideToast - Function to hide the toast
  */

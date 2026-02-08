@@ -9,10 +9,10 @@
 }
 
 .card {
-  background-color: var(--quaternary);
-  border-radius: 8px;
+  background-color: transparent;
   padding: 1.5rem;
-  color: #fff;
+  color: var(--primary);
+  border: 1px solid var(--primary);
 }
 
 .title {
@@ -28,17 +28,19 @@
 }
 
 .structurePreview {
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 6px;
+  background-color: var(--sketch-bg);
   padding: 0.75rem 1rem;
   margin-bottom: 1.25rem;
+   border: 1px solid var(--primary);
 }
 
 .structureTitle {
   display: block;
   font-size: 0.8rem;
+  font-weight: bold;
   opacity: 0.7;
   margin-bottom: 0.5rem;
+  color: #000;
 }
 
 .structureCode {
@@ -60,11 +62,13 @@
   width: 100%;
   padding: 1rem 1.5rem;
   font-size: 1.1rem;
-  background-color: var(--tertiary);
+  background-color: transparent;
+  color: var(--primary);
 }
 
 .selectButton:hover {
   background-color: var(--tertiary-hover);
+  color: var(--sketch-bg);
 }
 
 .selectButton:disabled {
@@ -91,14 +95,14 @@
 }
 
 .compactCard {
-  background-color: var(--quaternary);
-  border-radius: 6px;
+  background-color: var(--sketch-bg);
+  border-radius: 0px;
+  border: 1px solid var(--sketch-border);
   padding: 0.6rem 0.85rem;
-  color: #fff;
+  color: var(--primary);
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   transition: box-shadow 0.2s ease;
 }
 
@@ -151,8 +155,9 @@
 .compactStatus {
   font-size: 0.65rem;
   padding: 0.15rem 0.4rem;
-  background-color: var(--secondary);
-  border-radius: 3px;
+  background-color: var(--sketch-bg);
+  border-radius: 0px;
+  border: 1px solid var(--secondary);
   text-transform: uppercase;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -176,13 +181,16 @@
 .compactButton {
   padding: 0.25rem 0.5rem;
   font-size: 0.7rem;
-  background-color: var(--tertiary);
-  border-radius: 4px;
+  background-color: var(--sketch-bg);
+  color: var(--primary);
+  border-radius: 0px;
   white-space: nowrap;
 }
 
 .compactButton:hover {
-  background-color: var(--tertiary-hover);
+  background-color: var(--primary);
+  color: var(--sketch-bg)
+
 }
 
 .compactButton:disabled {
@@ -193,17 +201,16 @@
 .compactButtonClear {
   padding: 0.25rem 0.5rem;
   font-size: 0.7rem;
-  background-color: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: rgba(255, 255, 255, 0.8);
-  border-radius: 4px;
+  border: 1px solid var(--primary);
+  color: var(--sketch-bg);
+  background-color: var(--tertiary);
+  border-radius: 0px;
   white-space: nowrap;
 }
 
 .compactButtonClear:hover {
-  background-color: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
+  background-color: var(--tertiary-hover);
+  color: var(--sketch-bg);
 }
 
 .compactButtonClear:disabled {

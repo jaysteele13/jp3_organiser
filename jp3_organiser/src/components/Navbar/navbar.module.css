@@ -1,4 +1,4 @@
-/* Arc Browser inspired vertical navbar */
+/* Sketch themed vertical navbar */
 
 .navbar {
     position: fixed;
@@ -6,13 +6,13 @@
     top: 0;
     height: 100vh;
     width: 200px;
-    background-color: var(--quaternary);
+    background-color: transparent;
+    border-right: 1px solid var(--sketch-border);
     display: flex;
     flex-direction: column;
-    padding: 1rem 0.5rem;
+    padding: 1rem 0.5rem; 
     transition: width 0.25s ease;
     z-index: 100;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
 }
 
 .navbar.collapsed {
@@ -23,11 +23,11 @@
 .header {
     padding: 0.5rem;
     margin-bottom: 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--sketch-border);
 }
 
 .logo {
-    color: #fff;
+    color: var(--primary);
     font-weight: 700;
     font-size: 1rem;
     white-space: nowrap;
@@ -49,26 +49,32 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem;
-    border-radius: 8px;
-    color: rgba(255, 255, 255, 0.8);
+    border-radius: 0;
+    border: 1px solid transparent;
+    color: var(--sketch-text);
     text-decoration: none;
-    transition: background-color 0.15s ease, color 0.15s ease;
+    transition: all 0.15s ease;
     white-space: nowrap;
     overflow: hidden;
+    border-color: var(--sketch-border);
 }
 
 .navLink:hover {
-    background-color: var(--quaternary-hover);
-    color: #fff;
+    background-color: var(--secondary);
+    border-color: var(--sketch-border);
+    color: var(--sketch-bg);
+
 }
 
 .navLink.active {
     background-color: var(--primary);
-    color: #fff;
+    border-color: var(--sketch-border);
+    color: var(--sketch-bg);
 }
 
 .navLink.active:hover {
     background-color: var(--primary-hover);
+    border-color: var(--sketch-border);
 }
 
 .icon {
@@ -90,7 +96,7 @@
 .footer {
     padding: 0.5rem;
     padding-bottom: 1.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--sketch-border);
     margin-top: auto;
 }
 
@@ -101,18 +107,20 @@
     width: 100%;
     min-height: 36px;
     padding: 0.5rem 0.75rem;
-    background-color: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: rgba(255, 255, 255, 0.7);
-    border-radius: 6px;
+    background-color: var(--secondary);
+    border: 1px solid var(--sketch-border);
+    color: #fff;
+    border-radius: 0;
     cursor: pointer;
-    transition: background-color 0.15s ease, color 0.15s ease;
-    box-shadow: none;
+    transition: all 0.15s ease;
     line-height: 1;
+    box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.2);
     
 }
 
 .collapseBtn:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--tertiary);
+    border-color: var(--sketch-border);
     color: #fff;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
 }

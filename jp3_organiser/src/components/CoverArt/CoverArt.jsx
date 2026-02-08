@@ -43,10 +43,15 @@ import artistPlaceholder1 from '../../assets/artist_placeholders/1.png';
 import artistPlaceholder2 from '../../assets/artist_placeholders/2.png';
 import artistPlaceholder3 from '../../assets/artist_placeholders/3.png';
 
+// Album placeholder image
+import albumPlaceholder from '../../assets/icon_placeholder/album_placeholder.png';
+
+
+
 // Size configurations
 const SIZES = {
-  small: 40,
-  medium: 60,
+  small: 60,
+  medium: 90,
   large: 150,
   xlarge: 250,
 };
@@ -106,6 +111,7 @@ const CoverArt = memo(function CoverArt({
   size = 'medium',
   className = '',
   fallbackIcon = '💿',
+  borderRadius = false,
   imageCoverType = IMAGE_COVER_TYPE.ALBUM,
   circular = null, // null = auto (circular for artists, square for albums)
 }) {
@@ -360,6 +366,7 @@ const CoverArt = memo(function CoverArt({
     styles.container,
     styles[size],
     isCircular ? styles.circular : '',
+    !borderRadius ? styles.noRadius : '',
     className,
   ].filter(Boolean).join(' ');
   
@@ -367,7 +374,7 @@ const CoverArt = memo(function CoverArt({
 
   // Show fallback while loading, on error, or when no image
   if (isLoading || hasError || !imageUrl) {
-    // For artists, use placeholder image; for albums, use emoji fallback
+    // For artists, use placeholder image; for albums, use album placeholder image
     if (isArtistCover && artistPlaceholder) {
       return (
         <div className={containerClass} style={containerStyle}>
@@ -379,9 +386,26 @@ const CoverArt = memo(function CoverArt({
         </div>
       );
     }
+
+    if (imageCoverType === IMAGE_COVER_TYPE.SONG) {
+      return (
+        <div className={containerClass} style={containerStyle}>
+          <img
+            src={songPlaceholder}
+            alt={`${album} song placeholder`}
+            className={styles.image}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className={containerClass} style={containerStyle}>
-        <span className={styles.fallback}>{fallbackIcon}</span>
+        <img
+          src={albumPlaceholder}
+          alt={`${album} placeholder`}
+          className={styles.image}
+        />
       </div>
     );
   }

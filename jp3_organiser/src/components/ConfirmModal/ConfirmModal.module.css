@@ -14,28 +14,27 @@
 
 /* Modal card */
 .modal {
-  background-color: #1a1a1a;
-  border-radius: 12px;
+  background-color: var(--sketch-bg);
   padding: 1.5rem;
   min-width: 400px;
   max-width: 500px;
   max-height: 80vh;
   overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  border: 1px solid var(--tertiary);
+  border: 1px solid var(--primary);
 }
 
 /* Modal title */
 .title {
   margin: 0 0 0.75rem 0;
   font-size: 1.25rem;
-  color: #fff;
+  color: var(--primary);
 }
 
 /* Message text */
 .message {
   margin: 0 0 1rem 0;
-  color: #aaa;
+  color: var(--primary);
   font-size: 0.9rem;
   line-height: 1.5;
 }
@@ -56,18 +55,16 @@
 /* Cancel button - secondary style */
 .cancelBtn {
   background-color: transparent;
-  border: 1px solid #666;
-  color: #ccc;
+  border: 1px solid var(--primary);
+  color: var(--primary);
   padding: 0.6em 1.2em;
-  border-radius: 8px;
   cursor: pointer;
   font-weight: 500;
   transition: all 0.2s ease;
 }
 
 .cancelBtn:hover:not(:disabled) {
-  border-color: #888;
-  color: #fff;
+  color: var(--sketch-bg);
 }
 
 .cancelBtn:disabled {
@@ -78,9 +75,9 @@
 /* Base confirm button */
 .confirmBtn {
   border: none;
-  color: #fff;
+  color: var(--sketch-bg);
   padding: 0.6em 1.2em;
-  border-radius: 8px;
+  border: 1px solid var(--primary);
   cursor: pointer;
   font-weight: 500;
   transition: background-color 0.2s ease;
@@ -115,5 +112,6 @@
 }
 
 .confirmBtnDanger:hover:not(:disabled) {
-  background-color: var(--primary-hover);
+  background-color: var(--secondary);
+  color: var(--sketch-bg);
 }

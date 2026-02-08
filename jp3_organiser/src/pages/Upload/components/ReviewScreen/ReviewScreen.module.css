@@ -1,22 +1,22 @@
 /* ReviewScreen component styles */
 
 .container {
-  background-color: var(--quaternary);
-  border-radius: 8px;
+  
   padding: 1.5rem;
-  color: #fff;
-  margin-top: 1rem;
+  color: var(--primary);
+
 }
 
 /* Playlist banner */
 .playlistBanner {
   display: flex;
+  
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  background-color: var(--tertiary);
-  border-radius: 6px;
+  background-color: var(--sketch-bg);
   margin-bottom: 1rem;
+  border: 1px solid var(--primary);
 }
 
 .playlistIcon {
@@ -42,9 +42,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  
 }
 
 .title {
@@ -60,24 +59,30 @@
   align-items: center;
 }
 
+
 .exitButton {
-  padding: 0.5rem 1rem;
+  
   background-color: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 0.875rem;
+  
+  border: 1px solid  var(--primary);
+  color: var(--primary);
+   padding: 0.5rem 1rem;
+    font-size: 0.875rem;
 }
 
 .exitButton:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.5);
+  background-color: var(--tertiary);
+  
+  color: var(--sketch-bg)
 }
+
+
 
 /* Done button - prominent when enabled */
 .doneButton {
   padding: 0.5rem 1.25rem;
   background-color: var(--secondary);
-  border: none;
+  border: 1px solid var(--primary);
   color: #fff;
   font-size: 0.875rem;
   font-weight: 600;
@@ -96,7 +101,7 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.5rem;
 }
 
 /* Empty state */
@@ -147,16 +152,18 @@
 
 /* Song Card */
 .songCard {
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
+  border: 1px solid var(--primary);
+  background-color: var(--sketch-bg);
   padding: 1.5rem;
 }
 
 .songHeader {
   margin-bottom: 1.25rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: center;   /* centers the inner row horizontally */
 }
+
 
 .songFileName {
   margin: 0 0 0.25rem 0;
@@ -169,6 +176,23 @@
   font-size: 0.8rem;
   opacity: 0.6;
 }
+.songFileInfoRow {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  width: fit-content;
+  margin: 0 auto;
+  justify-content: center;
+}
+
+.songFileNameColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+
+
 
 /* Metadata Display */
 .metadataDisplay {
@@ -177,14 +201,17 @@
 
 .sourceIndicator {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  align-items: stretch;
+  flex-direction: column;
+  width: 100%;
+ 
 }
 
 .sourceTag {
-  padding: 0.25rem 0.75rem;
-  border-radius: 4px;
+  display: block;
+  width: 100%;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--primary);
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -192,13 +219,34 @@
 }
 
 .sourceAutomated {
-  background-color: var(--secondary);
-  color: #fff;
+  border: 1px solid var(--primary);
+  background-color: transparent;
+  border-left-color: var(--automated-status);
+  text-decoration-color: var(--automated-status);
+  border-left-width: 3px;
+  border-left-style: groove;
+  color: var(--primary);
 }
 
 .sourceManual {
-  background-color: #f0ad4e;
-  color: #000;
+    border: 1px solid var(--primary);
+  background-color: transparent;
+  border-left-color: var(--incomplete-status);
+  text-decoration-color: var(--incomplete-status);
+  border-left-width: 3px;
+  border-left-style: groove;
+  color: var(--primary);
+}
+
+.sourceConfirmed {
+  border: 1px solid var(--primary);
+  background-color: transparent;
+  border-left-color: var(--secondary);
+  text-decoration-color: var(--secondary);
+  border-left-width: 3px;
+  border-left-style: groove;
+  border-bottom: none;
+  color: var(--primary);
 }
 
 .sourceDetail {
@@ -270,9 +318,7 @@
 
 /* Audio Player */
 .audioPlayer {
-  background-color: rgba(0, 0, 0, 0.15);
-  border-radius: 6px;
-  padding: 1rem;
+ padding: 0.3rem 0 .3rem 0;
 }
 
 .playerLabel {
@@ -291,16 +337,19 @@
 .playButton {
   flex: 1;
   padding: 0.75rem 1rem;
-  background-color: var(--tertiary);
+  background-color: transparent;
   font-size: 0.9rem;
+  color: var(--primary);
 }
 
 .playButton:hover {
-  background-color: var(--tertiary-hover);
+  background-color: var(--tertiary);
+  color: var(--sketch-bg);
 }
 
 .playButtonActive {
   background-color: var(--primary);
+  color: var(--sketch-bg);
 }
 
 .playButtonActive:hover {
@@ -405,8 +454,6 @@
 
 /* Navigation Controls */
 .navigationControls {
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
@@ -449,15 +496,21 @@
 
 .navButton {
   padding: 0.6rem 1.5rem;
-  background-color: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: var(--primary);
+  border: 1px solid var(--primary);
   color: #fff;
   font-size: 0.9rem;
 }
 
+.navButton:hover {
+  background-color: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+
 .navButton:hover:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
+  background-color: transparent;
+  border-color: none;
 }
 
 .navButton:disabled {
@@ -486,27 +539,27 @@
   flex: 2;
   padding: 0.85rem 1.5rem;
   background-color: transparent;
-  border: 1px solid var(--secondary);
-  color: var(--secondary);
+  border: 1px solid var(--primary);
+  color: var(--primary);
   font-size: 1rem;
   font-weight: 600;
 }
 
 .unconfirmButton:hover {
-  background-color: var(--secondary);
+  background-color: var(--primary);
   color: #fff;
 }
 
 .editButton {
   flex: 1;
   padding: 0.85rem 1rem;
-  background-color: #f0ad4e;
+  background-color: transparent;
   color: #000;
   font-size: 0.9rem;
 }
 
 .editButton:hover:not(:disabled) {
-  background-color: #ec971f;
+  background-color: var(--incomplete-status);
 }
 
 .editButton:disabled {
@@ -546,8 +599,12 @@
 
 /* Edit container */
 .editContainer {
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
+  background-color:var(--sketch-bg);
+  border: 1px solid var(--primary);
+  border-left-color: var(--incomplete-status);
+  text-decoration-color: var(--incomplete-status);
+  border-left-width: 3px;
+  border-left-style: groove;
   padding: 1rem;
 }
 

@@ -2,7 +2,7 @@
 
 .container {
   padding: 1.5rem;
-  width: 100%;
+
 }
 
 .divider {
@@ -38,7 +38,6 @@
 .error {
   padding: 1rem;
   background-color: var(--primary);
-  border-radius: 6px;
   margin-bottom: 1rem;
   font-size: 0.9rem;
 }
@@ -47,7 +46,7 @@
   text-align: center;
   padding: 3rem;
   background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
+ 
 }
 
 .emptyState h2,
@@ -63,10 +62,10 @@
 
 /* Delete confirmation info */
 .deleteInfo {
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: #fff;
   padding: 1rem;
-  border-radius: 6px;
   margin-bottom: 1rem;
+  border: 1px solid var(--primary);
 }
 
 .deleteInfoTitle {

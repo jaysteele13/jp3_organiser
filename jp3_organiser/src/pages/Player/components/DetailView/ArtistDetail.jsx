@@ -61,16 +61,16 @@ export default function ArtistDetail() {
   }, [artistSongs]);
 
 
-    // Render cover art with large size - defined before early returns to follow Rules of Hooks
-    const renderCoverArt = useCallback(() => (
-      <CoverArt
-        artist={artist?.name}
-        libraryPath={libraryPath}
-        size="large"
-        imageCoverType={IMAGE_COVER_TYPE.ARTIST}
-        circular={false}
-      />
-    ), [artist?.name, libraryPath]);
+  // Render cover art with xlarge size - defined before early returns to follow Rules of Hooks
+  const renderCoverArt = useCallback(() => (
+    <CoverArt
+      artist={artist?.name}
+      libraryPath={libraryPath}
+      size="xlarge"
+      imageCoverType={IMAGE_COVER_TYPE.ARTIST}
+      circular={false}
+    />
+  ), [artist?.name, libraryPath]);
 
   const handleBack = useCallback(() => {
     // If we have navigation history from within the app, go back

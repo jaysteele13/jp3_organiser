@@ -138,7 +138,7 @@ export default function ReviewScreen({
             className={styles.exitButton} 
             onClick={handleExit}
           >
-            Exit
+            Exit Review
           </button>
           {/* Done button - only enabled when all confirmed */}
           <button 

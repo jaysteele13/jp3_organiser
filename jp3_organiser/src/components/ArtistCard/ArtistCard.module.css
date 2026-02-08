@@ -35,30 +35,15 @@
 }
 
 .circleContainer:focus {
-  outline: 2px solid var(--primary, #007bff);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
-
-/* Purple variant - quaternary color outline */
-.purpleVariant {
-  box-shadow: 0 0 0 3px var(--quaternary, #6649B6);
-}
-
-.purpleVariant:hover {
-  box-shadow: 0 0 0 3px var(--quaternary-hover, #5339a6), 0 4px 16px rgba(0, 0, 0, 0.3);
-}
-
-.purpleVariant:focus {
-  outline: 2px solid var(--quaternary, #6649B6);
-  outline-offset: 2px;
-}
-
 /* Hover overlay - shows counts only */
 .hoverOverlay {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -94,41 +79,45 @@
 }
 
 .actionList {
-  display: flex;
+  display: block;
+  width: fit-content;
   flex-direction: column;
   align-items: center;
   gap: 0.35rem;
-  background: rgba(0, 0, 0, 0.9);
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  background: var(--sketch-bg);
+  
+  border: 1px solid var(--primary);
+
 }
 
 .actionButton {
   background: transparent;
   border: none;
-  color: #fff;
-  font-size: 0.75rem;
+  color: var(--primary);
+  border-bottom: 1px dashed var(--primary);
+  font-size: 0.85rem;
   font-family: inherit;
-  padding: 0.4rem 0.75rem;
-  border-radius: 4px;
+  
+  width: 100%;
   cursor: pointer;
   transition: background-color 0.15s ease;
   white-space: nowrap;
-  width: 100%;
+  
   text-align: center;
 }
 
 .actionButton:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--primary);
+  color: var(--sketch-bg);
 }
 
 .dangerButton {
-  color: var(--primary, #ff4444);
+  color: var(--primary);
+  border-bottom: none;
 }
 
 .dangerButton:hover {
-  background-color: var(--primary, #ff4444);
+  background-color: var(--primary);
   color: #fff;
 }
 
@@ -145,7 +134,7 @@
   text-align: center;
   cursor: pointer;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  
   transition: background-color 0.15s ease;
 }
 

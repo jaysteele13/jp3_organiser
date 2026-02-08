@@ -12,7 +12,10 @@ import { memo } from 'react';
 import { CoverArt } from '../../components';
 import { IMAGE_COVER_TYPE } from '../../utils/enums';
 import { SEARCH_CATEGORY } from '../../hooks/useLibrarySearch';
+import playlistPlaceholder from '../../assets/icon_placeholder/playlist_placeholder.png';
 import styles from './LibrarySearch.module.css';
+
+import { TAB_IMAGES } from '../../utils/enums';
 
 const SearchResultCard = memo(function SearchResultCard({
   item,
@@ -39,7 +42,7 @@ const SearchResultCard = memo(function SearchResultCard({
       case SEARCH_CATEGORY.PLAYLIST:
         return (
           <div className={styles.iconThumbnail}>
-            <span className={styles.icon}>📋</span>
+            <img src={playlistPlaceholder} alt="Playlist" className={styles.icon} />
           </div>
         );
       
@@ -67,7 +70,11 @@ const SearchResultCard = memo(function SearchResultCard({
       case SEARCH_CATEGORY.SONG:
         return (
           <div className={styles.iconThumbnail}>
-            <span className={styles.icon}>🎵</span>
+            <img
+              src={TAB_IMAGES.SONGS.still_b}
+              alt="Song"
+              className={styles.icon}
+            />
           </div>
         );
       

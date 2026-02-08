@@ -6,7 +6,6 @@
 
 /* Individual row */
 .padding {
-  padding: .25rem;
   width: 100%;
   box-sizing: border-box;
 }
@@ -15,18 +14,18 @@
   display: flex;
   align-items: center;
   padding: 0.75rem 1rem;
-  background-color: var(--tertiary);
-  border-radius: 6px;
+  background-color: var(--sketch-bg-fade);
+  border: 1px dashed var(--primary);
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
 
 .row:hover {
-  background-color: var(--tertiary-hover);
+  background-color: var(--sketch-bg);
 }
 
 .row.playing {
-  background-color: var(--quaternary);
+  background-color: var(--sketch-bg);
 }
 
 /* Row info section */
@@ -80,7 +79,6 @@
   background-color: var(--secondary);
   border: none;
   color: #000;
-  border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.15s ease;
   box-shadow: none;

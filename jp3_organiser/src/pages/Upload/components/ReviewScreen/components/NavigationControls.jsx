@@ -38,14 +38,13 @@ export default function NavigationControls({ navigation }) {
           File {currentPosition} of {totalFiles}
         </span>
         <span className={styles.confirmProgress}>
-          ({confirmedCount} of {totalFiles} confirmed)
+          (<b>{confirmedCount}</b> of {totalFiles} confirmed)
         </span>
-        {isConfirmed && (
-          <span className={styles.confirmedBadge}>Confirmed</span>
-        )}
+
       </div>
 
-      {/* Navigation arrows */}
+      {   totalFiles > 1 && (
+
       <div className={styles.navArrows}>
         <button 
           className={styles.navButton}
@@ -64,6 +63,7 @@ export default function NavigationControls({ navigation }) {
           Next &rarr;
         </button>
       </div>
+      )}
 
       {/* Action buttons */}
       <div className={styles.actionButtons}>

@@ -81,7 +81,7 @@ export default function PlayerBar() {
 
   return (
     <>
-      <div className={styles.playerBar}>
+      <div className={`${styles.playerBar} sketch-texture sketch-border`}>
         <div className={styles.container}>
           {/* Left: Track Info */}
           <TrackInfo track={currentTrack} />

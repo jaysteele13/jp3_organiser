@@ -17,23 +17,24 @@
   padding: 0.5rem 0.85rem;
   font-size: 0.8rem;
   font-weight: 500;
-  background-color: var(--quaternary);
-  border: none;
-  color: #fff;
-  border-radius: 6px;
+  background-color: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
 
 .changeModeButton:hover {
-  background-color: var(--quaternary-hover);
+  background-color: var(--tertiary);
+  color: var(--sketch-bg);
 }
 
 .uploadContainer {
   width: 100%;
-  background-color: var(--tertiary);
-  border-radius: 8px;
-  color: #fff;
+  background-color: transparent;
+  border-radius: 0px;
+  color: var(--primary);
+  border: 1px solid var(--primary);
 }
 
 .header {
@@ -91,7 +92,6 @@
   margin-top: 1rem;
   padding: 0.75rem 1rem;
   background-color: var(--primary);
-  border-radius: 6px;
   font-size: 0.9rem;
 }
 
@@ -99,7 +99,6 @@
 .fileListContainer {
   margin-top: 1.25rem;
   background-color: rgba(0, 0, 0, 0.15);
-  border-radius: 6px;
   padding: 1rem;
 }
 
@@ -125,7 +124,7 @@
 }
 
 .statIncomplete {
-  color: #f0ad4e;
+  color: var(--incomplete-status);
 }
 
 .statError {
@@ -151,7 +150,6 @@
   padding: 0.75rem 1rem;
   margin-bottom: 1rem;
   background-color: var(--secondary);
-  border-radius: 6px;
   font-size: 0.9rem;
   text-align: center;
 }
@@ -201,7 +199,6 @@
   align-items: center;
   padding: 0.65rem 0.85rem;
   background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
   margin-bottom: 0.5rem;
   gap: 1rem;
   transition: background-color 0.15s ease;
@@ -254,7 +251,6 @@
   font-size: 0.7rem;
   background-color: #f0ad4e;
   color: #000;
-  border-radius: 3px;
 }
 
 .editButton:hover {
@@ -274,7 +270,6 @@
 .statusPending {
   display: inline-block;
   padding: 0.2rem 0.5rem;
-  border-radius: 3px;
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -292,7 +287,7 @@
 }
 
 .statusIncomplete {
-  background-color: #f0ad4e;
+  background-color: var(--incomplete-status);
   color: #000;
 }
 
@@ -356,7 +351,7 @@
   background-color: var(--secondary);
   border-radius: 8px;
   padding: 1.5rem;
-  color: #fff;
+  color: var(--primary);
 }
 
 .completeHeader {

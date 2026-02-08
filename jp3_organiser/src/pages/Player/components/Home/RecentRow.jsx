@@ -19,11 +19,12 @@ import React from 'react';
 import { RECENT_TYPE } from '../../../../hooks/useRecents';
 import { IMAGE_COVER_TYPE } from '../../../../utils/enums';
 import { CoverArt, ScrollingText } from '../../../../components';
+import playlistPlaceholder from '../../../../assets/icon_placeholder/playlist_placeholder.png';
 import styles from './RecentRow.module.css';
 
 // Icons for content types without album art
 const TYPE_ICONS = {
-  [RECENT_TYPE.PLAYLIST]: '📋',
+  [RECENT_TYPE.PLAYLIST]: playlistPlaceholder,
 };
 
 // Get card style class based on type
@@ -140,6 +141,8 @@ export default function RecentRow({
           const coverArtProps = type === RECENT_TYPE.ARTIST 
             ? { artist: coverArtist, album: null, fallbackIcon: "🎤", imageCoverType: IMAGE_COVER_TYPE.ARTIST }
             : { artist: coverArtist, album: coverAlbum, fallbackIcon: type === RECENT_TYPE.SONG ? "🎵" : "💿" };
+
+          const isImageIcon = typeof icon === 'string' && (icon.endsWith('.png') || icon.endsWith('.jpg') || icon.endsWith('.jpeg') || icon.endsWith('.svg'));
           
           return (
             <div
@@ -154,7 +157,13 @@ export default function RecentRow({
                   size="medium"
                 />
               ) : (
-                <div className={styles.cardIcon}>{icon}</div>
+                <div className={styles.cardIcon}>
+                  {isImageIcon ? (
+                    <img src={icon} alt={typeLabel} />
+                  ) : (
+                    icon
+                  )}
+                </div>
               )}
               <div className={styles.cardInfo}>
                 <ScrollingText className={styles.title}>

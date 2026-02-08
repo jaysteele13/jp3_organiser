@@ -7,9 +7,9 @@
   gap: 1rem;
   margin-bottom: 1rem;
   padding: 0.75rem 1rem;
-  background-color: var(--tertiary);
-  border-radius: 6px;
-  color: #000;
+  background-color: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
 }
 
 .statsLeft {
@@ -24,37 +24,48 @@
 
 /* Compact warning */
 .compactWarning {
-  display: flex;
   align-items: center;
-  gap: 0.75rem;
+  padding: .51rem;
+    font-size: 0.8rem;
+  font-weight: 500;
 }
 
 .warningText {
-  font-size: 0.85rem;
-  color: #8B4513;
-  font-weight: 500;
+  color: var(--secondary);
+  font-weight: 800;
+  border: 1px solid var(--primary);
+  display: inline-block;
+  border-right: none;
 }
 
 .compactBtn {
-  padding: 0.4rem 0.75rem;
-  font-size: 0.8rem;
-  background-color: var(--secondary);
-  color: #000;
-  border: none;
-  border-radius: 4px;
+
+
+  background-color: var(--sketch-bg);
+  color: var(--primary);
+  border: 1px solid var(--primary);
   cursor: pointer;
-  font-weight: 500;
+
   transition: background-color 0.2s;
 }
 
 .compactBtn:hover:not(:disabled) {
   background-color: var(--secondary-hover);
+  color: var(--sketch-bg);
 }
 
 .compactBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.warningText,
+.compactBtn {
+  border: 1px solid var(--primary);
+  padding: 1rem 0.5rem;
+  line-height: 1;
+}
+
 
 /* Info box (used inside ConfirmModal) */
 .infoBox {
@@ -63,7 +74,7 @@
   border-radius: 6px;
   margin-bottom: 1rem;
   font-size: 0.9rem;
-  color: #ccc;
+  color: var(--primary);
 }
 
 .infoBox ul {
@@ -82,7 +93,7 @@
   border-radius: 6px;
   margin-bottom: 1rem;
   font-size: 0.9rem;
-  color: #ccc;
+  color: var(--primary);
 }
 
 .resultBox p {

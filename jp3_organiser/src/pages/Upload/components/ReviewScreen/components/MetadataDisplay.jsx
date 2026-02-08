@@ -49,21 +49,12 @@ function getStatusDisplay(metadataStatus, isConfirmed) {
 export default function MetadataDisplay({ file }) {
   if (!file) return null;
 
-  const { metadata, metadataSource, metadataStatus, isConfirmed } = file;
-  const isAutomated = metadataSource === 'id3' || metadataSource === 'fingerprint';
+  const { metadata, metadataStatus, isConfirmed } = file;
   const statusDisplay = getStatusDisplay(metadataStatus, isConfirmed);
 
   return (
     <div className={styles.metadataDisplay}>
-      {/* Automated indicator */}
-      <div className={styles.sourceIndicator}>
-        <span className={`${styles.sourceTag} ${isAutomated ? styles.sourceAutomated : styles.sourceManual}`}>
-          {isAutomated ? 'Automated' : 'Manual'}
-        </span>
-        <span className={styles.sourceDetail}>
-          via {getSourceLabel(metadataSource)}
-        </span>
-      </div>
+    
 
       {/* Metadata fields */}
       <div className={styles.metadataFields}>
@@ -96,16 +87,7 @@ export default function MetadataDisplay({ file }) {
         )}
       </div>
 
-      {/* Status indicator */}
-      {statusDisplay.label == 'Confirmed' && (
-
-      
-      <div className={styles.statusRow}>
-        <span className={`${styles.statusBadge} ${styles[statusDisplay.className]}`}>
-          {statusDisplay.label}
-        </span>
-      </div>
-      )}
+    
     </div>
   );
 }
