@@ -118,6 +118,8 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
     />
   ), [onEditSong, onDeleteSong]);
 
+  const isEmpty = library.songs.length > 0;
+
   return (
     <div className={styles.container}>
       {/* Filter indicator bar */}
@@ -132,7 +134,8 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
 
       {/* Toolbar row - Select mode toggle and selection actions */}
       <div className={styles.toolbar}>
-        <button
+        { isEmpty && (
+             <button
           type="button"
           className={`${styles.selectModeBtn} ${isSelectMode ? styles.selectModeActive : ''}`}
           onClick={handleToggleSelectMode}
@@ -140,6 +143,8 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
         >
           {isSelectMode ? 'Cancel' : 'Select'}
         </button>
+        )}
+     
 
         {/* Selection actions - shown when in select mode with items selected */}
         {isSelectMode && hasSelection && (
