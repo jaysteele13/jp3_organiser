@@ -35,27 +35,15 @@
 }
 
 .circleContainer:focus {
-  outline: 2px solid var(--primary, #007bff);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
-
-/* Purple variant - quaternary color outline */
-
-.purpleVariant:hover {
-  box-shadow: 0 0 0 3px var(--tertiary-hover), 0 4px 16px rgba(0, 0, 0, 0.3);
-}
-
-.purpleVariant:focus {
-  outline: 2px solid var(--secondary);
-  outline-offset: 2px;
-}
-
 /* Hover overlay - shows counts only */
 .hoverOverlay {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
   align-items: center;

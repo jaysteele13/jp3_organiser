@@ -85,8 +85,9 @@
   top: 50%;
   transform: translateY(-50%);
   font-size: 0.7rem;
-  color: var(--secondary);
-  background-color: rgba(153, 182, 73, 0.15);
+  color: var(--sketch-bg);
+  border: 1px solid var(--primary);
+  background-color: var(--tertiary);
   padding: 0.1rem 0.3rem;
 
   pointer-events: none;

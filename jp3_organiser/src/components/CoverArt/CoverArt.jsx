@@ -50,8 +50,8 @@ import albumPlaceholder from '../../assets/icon_placeholder/album_placeholder.pn
 
 // Size configurations
 const SIZES = {
-  small: 40,
-  medium: 60,
+  small: 60,
+  medium: 90,
   large: 150,
   xlarge: 250,
 };

@@ -49,7 +49,7 @@
 }
 
 .header.playlist.color2 {
-  border-left-color: var(--primary);
+  border-left-color: var(--secondary);
 }
 
 .header.playlist.color3 {

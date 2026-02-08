@@ -179,10 +179,10 @@
   top: 50%;
   transform: translateY(-50%);
   font-size: 0.7rem;
-  color: var(--tertiary);
-  background-color: rgba(73, 182, 156, 0.15);
+  color: var(--sketch-bg);
+  background-color: var(--tertiary);
   padding: 0.0rem 0.3rem;
-  border-radius: 3px;
+  border: 1px solid var(--primary);
   pointer-events: none;
 }
 

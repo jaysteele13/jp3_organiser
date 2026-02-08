@@ -39,11 +39,11 @@
   /* Sketch Theme Color Palette */
   --primary: #242424;
   --primary-hover: #1a1a1a;
-  --secondary: #8167c9; /* previous teal 49B69C;*/
+  --secondary: #9785c9; /* previous teal e8e489;*/
   --secondary-washed: color-mix(in srgb, var(--secondary) 35%, white);
   --secondary-hover: #573d9e; /* #49B69Cdd; previous*/
-  --tertiary: #598b5e; /* previous B64963*/
-  --tertiary-hover: #9e3d54;
+  --tertiary: #548478; /* previous B64963*/
+  --tertiary-hover: #3f645b;
   --sketch-bg: #F5F5F1;
   --sketch-border: #000000;
   --sketch-text: #242424;
@@ -51,7 +51,7 @@
   --primary-fade: rgba(0,0,0, 0.25);
   --sketch-bg-fade: rgba(255, 255, 255, 0.25);
 
-  --automated-status: #5bc0de;
+  --automated-status: #548478;
   --incomplete-status: #FFEE8C;
   --incomplete-status-text: #a08800;
   

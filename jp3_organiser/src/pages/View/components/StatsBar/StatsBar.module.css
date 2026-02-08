@@ -31,7 +31,7 @@
 }
 
 .warningText {
-  color: var(--incomplete-status-text);
+  color: var(--secondary);
   font-weight: 800;
   border: 1px solid var(--primary);
   display: inline-block;
