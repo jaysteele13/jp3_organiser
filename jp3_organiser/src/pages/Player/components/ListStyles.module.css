@@ -386,6 +386,27 @@
    RESPONSIVE
    ======================================== */
 
+@media (max-width: 1600px ){
+  /* Album-specific grid: 4 cards per row, centered */
+ .albumGrid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+
+  
+}
+
+@media (max-width: 1100px ){
+  /* Album-specific grid: 4 cards per row, centered */
+ .albumGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+
+  
+}
+
+
 @media (max-width: 768px) {
   .cardGrid {
     gap: 0.75rem;

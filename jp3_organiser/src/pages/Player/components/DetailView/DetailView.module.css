@@ -58,8 +58,7 @@
 
 /* Cover Art Placeholder */
 .coverArt {
-  width: 200px;
-  height: 200px;
+max-width: 250px;
   border-right: 1px solid var(--primary);
 
     display: flex;

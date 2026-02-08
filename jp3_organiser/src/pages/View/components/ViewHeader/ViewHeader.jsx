@@ -68,7 +68,7 @@ export default function ViewHeader({
                     onClick={onBackClick}
                     title="Back to Player"
                   >
-                    &larr;
+                    &larr; jp3 player
                   </button>
                 )}
                 {/* Library in Primary Font bigger On hover display path. Comment out the debugging lcear cache. Keep Refresh */}

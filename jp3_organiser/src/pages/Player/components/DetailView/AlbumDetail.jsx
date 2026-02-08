@@ -62,7 +62,7 @@ export default function AlbumDetail() {
       artist={album?.artistName}
       album={album?.name}
       libraryPath={libraryPath}
-      size="large"
+      size="xlarge"
     />
   ), [album?.artistName, album?.name, libraryPath]);
 

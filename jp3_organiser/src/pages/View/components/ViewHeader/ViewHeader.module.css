@@ -9,11 +9,10 @@
 
 .backButton {
   padding: 0.5rem 0.75rem;
-  background-color: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: black;
-  font-size: 1.25rem;
-  border-radius: 4px;
+  background-color: var(--secondary);
+  border: 1px solid var(--primary);
+  color: var(--sketch-bg);
+  font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.15s ease;
   flex-shrink: 0;
@@ -21,8 +20,7 @@
 }
 
 .backButton:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.5);
+  background-color: var(--secondary-hover);
 }
 
 .headerInfo {
