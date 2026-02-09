@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './EditArtistModal.module.css';
 
 export default function EditArtistModal({ 
@@ -36,7 +37,7 @@ export default function EditArtistModal({
 
   const hasChanges = name.trim() !== artist.name;
 
-  return (
+  return createPortal(
     <div className={styles.overlay} onClick={onCancel}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <h2 className={styles.title}>Edit Artist</h2>
@@ -84,6 +85,7 @@ export default function EditArtistModal({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

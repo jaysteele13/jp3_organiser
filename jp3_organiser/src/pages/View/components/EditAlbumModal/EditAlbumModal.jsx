@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './EditAlbumModal.module.css';
 
 export default function EditAlbumModal({ 
@@ -44,7 +45,7 @@ export default function EditAlbumModal({
     artistName.trim() !== album.artistName || 
     (year ? parseInt(year, 10) : 0) !== album.year;
 
-  return (
+  return createPortal(
     <div className={styles.overlay} onClick={onCancel}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <h2 className={styles.title}>Edit Album</h2>
@@ -119,6 +120,7 @@ export default function EditAlbumModal({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

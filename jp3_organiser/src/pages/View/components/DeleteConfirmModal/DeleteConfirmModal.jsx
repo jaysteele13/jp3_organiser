@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './DeleteConfirmModal.module.css';
 
 export default function DeleteConfirmModal({ 
@@ -20,7 +21,7 @@ export default function DeleteConfirmModal({
 
   const isSingleSong = songs.length === 1;
 
-  return (
+  return createPortal(
     <div className={styles.overlay} onClick={onCancel}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <h2 className={styles.title}>
@@ -63,6 +64,7 @@ export default function DeleteConfirmModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
