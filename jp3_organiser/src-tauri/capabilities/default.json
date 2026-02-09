@@ -22,6 +22,7 @@
     "fs:scope-audio-recursive",
     "fs:scope-document-recursive",
     "fs:scope-download-recursive",
-    "fs:scope-desktop-recursive"
+    "fs:scope-desktop-recursive",
+    "core:window:allow-set-fullscreen"
   ]
 }

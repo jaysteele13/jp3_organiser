@@ -25,7 +25,8 @@
     "url": "/",
     "width": 800,
     "height": 600,
-    "visible": false
+    "visible": false,
+    "fullscreen": false
   }
 ],
 

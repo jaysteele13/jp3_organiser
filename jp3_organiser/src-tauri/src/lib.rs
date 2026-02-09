@@ -35,6 +35,8 @@ fn splash_screen(app: AppHandle) -> Result<(), String> {
 
     // show main
     if let Some(main) = app.get_webview_window("main") {
+        main.maximize().map_err(|e| e.to_string())?;
+        main.set_decorations(true).map_err(|e| e.to_string())?;
         main.show().map_err(|e | e.to_string())?;
     } else {
         return Err("main window not found".into());

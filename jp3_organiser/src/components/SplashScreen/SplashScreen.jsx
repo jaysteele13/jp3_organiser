@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './SplashScreen.module.css';
 import { invoke } from '@tauri-apps/api/core';
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 export default function SplashScreen() {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ useEffect(() => {
   const timer = setTimeout(async () => {
     try {
       await invoke("splash_screen");
+
     } catch (e) {
       console.error(`Failed to finish splash: ${e}`);
     }
