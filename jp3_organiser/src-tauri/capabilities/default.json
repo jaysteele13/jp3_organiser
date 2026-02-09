@@ -3,7 +3,7 @@
   "identifier": "default",
   "description": "Capability for the main window",
   "windows": [
-    "main, splash"
+    "main"
   ],
   "permissions": [
     "core:default",
