@@ -27,7 +27,7 @@ useEffect(() => {
           className={styles.logo}
         />
       </div>
-      <p className={styles.tagline}>your lil pocket pal</p>
+      <p className={styles.tagline}>jp3 organiser</p>
     </div>
   );
 }
