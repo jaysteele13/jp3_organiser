@@ -17,10 +17,30 @@
 //! - `services/` - Business logic services
 //!   - `fingerprint_service` - Audio fingerprinting with fpcalc
 //!   - `metadata_ranking_service` - AcoustID response ranking
+use tauri::{AppHandle, Manager};
 
 pub mod commands;
 pub mod models;
 pub mod services;
+
+// Splash Function
+#[tauri::command]
+fn splash_screen(app: AppHandle) -> Result<(), String> {
+    if let Some(splash) = app.get_webview_window("splash_screen") {
+        let _ = splash.close();
+    }
+    else {
+        println!("Splash Screen Window not found");
+    }
+
+    // show main
+    if let Some(main) = app.get_webview_window("main") {
+        main.show().map_err(|e | e.to_string())?;
+    } else {
+        return Err("main window not found".into());
+    }
+    Ok(())
+}
 
 use commands::{
     // Audio commands
@@ -118,6 +138,7 @@ pub fn run() {
             save_to_playlist,
             add_songs_to_playlist,
             remove_songs_from_playlist,
+            splash_screen
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

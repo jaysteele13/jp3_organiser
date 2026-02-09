@@ -10,13 +10,25 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
-      {
-        "title": "jp3_organiser",
-        "width": 800,
-        "height": 600
-      }
-    ],
+  {
+    "title": "warming him up",
+    "label": "splash_screen",
+    "url": "/splash",
+    "width": 300,
+    "height": 300
+  },
+  {
+    "label": "main",
+    "title": "jp3_organiser",
+    "url": "/",
+    "width": 800,
+    "height": 600,
+    "visible": false
+  }
+],
+
     "security": {
       "csp": null,
       "assetProtocol": {
