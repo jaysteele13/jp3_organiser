@@ -67,6 +67,20 @@
   color: #666;
 }
 
+/* Track number column */
+.trackNumber {
+  width: 2rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #666;
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+}
+
+.trackNumber.hidden {
+  visibility: hidden;
+}
+
 /* Action buttons */
 .actions {
   display: flex;

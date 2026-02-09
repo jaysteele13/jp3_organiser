@@ -11,7 +11,7 @@
  * - isPlaying: Whether this song is currently playing
  * - onPlay: Callback when row is clicked
  * - onQueue: Callback when Queue button is clicked
- * - showTrackNumber: Prefix title with track number (for album context)
+ * - showTrackColumn: Show track number as separate column
  * - subtitle: Custom subtitle string (disables artist/album links when provided)
  * 
  * Memoized to prevent unnecessary re-renders in large lists.
@@ -28,7 +28,8 @@ function PlayerSongCard({
   isPlaying = false,
   onPlay, 
   onQueue,
-  showTrackNumber = false,
+  showTrackColumn = false,
+  trackNumber,
   subtitle
 }) {
   const navigate = useNavigate();
@@ -77,10 +78,8 @@ function PlayerSongCard({
     }
   };
 
-  // Build title with optional track number prefix
-  const displayTitle = showTrackNumber && song.trackNumber 
-    ? `${song.trackNumber}. ${song.title}` 
-    : song.title;
+  const trackNum = trackNumber !== undefined ? trackNumber : (song.trackNumber || '');
+  const showTrack = showTrackColumn && trackNum;
 
   // Determine if we should use custom subtitle or interactive links
   const useCustomSubtitle = subtitle !== undefined;
@@ -97,8 +96,13 @@ function PlayerSongCard({
         tabIndex={0}
         onKeyDown={(e) => e.key === 'Enter' && handleRowClick()}
       >
+        {showTrack ? (
+          <span className={styles.trackNumber}>{trackNum}</span>
+        ) : (
+          showTrackColumn && <span className={`${styles.trackNumber} ${styles.hidden}`}>0</span>
+        )}
         <div className={styles.info}>
-          <span className={styles.title}>{displayTitle}</span>
+          <span className={styles.title}>{song.title}</span>
           
           {useCustomSubtitle ? (
             // Custom subtitle - render as plain text

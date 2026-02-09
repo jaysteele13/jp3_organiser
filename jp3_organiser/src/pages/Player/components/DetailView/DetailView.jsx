@@ -191,7 +191,8 @@ export default function DetailView({
                 isPlaying={isCurrentTrack(song.id)}
                 onPlay={handlePlaySong}
                 onQueue={handleQueueSong}
-                showTrackNumber={type === 'album'}
+                showTrackColumn={true}
+                trackNumber={index + 1}
                 subtitle={getSongSubtitle(song)}
               />
             ))}
