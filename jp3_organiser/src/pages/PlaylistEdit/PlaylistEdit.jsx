@@ -74,6 +74,7 @@ const PickerSongRow = memo(function PickerSongRow({ song, isSelected, isInPlayli
       <td className={styles.cellCheckbox}>
         <input
           type="checkbox"
+          className={styles.checkbox}
           checked={isSelected}
           disabled={isInPlaylist}
           onChange={() => onToggle(song.id)}
