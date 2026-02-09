@@ -117,7 +117,7 @@ export default function Player() {
   }
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${styles.fadeIn}`}>
       {isLoading && <LoadingState message="Loading library..." />}
       
       <ErrorState error={error} />

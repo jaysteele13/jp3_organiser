@@ -48,7 +48,7 @@ export default function Upload() {
   }
 
   return (
-    <div className={styles.uploadPage}>
+    <div className={`${styles.uploadPage} ${styles.fadeIn}`}>
       <Header
         title="Upload Music"
         description="Prepare your music for the ESP32"

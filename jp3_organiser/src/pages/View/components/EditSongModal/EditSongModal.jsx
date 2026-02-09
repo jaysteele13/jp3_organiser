@@ -7,6 +7,7 @@
  */
 
 import { useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { LibraryProvider } from '../../../../hooks';
 import { parsedSongToTrackedFile } from '../../../../utils';
 import MetadataForm from '../../../Upload/components/MetadataForm';
@@ -57,7 +58,7 @@ export default function EditSongModal({
     mouseDownOnOverlay.current = false;
   };
 
-  return (
+  return createPortal(
     <div 
       className={styles.overlay} 
       onMouseDown={handleOverlayMouseDown}
@@ -89,6 +90,7 @@ export default function EditSongModal({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

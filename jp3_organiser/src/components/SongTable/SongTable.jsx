@@ -99,7 +99,7 @@ export default function SongTable({
                   <th className={styles.thCheckbox}>
                     <input
                       type="checkbox"
-                      className={styles.checkbox}
+                      className={`${styles.checkbox} ${styles.checkboxAll}`}
                       checked={allSelected}
                       ref={(el) => {
                         if (el) el.indeterminate = someSelected;

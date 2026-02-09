@@ -17,6 +17,7 @@
  */
 
 import { useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './ConfirmModal.module.css';
 
 export default function ConfirmModal({
@@ -64,7 +65,7 @@ export default function ConfirmModal({
     mouseDownOnOverlay.current = false;
   }, []);
 
-  return (
+  return createPortal(
     <div 
       className={styles.overlay} 
       onMouseDown={handleOverlayMouseDown}
@@ -103,6 +104,7 @@ export default function ConfirmModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

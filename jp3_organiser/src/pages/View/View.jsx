@@ -420,7 +420,7 @@ export default function View() {
   }
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${styles.fadeIn}`}>
       <ViewHeader 
         libraryPath={libraryPath}
         handleRefresh={handleRefresh}
