@@ -175,10 +175,11 @@ pub async fn lookup_acoustid(
         fingerprint_result.duration_seconds
     );
 
-    let api_key = var("ACOUSTIC_ID_API_KEY").map_err(|e| {
-        log::error!("ACOUSTIC_ID_API_KEY environment variable not set: {}", e);
-        AcoustIdLookupError::ConfigError("ACOUSTIC_ID_API_KEY not set".to_string())
-    })?;
+    // let api_key = var("ACOUSTIC_ID_API_KEY").map_err(|e| {
+    //     log::error!("ACOUSTIC_ID_API_KEY environment variable not set: {}", e);
+    //     AcoustIdLookupError::ConfigError("ACOUSTIC_ID_API_KEY not set".to_string())
+    // })?;
+    let api_key = env!("ACOUSTIC_ID_API_KEY");
 
     let client = reqwest::Client::new();
 

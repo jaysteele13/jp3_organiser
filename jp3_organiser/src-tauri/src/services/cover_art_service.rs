@@ -334,11 +334,12 @@ async fn get_album_cover_url(mbid: &str) -> Result<String, CoverArtError> {
 async fn get_artist_cover_url(mbid: &str) -> Result<String, CoverArtError> {
 
     // Load in the API key from .env.local
-    let api_key = var("FANART_PROJECT_KEY").map_err(|e| {
-        log::error!("FANART_PROJECT_KEY environment variable not set: {}", e);
-        CoverArtError::ParseError("FANART_PROJECT_KEY not set".to_string())
-    })?;
+    // let api_key = var("FANART_PROJECT_KEY").map_err(|e| {
+    //     log::error!("FANART_PROJECT_KEY environment variable not set: {}", e);
+    //     CoverArtError::ParseError("FANART_PROJECT_KEY not set".to_string())
+    // })?;
 
+    let api_key = env!("FANART_PROJECT_KEY");
 
 
     let api_url = format!("https://webservice.fanart.tv/v3.2/music/{}?api_key={}", mbid, api_key );

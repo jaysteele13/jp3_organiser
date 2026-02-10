@@ -3,6 +3,7 @@
   "productName": "jp3_organiser",
   "version": "0.1.0",
   "identifier": "com.jp3-organiser.app",
+
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -38,6 +39,7 @@
     }
   },
   "bundle": {
+    "resources": [".env"],
     "active": true,
     "targets": "all",
     "icon": [

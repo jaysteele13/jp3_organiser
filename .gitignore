@@ -1,3 +1,4 @@
 jp3_organiser/.vscode/
 jp3_organiser/node_modules/
 jp3_organiser/dist/
+jp3_organiser/src-tauri/build.rs

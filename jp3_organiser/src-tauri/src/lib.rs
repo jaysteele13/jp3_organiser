@@ -18,6 +18,8 @@
 //!   - `fingerprint_service` - Audio fingerprinting with fpcalc
 //!   - `metadata_ranking_service` - AcoustID response ranking
 use tauri::{AppHandle, Manager};
+use dotenv::dotenv;
+use std::env;
 
 pub mod commands;
 pub mod models;
@@ -43,6 +45,7 @@ fn splash_screen(app: AppHandle) -> Result<(), String> {
     }
     Ok(())
 }
+
 
 use commands::{
     // Audio commands
@@ -88,18 +91,14 @@ use commands::{
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    dotenv().ok();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_upload::init())
         .plugin(tauri_plugin_opener::init())
-        .setup(|_app| {
-            dotenvy::from_filename(".env.local").ok();
-            env_logger::init();
-            log::info!("JP3 Organiser starting...");
-            Ok(())
-        })
         .invoke_handler(tauri::generate_handler![
             // Audio commands
             process_audio_files,
