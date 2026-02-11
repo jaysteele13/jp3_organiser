@@ -129,7 +129,7 @@ export default function RecentRow({
           
           // Determine cover art props for songs and albums
           const hasCoverArt = type === RECENT_TYPE.SONG || type === RECENT_TYPE.ALBUM || type === RECENT_TYPE.ARTIST;
-          const coverArtist = (type === RECENT_TYPE.SONG || type === RECENT_TYPE.ALBUM) ? item.artistName : null
+          const coverArtist = (type === RECENT_TYPE.SONG || type === RECENT_TYPE.ALBUM) ? item.artistName : (type === RECENT_TYPE.ARTIST ? item.name : null);
 
           let coverAlbum = null;
           if (type === RECENT_TYPE.SONG) {
