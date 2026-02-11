@@ -4,7 +4,7 @@
  * Wraps Tauri commands for fetching and managing album and artist cover art.
  * 
  * Album covers are fetched from Cover Art Archive using MusicBrainz Release IDs (MBIDs).
- * Artist covers are fetched from Fanart.tv using MusicBrainz Artist IDs.
+ * Artist covers are fetched from Deezer API by searching the artist name (no API key required).
  * 
  * Cover files are cached locally in the jp3/assets/ directory:
  * - Album covers: jp3/assets/albums/{hash}.jpg
@@ -49,32 +49,50 @@ export async function searchAlbumMbidsBatch(queries) {
  * 
  * If cover already exists in cache, returns the cached path immediately.
  * Otherwise, fetches from Cover Art Archive using the MBID and caches it.
+ * If the primary MBID returns no cover art and a fallback MBID is provided,
+ * the backend will retry with the fallback (typically the AcoustID release MBID).
  * Cover files are named using a hash of artist+album for stability.
  * 
  * @param {string} basePath - Library base path
  * @param {string} artist - Artist name (for stable filename generation)
  * @param {string} album - Album name (for stable filename generation)
- * @param {string} mbid - MusicBrainz Release ID
+ * @param {string} mbid - Primary MusicBrainz Release ID
+ * @param {string|null} [fallbackMbid=null] - Optional AcoustID Release ID (fallback)
  * @returns {Promise<{success: boolean, path?: string, error?: string, wasCached: boolean}>}
  */
-export async function fetchAlbumCover(basePath, artist, album, mbid) {
-  return await invoke('fetch_album_cover', { basePath, artist, album, mbid });
+export async function fetchAlbumCover(basePath, artist, album, mbid, fallbackMbid = null) {
+  return await invoke('fetch_album_cover', { basePath, artist, album, mbid, fallbackMbid });
+}
+
+/**
+ * Fetch album cover from Deezer as a fallback
+ * 
+ * Used when CoverArtArchive is unavailable (5xx gateway errors).
+ * Searches Deezer by artist + album name — no MBID required.
+ * 
+ * @param {string} basePath - Library base path
+ * @param {string} artist - Artist name
+ * @param {string} album - Album name
+ * @returns {Promise<{success: boolean, path?: string, error?: string, wasCached: boolean}>}
+ */
+export async function fetchDeezerAlbumCover(basePath, artist, album) {
+  return await invoke('fetch_deezer_album_cover', { basePath, artist, album });
 }
 
 /**
  * Fetch and cache cover art for an artist
  * 
  * If cover already exists in cache, returns the cached path immediately.
- * Otherwise, fetches from Fanart.tv using the artist MBID and caches it.
+ * Otherwise, fetches from Deezer API by searching the artist name.
+ * No MBID or API key required.
  * Cover files are named using a hash of artist name for stability.
  * 
  * @param {string} basePath - Library base path
- * @param {string} artist - Artist name (for stable filename generation)
- * @param {string} artistMbid - MusicBrainz Artist ID
+ * @param {string} artist - Artist name (used for search and stable filename generation)
  * @returns {Promise<{success: boolean, path?: string, error?: string, wasCached: boolean}>}
  */
-export async function fetchArtistCover(basePath, artist, artistMbid) {
-  return await invoke('fetch_artist_cover', { basePath, artist, artistMbid });
+export async function fetchArtistCover(basePath, artist) {
+  return await invoke('fetch_artist_cover', { basePath, artist });
 }
 
 /**
@@ -107,7 +125,7 @@ export async function readAlbumCover(basePath, artist, album) {
  * @throws {Error} If cover not found
  */
 export async function readArtistCover(basePath, artist) {
-  return await invoke('read_artist_cover', { basePath, artist });
+  return await invoke('read_artist_cover', { basePath, artist }); 
 }
 
 /**
@@ -152,43 +170,6 @@ export async function getArtistCoverBlobUrl(basePath, artist) {
 }
 
 /**
- * Clear all cached cover art for albums and artists
- * 
- * This safely removes all cached cover images from:
- * - {library_path}/jp3/assets/albums/
- * - {library_path}/jp3/assets/artists/
- * 
- * AND clears the not-found store that prevents repeated API calls.
- * The directories are preserved (only .jpg files are deleted).
- * Useful when API keys were incorrect or corrupted cache needs clearing.
- * 
- * @param {string} basePath - Library base path
- * @returns {Promise<{success: boolean, albumsCleared: number, artistsCleared: number, notFoundEntriesCleared: number, error?: string}>}
- */
-export async function clearCoverCache(basePath) {
-  // Import here to avoid circular dependencies
-  const { clearNotFoundCache } = await import('./coverArtNotFoundStore');
-  
-  const result = await invoke('clear_cover_cache', { basePath });
-  
-  // Also clear the not-found store
-  try {
-    await clearNotFoundCache();
-    return {
-      ...result,
-      notFoundEntriesCleared: true
-    };
-  } catch (error) {
-    console.error('[coverArtService] Failed to clear not-found store:', error);
-    return {
-      ...result,
-      notFoundEntriesCleared: false,
-      notFoundError: error.message
-    };
-  }
-}
-
-/**
  * Convert raw bytes to a blob URL
  * @param {Uint8Array|number[]} bytes - Image bytes
  * @returns {string|null} Blob URL or null if conversion fails
@@ -207,4 +188,17 @@ function bytesToBlobUrl(bytes) {
   
   const blob = new Blob([uint8Array], { type: 'image/jpeg' });
   return URL.createObjectURL(blob);
+}
+
+/**
+ * Clear all cached cover art for albums and artists.
+ * 
+ * Removes all cached .jpg files from the jp3/assets/albums/ and jp3/assets/artists/ directories.
+ * The directories are preserved (only files are deleted).
+ * 
+ * @param {string} basePath - Library base path
+ * @returns {Promise<{success: boolean, albumsCleared: number, artistsCleared: number, error?: string}>}
+ */
+export async function clearCoverCache(basePath) {
+  return await invoke('clear_cover_cache', { basePath });
 }

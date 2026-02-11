@@ -42,6 +42,16 @@ export default function View() {
   // Toast notification for feedback
   const toast = useToast();
 
+  // Listen for CoverArtArchive proxy errors (5xx) and show a single toast
+  useEffect(() => {
+    function handleProxyError(e) {
+      const status = e.detail || 'Unknown';
+      toast.showToast(`CoverArt proxy issue on their end: ${status}`, 'error');
+    }
+    window.addEventListener('coverart-proxy-error', handleProxyError);
+    return () => window.removeEventListener('coverart-proxy-error', handleProxyError);
+  }, [toast]);
+
   // Sync activeTab when navigation state changes (e.g., returning from PlaylistEdit)
   useEffect(() => {
     if (location.state?.tab) {

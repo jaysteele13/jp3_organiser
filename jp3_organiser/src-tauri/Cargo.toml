@@ -33,6 +33,7 @@ uuid = { version = "1", features = ["v4"] }
 # Note: fpcalc must be installed system-wide (apt install fpcalc or brew install fpcalc)
 reqwest = { version = "0.11", features = ["json"] }
 tokio = { version = "1", features = ["time", "sync"] }
+urlencoding = "2"
 anyhow = "1"
 log = "0.4"
 env_logger = "0.11"

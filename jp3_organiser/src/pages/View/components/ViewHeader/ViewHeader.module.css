@@ -27,6 +27,18 @@
   text-align: center;
 }
 
+.libraryPathDisplay {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity 0.3s ease, max-height 0.3s ease;
+}
+
+.libraryPathVisible {
+  opacity: 1;
+  max-height: 3rem;
+}
+
 .title {
   margin: 0 0 0.5rem 0;
   font-size: 1.75rem;
@@ -63,16 +75,31 @@
 
 .buttonGroup {
   display: flex;
-  gap: 0.75rem;
   align-items: center;
+  justify-content: center;
 }
 
 .clearCacheButton {
-  padding: 0.6rem 1.2rem;
   background-color: var(--tertiary);
   color: #fff;
   flex-shrink: 0;
   font-size: 0.9rem;
+  opacity: 0;
+  max-width: 0;
+  padding: 0.6rem 0;
+  margin-left: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: max-width 0.3s ease, opacity 0.25s ease, padding 0.3s ease, margin-left 0.3s ease;
+}
+
+.buttonGroup:hover .clearCacheButton {
+  opacity: 1;
+  max-width: 10rem;
+  padding: 0.6rem 1.2rem;
+  margin-left: 0.75rem;
+  pointer-events: auto;
 }
 
 .clearCacheButton:hover {
@@ -80,7 +107,7 @@
 }
 
 .clearCacheButton:disabled {
-  opacity: 0.7;
+  pointer-events: auto;
   cursor: wait;
 }
 

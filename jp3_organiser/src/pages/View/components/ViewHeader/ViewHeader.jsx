@@ -1,6 +1,8 @@
 
 import { useState } from 'react';
 import { clearCoverCache } from '../../../../services/coverArtService';
+import { clearNotFoundCache } from '../../../../services/coverArtNotFoundStore';
+import { clearCoverArtCache } from '../../../../components/CoverArt/CoverArt';
 import { useToast } from '../../../../hooks/useToast';
 import styles from './ViewHeader.module.css'
 
@@ -29,26 +31,31 @@ export default function ViewHeader({
     setIsClearingCache(true);
     try {
       const result = await clearCoverCache(libraryPath);
+
+      // Clear the JS-side not-found cache (allows API retries)
+      // Note: MBIDs are NOT cleared — they're valuable data from upload fingerprinting
+      await clearNotFoundCache();
+
+      // Flush in-memory blob URL cache so covers re-fetch on next render
+      clearCoverArtCache();
+
       if (result.success) {
         const totalCleared = result.albumsCleared + result.artistsCleared;
         
         // Build success message
         let message = '';
         if (totalCleared > 0) {
-          message += `Cleared ${totalCleared} cached cover images (${result.albumsCleared} albums, ${result.artistsCleared} artists)`;
+          message += `Cleared ${totalCleared} cached images (${result.albumsCleared} albums, ${result.artistsCleared} artists)`;
         } else {
           message += 'No cached cover images found';
         }
+        message += '. All caches reset — re-fetching covers...';
         
-        // Add not-found store info
-        if (result.notFoundEntriesCleared) {
-          message += totalCleared > 0 ? ' and ' : 'Cleared ';
-          message += 'not-found cache (allowing API retries)';
-        } else if (result.notFoundError) {
-          message += '. Failed to clear not-found cache';
-        }
-        
-        toast.showToast(message, totalCleared > 0 ? 'success' : 'info');
+        toast.showToast(message, 'success');
+
+        // Trigger a library refresh so CoverArt components re-mount
+        // and re-fetch through the throttled queue
+        handleRefresh();
       } else {
         toast.showToast(result.error || 'Failed to clear cover cache', 'error');
       }
@@ -77,30 +84,27 @@ export default function ViewHeader({
                   onMouseEnter={() => setIsHovering(true)}
                   onMouseLeave={() => setIsHovering(false)}
                   >Library</h1>
-                  {isHovering && (
-                    <div className={styles.libraryPathDisplay}>
-                      <p className={styles.subtitle}>
-                        Parsed from: <code>{libraryPath}/jp3/metadata/library.bin</code>
-                      </p>
-                    </div>
-                  )}
+                  <div className={`${styles.libraryPathDisplay} ${isHovering ? styles.libraryPathVisible : ''}`}>
+                    <p className={styles.subtitle}>
+                      Parsed from: <code>{libraryPath}/jp3/metadata/library.bin</code>
+                    </p>
+                  </div>
                 </div>
-                {/* REFRESH BUTTON FOR CACHE REMOVE BEFORE FINISHED in CoverArtService.js lib.rs and cover_art.rs */}
                 <div className={styles.buttonGroup}>
-                  {/* <button 
-                    className={styles.clearCacheButton} 
-                    onClick={handleClearCache}
-                    disabled={isClearingCache || !libraryPath}
-                    title="Clear cached cover images and reset not-found cache (useful after API key changes)"
-                  >
-                    {isClearingCache ? 'Clearing...' : 'Clear Cache'}
-                  </button> */}
                   <button 
                     className={styles.refreshButton} 
                     onClick={handleRefresh}
                     disabled={isLoading}
                   >
                     {isLoading ? 'Loading...' : 'Refresh'}
+                  </button>
+                  <button 
+                    className={styles.clearCacheButton} 
+                    onClick={handleClearCache}
+                    disabled={isClearingCache || !libraryPath}
+                    title="Clear cached cover images and reset not-found cache"
+                  >
+                    {isClearingCache ? 'Clearing...' : '♻ CoverArt'}
                   </button>
                 </div>
               </header>

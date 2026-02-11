@@ -3,7 +3,7 @@
 //! Commands for fetching and managing album and artist cover art.
 //! 
 //! Album covers are fetched from Cover Art Archive using MusicBrainz Release IDs.
-//! Artist covers are fetched from Fanart.tv using MusicBrainz Artist IDs.
+//! Artist covers are fetched from Deezer API by searching artist name (no API key required).
 //! 
 //! Cover files are named using a hash for stability across library compaction:
 //! - Albums: hash of "artist|||album"
@@ -43,25 +43,30 @@ pub struct GetCoverPathResult {
 ///
 /// If cover already exists in cache, returns the cached path.
 /// Otherwise, fetches from Cover Art Archive using the MBID.
+/// If the primary MBID returns no cover art and a fallback MBID is provided,
+/// retries with the fallback (typically the AcoustID release MBID).
 /// Cover files are named using a hash of artist+album for stability.
 ///
 /// # Arguments
 /// * `base_path` - Library base path
 /// * `artist` - Artist name (for stable filename generation)
 /// * `album` - Album name (for stable filename generation)
-/// * `mbid` - MusicBrainz Release ID
+/// * `mbid` - Primary MusicBrainz Release ID (from MusicBrainz search)
+/// * `fallback_mbid` - Optional AcoustID Release ID (fallback if primary has no cover)
 #[tauri::command]
 pub async fn fetch_album_cover(
     base_path: String,
     artist: String,
     album: String,
     mbid: String,
+    fallback_mbid: Option<String>,
 ) -> Result<FetchCoverResult, String> {
     log::info!(
-        "fetch_album_cover called: artist=\"{}\", album=\"{}\", mbid={}",
+        "fetch_album_cover called: artist=\"{}\", album=\"{}\", mbid={}, fallback_mbid={:?}",
         artist,
         album,
-        mbid
+        mbid,
+        fallback_mbid
     );
 
     let albums_dir = Path::new(&base_path).join("jp3").join("assets").join("albums");
@@ -86,7 +91,13 @@ pub async fn fetch_album_cover(
     }
 
     // Fetch and save album cover from Cover Art Archive
-    match cover_art_service::fetch_and_save_album_cover(&mbid, &albums_dir, &artist, &album).await {
+    match cover_art_service::fetch_and_save_album_cover(
+        &mbid,
+        fallback_mbid.as_deref(),
+        &albums_dir,
+        &artist,
+        &album,
+    ).await {
         Ok(result) => Ok(FetchCoverResult {
             success: true,
             path: Some(result.path),
@@ -117,23 +128,21 @@ pub async fn fetch_album_cover(
 /// Fetch and cache cover art for an artist.
 ///
 /// If cover already exists in cache, returns the cached path.
-/// Otherwise, fetches from Fanart.tv using the Artist MBID.
+/// Otherwise, fetches from Deezer API by searching the artist name.
+/// No MBID or API key required.
 /// Cover files are named using a hash of artist name for stability.
 ///
 /// # Arguments
 /// * `base_path` - Library base path
-/// * `artist` - Artist name (for stable filename generation)
-/// * `artist_mbid` - MusicBrainz Artist ID
+/// * `artist` - Artist name (used for search and for stable filename generation)
 #[tauri::command]
 pub async fn fetch_artist_cover(
     base_path: String,
     artist: String,
-    artist_mbid: String,
 ) -> Result<FetchCoverResult, String> {
     log::info!(
-        "fetch_artist_cover called: artist=\"{}\", artist_mbid={}",
+        "fetch_artist_cover called: artist=\"{}\"",
         artist,
-        artist_mbid
     );
 
     let artists_dir = Path::new(&base_path).join("jp3").join("assets").join("artists");
@@ -157,8 +166,8 @@ pub async fn fetch_artist_cover(
         })?;
     }
 
-    // Fetch and save artist cover from Fanart.tv
-    match cover_art_service::fetch_and_save_artist_cover(&artist_mbid, &artists_dir, &artist).await {
+    // Fetch and save artist cover from Deezer
+    match cover_art_service::fetch_and_save_artist_cover(&artists_dir, &artist).await {
         Ok(result) => Ok(FetchCoverResult {
             success: true,
             path: Some(result.path),
@@ -166,7 +175,7 @@ pub async fn fetch_artist_cover(
             was_cached: false,
         }),
         Err(cover_art_service::CoverArtError::NotFound) => {
-            log::info!("No artist cover art available for MBID: {}", artist_mbid);
+            log::info!("No artist cover art available for: {}", artist);
             Ok(FetchCoverResult {
                 success: false,
                 path: None,
@@ -176,6 +185,81 @@ pub async fn fetch_artist_cover(
         }
         Err(e) => {
             log::error!("Failed to fetch artist cover art: {}", e);
+            Ok(FetchCoverResult {
+                success: false,
+                path: None,
+                error: Some(e.to_string()),
+                was_cached: false,
+            })
+        }
+    }
+}
+
+/// Fetch and cache album cover art from Deezer as a fallback.
+///
+/// This is used when CoverArtArchive is unavailable (5xx errors).
+/// Searches Deezer by artist + album name — no MBID required.
+///
+/// # Arguments
+/// * `base_path` - Library base path
+/// * `artist` - Artist name
+/// * `album` - Album name
+#[tauri::command]
+pub async fn fetch_deezer_album_cover(
+    base_path: String,
+    artist: String,
+    album: String,
+) -> Result<FetchCoverResult, String> {
+    log::info!(
+        "fetch_deezer_album_cover called: artist=\"{}\", album=\"{}\"",
+        artist,
+        album
+    );
+
+    let albums_dir = Path::new(&base_path).join("jp3").join("assets").join("albums");
+
+    // Check if already cached (using artist+album hash)
+    if let Some(path) = cover_art_service::get_cover_path_by_name(&albums_dir, &artist, &album) {
+        log::info!("Album cover already cached (Deezer fallback): {}", path);
+        return Ok(FetchCoverResult {
+            success: true,
+            path: Some(path),
+            error: None,
+            was_cached: true,
+        });
+    }
+
+    // Ensure albums directory exists
+    if !albums_dir.exists() {
+        std::fs::create_dir_all(&albums_dir).map_err(|e| {
+            log::error!("Failed to create albums directory: {}", e);
+            format!("Failed to create albums directory: {}", e)
+        })?;
+    }
+
+    // Fetch from Deezer
+    match cover_art_service::fetch_and_save_deezer_album_cover(
+        &albums_dir,
+        &artist,
+        &album,
+    ).await {
+        Ok(result) => Ok(FetchCoverResult {
+            success: true,
+            path: Some(result.path),
+            error: None,
+            was_cached: false,
+        }),
+        Err(cover_art_service::CoverArtError::NotFound) => {
+            log::info!("No Deezer album cover available for: {} - {}", artist, album);
+            Ok(FetchCoverResult {
+                success: false,
+                path: None,
+                error: Some("No cover art available on Deezer".to_string()),
+                was_cached: false,
+            })
+        }
+        Err(e) => {
+            log::error!("Failed to fetch Deezer album cover: {}", e);
             Ok(FetchCoverResult {
                 success: false,
                 path: None,

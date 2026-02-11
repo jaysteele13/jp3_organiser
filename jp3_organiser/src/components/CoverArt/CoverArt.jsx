@@ -5,7 +5,10 @@
  * Fetches cover art from cache or external API on first render.
  * 
  * For albums: Uses Cover Art Archive via MusicBrainz Release IDs
- * For artists: Uses Fanart.tv via MusicBrainz Artist IDs
+ * For artists: Uses Deezer API by artist name
+ * 
+ * External API calls are throttled through a global queue (500ms between calls)
+ * to avoid overwhelming endpoints, especially after a cache clear.
  * 
  * Props:
  * - artist: string - Artist name (required)
@@ -25,9 +28,10 @@ import {
   getAlbumCoverBlobUrl, 
   getArtistCoverBlobUrl,
   fetchAlbumCover,
+  fetchDeezerAlbumCover,
   fetchArtistCover 
 } from '../../services/coverArtService';
-import { getAlbumMbid, getArtistMbid } from '../../services/mbidStore';
+import { getAlbumMbids } from '../../services/mbidStore';
 import {
   isAlbumCoverNotFound,
   isArtistCoverNotFound,
@@ -86,6 +90,51 @@ const blobUrlCache = new Map();
 // Track in-flight requests to deduplicate concurrent fetches
 // Key format same as blobUrlCache, value is a Promise
 const inFlightRequests = new Map();
+
+// ── Proxy error event ──
+// Fires a debounced custom event when the CoverArtArchive returns a 5xx error
+// so the View page can show a single toast instead of one per cover.
+let lastProxyErrorTime = 0;
+const PROXY_ERROR_COOLDOWN_MS = 30_000; // Only emit once per 30s
+
+function emitProxyError(statusText) {
+  const now = Date.now();
+  if (now - lastProxyErrorTime < PROXY_ERROR_COOLDOWN_MS) return;
+  lastProxyErrorTime = now;
+  window.dispatchEvent(new CustomEvent('coverart-proxy-error', { detail: statusText }));
+}
+
+/**
+ * Check if an error string indicates a server-side (5xx) proxy/gateway issue
+ */
+function isProxyError(errorString) {
+  return errorString && /Request failed: HTTP 5\d{2}/i.test(errorString);
+}
+
+// ── Global throttle queue for external API calls ──
+// Ensures only one cover art API call runs at a time with 500ms between calls.
+// Disk cache reads bypass this queue.
+const THROTTLE_DELAY_MS = 500;
+let fetchQueue = Promise.resolve();
+
+/**
+ * Queue an external API call through the global throttle.
+ * Returns the result of the callback.
+ * @param {() => Promise<T>} fn - Async function making the external API call
+ * @returns {Promise<T>}
+ */
+function throttledFetch(fn) {
+  const queued = fetchQueue.then(async () => {
+    const result = await fn();
+    // Wait 500ms before the next queued call can start
+    await new Promise(resolve => setTimeout(resolve, THROTTLE_DELAY_MS));
+    return result;
+  });
+  // Chain the next call after this one (including the delay)
+  // Use .catch to prevent one failure from breaking the chain
+  fetchQueue = queued.catch(() => {});
+  return queued;
+}
 
 /**
  * Create a stable cache key for album covers
@@ -188,18 +237,34 @@ const CoverArt = memo(function CoverArt({
               return null;
             }
 
-            // Look up MBID and fetch from API
-            console.log('[CoverArt] No cached album cover, looking up MBID...');
-            const mbid = await getAlbumMbid(artist, album);
-            console.log('[CoverArt] Album MBID:', mbid);
+            // Look up MBIDs and fetch from API (throttled)
+            console.log('[CoverArt] No cached album cover, looking up MBIDs...');
+            const { mbid, acoustidMbid } = await getAlbumMbids(artist, album);
+            console.log('[CoverArt] Album MBID:', mbid, '| AcoustID fallback:', acoustidMbid);
 
             if (mbid) {
-              const result = await fetchAlbumCover(libraryPath, artist, album, mbid);
+              const result = await throttledFetch(() =>
+                fetchAlbumCover(libraryPath, artist, album, mbid, acoustidMbid)
+              );
               console.log('[CoverArt] fetchAlbumCover result:', result);
               if (result.success) {
                 blobUrl = await getAlbumCoverBlobUrl(libraryPath, artist, album);
+              } else if (isProxyError(result.error)) {
+                // 5xx — CoverArtArchive down, try Deezer as fallback
+                emitProxyError(result.error);
+                console.log('[CoverArt] CAA proxy error, trying Deezer fallback for:', artist, '-', album);
+                const deezerResult = await throttledFetch(() =>
+                  fetchDeezerAlbumCover(libraryPath, artist, album)
+                );
+                console.log('[CoverArt] Deezer album fallback result:', deezerResult);
+                if (deezerResult.success) {
+                  blobUrl = await getAlbumCoverBlobUrl(libraryPath, artist, album);
+                } else {
+                  // Both sources failed — mark as not found
+                  await markAlbumCoverNotFound(artist, album);
+                }
               } else {
-                // Mark as not found to avoid repeated API calls
+                // Genuine not-found — cache to avoid repeated API calls
                 await markAlbumCoverNotFound(artist, album);
               }
             } else {
@@ -294,23 +359,23 @@ const CoverArt = memo(function CoverArt({
               return null;
             }
 
-            // Look up artist MBID and fetch from Fanart.tv
-            console.log('[CoverArt] No cached artist cover, looking up artist MBID...');
-            const artistMbid = await getArtistMbid(artist);
-            console.log('[CoverArt] Artist MBID:', artistMbid);
+            // Fetch from Deezer (throttled)
+            console.log('[CoverArt] No cached artist cover, fetching from Deezer...');
 
-            if (artistMbid) {
-              const result = await fetchArtistCover(libraryPath, artist, artistMbid);
+            {
+              const result = await throttledFetch(() =>
+                fetchArtistCover(libraryPath, artist)
+              );
               console.log('[CoverArt] fetchArtistCover result:', result);
               if (result.success) {
                 blobUrl = await getArtistCoverBlobUrl(libraryPath, artist);
+              } else if (isProxyError(result.error)) {
+                // 5xx — transient server issue, don't mark as not found
+                emitProxyError(result.error);
               } else {
-                // Mark as not found to avoid repeated API calls
+                // Genuine not-found — cache to avoid repeated API calls
                 await markArtistCoverNotFound(artist);
               }
-            } else {
-              // No MBID available, mark as not found
-              await markArtistCoverNotFound(artist);
             }
           }
 
@@ -437,4 +502,6 @@ export function clearCoverArtCache() {
   }
   blobUrlCache.clear();
   inFlightRequests.clear();
+  // Reset the throttle queue so pending items from the old cache don't pile up
+  fetchQueue = Promise.resolve();
 }
