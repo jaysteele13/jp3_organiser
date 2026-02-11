@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { clearCoverCache } from '../../../../services/coverArtService';
 import { clearNotFoundCache } from '../../../../services/coverArtNotFoundStore';
-import { clearMbids } from '../../../../services/mbidStore';
 import { clearCoverArtCache } from '../../../../components/CoverArt/CoverArt';
 import { useToast } from '../../../../hooks/useToast';
 import styles from './ViewHeader.module.css'
@@ -33,9 +32,9 @@ export default function ViewHeader({
     try {
       const result = await clearCoverCache(libraryPath);
 
-      // Clear the JS-side stores (not-found entries + MBIDs)
+      // Clear the JS-side not-found cache (allows API retries)
+      // Note: MBIDs are NOT cleared — they're valuable data from upload fingerprinting
       await clearNotFoundCache();
-      await clearMbids();
 
       // Flush in-memory blob URL cache so covers re-fetch on next render
       clearCoverArtCache();
@@ -50,9 +49,13 @@ export default function ViewHeader({
         } else {
           message += 'No cached cover images found';
         }
-        message += '. MBID and not-found caches reset.';
+        message += '. All caches reset — re-fetching covers...';
         
         toast.showToast(message, 'success');
+
+        // Trigger a library refresh so CoverArt components re-mount
+        // and re-fetch through the throttled queue
+        handleRefresh();
       } else {
         toast.showToast(result.error || 'Failed to clear cover cache', 'error');
       }
