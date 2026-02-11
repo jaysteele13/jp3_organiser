@@ -205,36 +205,44 @@ pub async fn fetch_and_save_album_cover(
 
     // Fetch cover art metadata from Cover Art Archive (primary MBID)
     log::info!("[CoverArt] Step 1: Getting cover URL from API (primary MBID)...");
-    let cover_url = match get_album_cover_url(mbid).await {
-        Ok(url) => {
-            log::info!("[CoverArt] Step 1 complete: Got URL from primary MBID: {}", url);
-            url
-        }
+    
+    // Attempt 1: Cover Art Archive (Primary MBID)
+    let caa_result = get_album_cover_url(mbid).await;
+
+    // Attempt 2: Cover Art Archive (Fallback MBID) if Primary was NotFound
+    let caa_result = match caa_result {
         Err(CoverArtError::NotFound) => {
-            // Primary MBID has no cover art — try fallback if available
-            match fallback_mbid {
-                Some(fallback) if fallback != mbid => {
+            if let Some(fallback) = fallback_mbid {
+                if fallback != mbid {
                     log::info!(
                         "[CoverArt] Primary MBID {} returned NotFound, trying fallback MBID: {}",
                         mbid, fallback
                     );
                     // Rate limit before retry
                     sleep(Duration::from_millis(API_CALL_DELAY_MS)).await;
-                    let url = get_album_cover_url(fallback).await?;
-                    log::info!("[CoverArt] Step 1 complete: Got URL from fallback MBID: {}", url);
-                    url
+                    get_album_cover_url(fallback).await
+                } else {
+                    Err(CoverArtError::NotFound)
                 }
-                _ => {
-                    log::info!("[CoverArt] No fallback MBID available, returning NotFound");
-                    return Err(CoverArtError::NotFound);
-                }
+            } else {
+                Err(CoverArtError::NotFound)
             }
         }
-        Err(e) => return Err(e),
+        other => other,
     };
 
-    // Download and save the image
-    save_cover_image(&cover_url, covers_dir, &filename).await
+    // If Cover Art Archive succeeded, save the image
+    match caa_result {
+        Ok(url) => {
+             log::info!("[CoverArt] Step 1 complete: Got URL from Cover Art Archive: {}", url);
+             save_cover_image(&url, covers_dir, &filename).await
+        },
+        Err(e) => {
+             // If all CAA attempts failed (or errored), try Deezer fallback
+             log::warn!("[CoverArt] Cover Art Archive failed: {}. Attempting Deezer fallback...", e);
+             fetch_and_save_deezer_album_cover(covers_dir, artist, album).await
+        }
+    }
 }
 
 /// Fetch artist cover art from Deezer and save it to the covers directory.
