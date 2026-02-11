@@ -84,30 +84,27 @@ export default function ViewHeader({
                   onMouseEnter={() => setIsHovering(true)}
                   onMouseLeave={() => setIsHovering(false)}
                   >Library</h1>
-                  {isHovering && (
-                    <div className={styles.libraryPathDisplay}>
-                      <p className={styles.subtitle}>
-                        Parsed from: <code>{libraryPath}/jp3/metadata/library.bin</code>
-                      </p>
-                    </div>
-                  )}
+                  <div className={`${styles.libraryPathDisplay} ${isHovering ? styles.libraryPathVisible : ''}`}>
+                    <p className={styles.subtitle}>
+                      Parsed from: <code>{libraryPath}/jp3/metadata/library.bin</code>
+                    </p>
+                  </div>
                 </div>
-                {/* REFRESH BUTTON FOR CACHE REMOVE BEFORE FINISHED in CoverArtService.js lib.rs and cover_art.rs */}
                 <div className={styles.buttonGroup}>
-                  <button 
-                    className={styles.clearCacheButton} 
-                    onClick={handleClearCache}
-                    disabled={isClearingCache || !libraryPath}
-                    title="Clear cached cover images and reset not-found cache (useful after API key changes)"
-                  >
-                    {isClearingCache ? 'Clearing...' : 'Clear Cache'}
-                  </button>
                   <button 
                     className={styles.refreshButton} 
                     onClick={handleRefresh}
                     disabled={isLoading}
                   >
                     {isLoading ? 'Loading...' : 'Refresh'}
+                  </button>
+                  <button 
+                    className={styles.clearCacheButton} 
+                    onClick={handleClearCache}
+                    disabled={isClearingCache || !libraryPath}
+                    title="Clear cached cover images and reset not-found cache"
+                  >
+                    {isClearingCache ? 'Clearing...' : '♻ CoverArt'}
                   </button>
                 </div>
               </header>

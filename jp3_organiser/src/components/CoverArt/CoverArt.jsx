@@ -90,6 +90,26 @@ const blobUrlCache = new Map();
 // Key format same as blobUrlCache, value is a Promise
 const inFlightRequests = new Map();
 
+// ── Proxy error event ──
+// Fires a debounced custom event when the CoverArtArchive returns a 5xx error
+// so the View page can show a single toast instead of one per cover.
+let lastProxyErrorTime = 0;
+const PROXY_ERROR_COOLDOWN_MS = 30_000; // Only emit once per 30s
+
+function emitProxyError(statusText) {
+  const now = Date.now();
+  if (now - lastProxyErrorTime < PROXY_ERROR_COOLDOWN_MS) return;
+  lastProxyErrorTime = now;
+  window.dispatchEvent(new CustomEvent('coverart-proxy-error', { detail: statusText }));
+}
+
+/**
+ * Check if an error string indicates a server-side (5xx) proxy/gateway issue
+ */
+function isProxyError(errorString) {
+  return errorString && /Request failed: HTTP 5\d{2}/i.test(errorString);
+}
+
 // ── Global throttle queue for external API calls ──
 // Ensures only one cover art API call runs at a time with 500ms between calls.
 // Disk cache reads bypass this queue.
@@ -228,8 +248,11 @@ const CoverArt = memo(function CoverArt({
               console.log('[CoverArt] fetchAlbumCover result:', result);
               if (result.success) {
                 blobUrl = await getAlbumCoverBlobUrl(libraryPath, artist, album);
+              } else if (isProxyError(result.error)) {
+                // 5xx — transient server issue, don't mark as not found
+                emitProxyError(result.error);
               } else {
-                // Mark as not found to avoid repeated API calls
+                // Genuine not-found — cache to avoid repeated API calls
                 await markAlbumCoverNotFound(artist, album);
               }
             } else {
@@ -334,8 +357,11 @@ const CoverArt = memo(function CoverArt({
               console.log('[CoverArt] fetchArtistCover result:', result);
               if (result.success) {
                 blobUrl = await getArtistCoverBlobUrl(libraryPath, artist);
+              } else if (isProxyError(result.error)) {
+                // 5xx — transient server issue, don't mark as not found
+                emitProxyError(result.error);
               } else {
-                // Mark as not found to avoid repeated API calls
+                // Genuine not-found — cache to avoid repeated API calls
                 await markArtistCoverNotFound(artist);
               }
             }
