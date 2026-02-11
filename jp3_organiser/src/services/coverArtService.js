@@ -4,7 +4,7 @@
  * Wraps Tauri commands for fetching and managing album and artist cover art.
  * 
  * Album covers are fetched from Cover Art Archive using MusicBrainz Release IDs (MBIDs).
- * Artist covers are fetched from Fanart.tv using MusicBrainz Artist IDs.
+ * Artist covers are fetched from Deezer API by searching the artist name (no API key required).
  * 
  * Cover files are cached locally in the jp3/assets/ directory:
  * - Album covers: jp3/assets/albums/{hash}.jpg
@@ -68,16 +68,16 @@ export async function fetchAlbumCover(basePath, artist, album, mbid, fallbackMbi
  * Fetch and cache cover art for an artist
  * 
  * If cover already exists in cache, returns the cached path immediately.
- * Otherwise, fetches from Fanart.tv using the artist MBID and caches it.
+ * Otherwise, fetches from Deezer API by searching the artist name.
+ * No MBID or API key required.
  * Cover files are named using a hash of artist name for stability.
  * 
  * @param {string} basePath - Library base path
- * @param {string} artist - Artist name (for stable filename generation)
- * @param {string} artistMbid - MusicBrainz Artist ID
+ * @param {string} artist - Artist name (used for search and stable filename generation)
  * @returns {Promise<{success: boolean, path?: string, error?: string, wasCached: boolean}>}
  */
-export async function fetchArtistCover(basePath, artist, artistMbid) {
-  return await invoke('fetch_artist_cover', { basePath, artist, artistMbid });
+export async function fetchArtistCover(basePath, artist) {
+  return await invoke('fetch_artist_cover', { basePath, artist });
 }
 
 /**

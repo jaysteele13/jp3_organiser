@@ -211,6 +211,7 @@ Commands are organized into modules under `src-tauri/src/commands/`:
 |--------|----------|
 | `audio.rs` | `process_audio_files`, `process_single_audio_file`, `get_audio_metadata`, `get_audio_metadata_from_acoustic_id` |
 | `config.rs` | `get_library_path`, `set_library_path`, `clear_library_path` |
+| `cover_art.rs` | `fetch_album_cover`, `fetch_artist_cover`, `get_album_cover_path`, `read_album_cover`, `read_artist_cover`, `search_album_mbid`, `search_album_mbids_batch`, `clear_cover_cache` |
 | `library.rs` | `initialize_library`, `get_library_info`, `save_to_library`, `load_library`, `delete_songs`, `delete_album`, `delete_artist`, `edit_song_metadata`, `get_library_stats`, `compact_library` |
 | `playlist.rs` | `create_playlist`, `load_playlist`, `list_playlists`, `delete_playlist_by_name`, `rename_playlist`, `save_to_playlist`, `add_songs_to_playlist`, `remove_songs_from_playlist` |
 
@@ -247,11 +248,14 @@ Services are in `src-tauri/src/services/`:
 
 **Cover Art Service:**
 - `cover_filename(artist, album)` - Generate stable hash-based filename from artist+album
-- `fetch_and_save_cover(base_path, artist, album, mbid)` - Fetch from Cover Art Archive and cache
-- `cover_exists_by_name(base_path, artist, album)` - Check if cover is cached
-- `get_cover_path_by_name(base_path, artist, album)` - Get full path to cached cover
-- Files stored in `jp3/covers/` directory with `.jpg` extension
+- `fetch_and_save_album_cover(mbid, fallback_mbid, covers_dir, artist, album)` - Fetch from Cover Art Archive with fallback MBID retry on 404
+- `fetch_and_save_artist_cover(artist_mbid, covers_dir, artist)` - Fetch from Fanart.tv and cache
+- `cover_exists_by_name(covers_dir, artist, album)` - Check if cover is cached
+- `get_cover_path_by_name(covers_dir, artist, album)` - Get full path to cached cover
+- Album covers stored in `jp3/assets/albums/` directory with `.jpg` extension
+- Artist covers stored in `jp3/assets/artists/` directory with `.jpg` extension
 - Filenames are 16-character hex hashes, stable across library compaction
+- **Fallback MBID:** When Cover Art Archive returns 404 for the primary (MusicBrainz) MBID, retries with the AcoustID release MBID before giving up
 
 **Metadata Ranking Algorithm:**
 | Criterion | Points (Top 5) | Rationale |
@@ -382,19 +386,21 @@ Models are in `src-tauri/src/models/`:
 ### coverArtService.js
 - `searchAlbumMbid(artist, album)` - Search MusicBrainz for release MBID by artist+album name
 - `searchAlbumMbidsBatch(queries)` - Batch search for multiple albums (respects rate limiting)
-- `fetchAlbumCover(basePath, artist, album, mbid)` - Fetch and cache album cover from Cover Art Archive
+- `fetchAlbumCover(basePath, artist, album, mbid, fallbackMbid?)` - Fetch and cache album cover from Cover Art Archive (with optional AcoustID fallback MBID)
 - `fetchArtistCover(basePath, artist, artistMbid)` - Fetch and cache artist cover from Fanart.tv
 - `readAlbumCover(basePath, artist, album)` - Read cached album cover image bytes
 - `readArtistCover(basePath, artist)` - Read cached artist cover image bytes
 - `getAlbumCoverBlobUrl(basePath, artist, album)` - Create blob URL from cached album cover for img src
 - `getArtistCoverBlobUrl(basePath, artist)` - Create blob URL from cached artist cover for img src
+- `clearCoverCache(basePath)` - Clear all cached cover art images for albums and artists
 
 **Cover Art Flow (Albums):**
 1. On save: Extract unique (artist, album) pairs from saved files
 2. Batch search MusicBrainz for each album → get release MBID
-3. Fall back to AcoustID MBID if MusicBrainz search fails
-4. Store artist→MBID and artist+album→MBID mappings in `mbidStore.js`
-5. On display: CoverArt component looks up MBID → fetches from Cover Art Archive → caches to disk
+3. Store both MusicBrainz MBID (primary) and AcoustID MBID (fallback) in `mbidStore.js`
+4. If MusicBrainz search fails, AcoustID MBID becomes the primary (no fallback stored)
+5. On display: CoverArt component looks up both MBIDs via `getAlbumMbids()` → calls `fetchAlbumCover(mbid, fallbackMbid)`
+6. Rust backend tries primary MBID on Cover Art Archive → if 404, retries with fallback MBID → caches to disk
 
 **Cover Art Flow (Artists):**
 1. On save: Extract unique artists and their MBIDs from AcoustID response
@@ -411,18 +417,24 @@ Example: "Pink Floyd" + "Dark Side of the Moon" → `a1b2c3d4e5f6g7h8.jpg`
 **Rate Limiting:** MusicBrainz enforces strict 1 request/second limit. The Rust service uses a global mutex to ensure compliance.
 
 ### mbidStore.js
-- `getAlbumMbid(artist, album)` - Get stored release MBID for an album
+- `getAlbumMbid(artist, album)` - Get primary (MusicBrainz) release MBID for an album
+- `getAlbumAcoustidMbid(artist, album)` - Get fallback (AcoustID) release MBID for an album
+- `getAlbumMbids(artist, album)` - Get both primary and fallback MBIDs as `{ mbid, acoustidMbid }`
 - `getArtistMbid(artist)` - Get stored artist MBID for an artist
 - `getAllMbids()` - Get all stored MBID mappings
-- `setMbid(artist, album, mbid)` - Store album MBID (first wins)
+- `setMbid(artist, album, mbid, acoustidMbid?)` - Store album MBIDs (first wins)
 - `setArtistMbid(artist, mbid)` - Store artist MBID (first wins)
-- `setMbids(entries)` - Store multiple album MBIDs at once
+- `setMbids(entries)` - Store multiple album MBIDs at once (entries include optional `acoustidMbid`)
 - `hasMbid(artist, album)` - Check if album MBID exists
 - `removeMbid(artist, album)` - Remove stored MBID
 - `clearMbids()` - Clear all stored MBIDs
 
 **Persistence:** Uses `@tauri-apps/plugin-store` to persist MBIDs in `mbids.json`.
 Key format: `"artist|||album"` for albums, `"artist|||"` for artists.
+
+**Storage format:** Album entries are stored as `{ mbid, acoustidMbid }` objects.
+The `acoustidMbid` field is only present when the AcoustID MBID differs from the MusicBrainz MBID.
+Backward compatible: old entries stored as plain strings are treated as `{ mbid: string }` with no fallback.
 
 ## Enums
 

@@ -227,12 +227,12 @@ export async function markArtistCoverNotFound(artist) {
 }
 
 /**
- * Remove album not-found entry (e.g., when cover becomes available)
+ * Remove album not-found entry (e.g., when a new song is uploaded for this album)
  * @param {string} artist - Artist name
  * @param {string} album - Album name
  * @returns {Promise<void>}
  */
-async function removeAlbumNotFound(artist, album) {
+export async function removeAlbumNotFound(artist, album) {
   if (!artist || !album) return;
   
   try {
@@ -247,11 +247,11 @@ async function removeAlbumNotFound(artist, album) {
 }
 
 /**
- * Remove artist not-found entry (e.g., when cover becomes available)
+ * Remove artist not-found entry (e.g., when a new song is uploaded for this artist)
  * @param {string} artist - Artist name
  * @returns {Promise<void>}
  */
-async function removeArtistNotFound(artist) {
+export async function removeArtistNotFound(artist) {
   if (!artist) return;
   
   try {

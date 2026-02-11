@@ -1,6 +1,9 @@
 
 import { useState } from 'react';
 import { clearCoverCache } from '../../../../services/coverArtService';
+import { clearNotFoundCache } from '../../../../services/coverArtNotFoundStore';
+import { clearMbids } from '../../../../services/mbidStore';
+import { clearCoverArtCache } from '../../../../components/CoverArt/CoverArt';
 import { useToast } from '../../../../hooks/useToast';
 import styles from './ViewHeader.module.css'
 
@@ -29,26 +32,27 @@ export default function ViewHeader({
     setIsClearingCache(true);
     try {
       const result = await clearCoverCache(libraryPath);
+
+      // Clear the JS-side stores (not-found entries + MBIDs)
+      await clearNotFoundCache();
+      await clearMbids();
+
+      // Flush in-memory blob URL cache so covers re-fetch on next render
+      clearCoverArtCache();
+
       if (result.success) {
         const totalCleared = result.albumsCleared + result.artistsCleared;
         
         // Build success message
         let message = '';
         if (totalCleared > 0) {
-          message += `Cleared ${totalCleared} cached cover images (${result.albumsCleared} albums, ${result.artistsCleared} artists)`;
+          message += `Cleared ${totalCleared} cached images (${result.albumsCleared} albums, ${result.artistsCleared} artists)`;
         } else {
           message += 'No cached cover images found';
         }
+        message += '. MBID and not-found caches reset.';
         
-        // Add not-found store info
-        if (result.notFoundEntriesCleared) {
-          message += totalCleared > 0 ? ' and ' : 'Cleared ';
-          message += 'not-found cache (allowing API retries)';
-        } else if (result.notFoundError) {
-          message += '. Failed to clear not-found cache';
-        }
-        
-        toast.showToast(message, totalCleared > 0 ? 'success' : 'info');
+        toast.showToast(message, 'success');
       } else {
         toast.showToast(result.error || 'Failed to clear cover cache', 'error');
       }

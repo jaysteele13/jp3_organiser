@@ -18,6 +18,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { saveToLibrary, saveToPlaylist, addSongsToPlaylist, MetadataStatus, setMbids, hasMbid, searchAlbumMbidsBatch, setArtistMbid } from '../../../../services';
+import { removeAlbumNotFound, removeArtistNotFound } from '../../../../services/coverArtNotFoundStore';
 import { useUploadCache } from '../../../../hooks';
 import { UPLOAD_MODE } from '../../../../utils';
 import styles from './SaveToLibrary.module.css';
@@ -146,6 +147,16 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
     if (entries.length > 0) {
       await setMbids(entries);
     }
+
+    // Clear not-found entries so CoverArt component will re-fetch
+    // for all albums and artists we just uploaded
+    for (const { artist, album } of albumList) {
+      await removeAlbumNotFound(artist, album);
+    }
+    for (const artist of uniqueArtists.keys()) {
+      await removeArtistNotFound(artist);
+    }
+    console.log(`[SaveToLibrary] Cleared not-found entries for ${albumList.length} album(s) and ${uniqueArtists.size} artist(s)`);
   }, []);
 
   const handleSaveToLibrary = useCallback(async () => {

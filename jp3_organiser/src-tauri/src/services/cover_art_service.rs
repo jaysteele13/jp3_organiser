@@ -3,7 +3,8 @@
 //! Album covers are fetched from Cover Art Archive (coverartarchive.org) using 
 //! MusicBrainz Release IDs (MBIDs).
 //!
-//! Artist covers are fetched from Fanart.tv using MusicBrainz Artist IDs.
+//! Artist covers are fetched from Deezer API (api.deezer.com) by searching
+//! the artist name. No API key required.
 //!
 //! # Cover File Naming
 //! Cover files are named using a hash of "artist|||album" (normalized to lowercase).
@@ -19,7 +20,6 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::path::Path;
 use std::time::Duration;
-use std::env::var;
 
 use serde::Deserialize;
 use tokio::time::sleep;
@@ -36,22 +36,26 @@ pub struct CoverArtAlbumResponse {
 }
 
 
-/// Fanart.tv artist thumbnail response
-/// Note: We only need the URL, other fields are ignored.
-/// Fanart.tv returns likes/width/height as strings, not numbers.
+/// Deezer artist search result
+/// Represents a single artist from the Deezer search API response.
+/// We only need the picture URLs, other fields are ignored.
 #[derive(Debug, Deserialize)]
-pub struct ArtistThumb {
-    pub url: String,
-    // Other fields (likes, width, height) are strings in the API response
-    // We don't need them, so we skip them entirely
+pub struct DeezerArtist {
+    pub name: String,
+    /// 500x500 artist picture
+    pub picture_big: Option<String>,
+    /// 250x250 artist picture
+    pub picture_medium: Option<String>,
+    /// 1000x1000 artist picture
+    pub picture_xl: Option<String>,
 }
 
-/// Fanart.tv API response structure
-/// Note: The API returns many fields, we only parse what we need.
+/// Deezer search API response structure
+/// GET https://api.deezer.com/search/artist/?q=ARTIST_NAME
 #[derive(Debug, Deserialize)]
-pub struct FanartResponse {
+pub struct DeezerSearchResponse {
     #[serde(default)]
-    pub artistthumb: Vec<ArtistThumb>,
+    pub data: Vec<DeezerArtist>,
 }
 
 
@@ -209,38 +213,37 @@ pub async fn fetch_and_save_album_cover(
     save_cover_image(&cover_url, covers_dir, &filename).await
 }
 
-/// Fetch artist cover art from Fanart.tv and save it to the covers directory.
+/// Fetch artist cover art from Deezer and save it to the covers directory.
+///
+/// Searches Deezer by artist name — no MBID or API key required.
 ///
 /// # Arguments
-/// * `artist_mbid` - MusicBrainz Artist ID
 /// * `covers_dir` - Directory to save covers (e.g., `{library}/jp3/assets/artists`)
-/// * `artist` - Artist name (for generating stable filename)
+/// * `artist` - Artist name (used for search and for generating stable filename)
 ///
 /// # Returns
 /// * `Ok(FetchCoverResult)` - Path and size of saved cover
 /// * `Err(CoverArtError)` - If fetch or save fails
 pub async fn fetch_and_save_artist_cover(
-    artist_mbid: &str,
     covers_dir: &Path,
     artist: &str,
 ) -> Result<FetchCoverResult, CoverArtError> {
     // Use "artist" as the second component for artist covers
     let filename = cover_filename(artist, "artist");
     
-    log::info!("[FanArt] ========================================");
-    log::info!("[FanArt] fetch_and_save_artist_cover called");
-    log::info!("[FanArt] Artist MBID: {}", artist_mbid);
-    log::info!("[FanArt] Artist: {}", artist);
-    log::info!("[FanArt] Generated filename: {}", filename);
-    log::info!("[FanArt] Covers dir: {:?}", covers_dir);
+    log::info!("[Deezer] ========================================");
+    log::info!("[Deezer] fetch_and_save_artist_cover called");
+    log::info!("[Deezer] Artist: {}", artist);
+    log::info!("[Deezer] Generated filename: {}", filename);
+    log::info!("[Deezer] Covers dir: {:?}", covers_dir);
 
     // Rate limit
     sleep(Duration::from_millis(API_CALL_DELAY_MS)).await;
 
-    // Fetch artist cover URL from Fanart.tv
-    log::info!("[FanArt] Step 1: Getting artist cover URL from Fanart.tv API...");
-    let cover_url = get_artist_cover_url(artist_mbid).await?;
-    log::info!("[FanArt] Step 1 complete: Got URL: {}", cover_url);
+    // Fetch artist cover URL from Deezer
+    log::info!("[Deezer] Step 1: Getting artist cover URL from Deezer API...");
+    let cover_url = get_artist_cover_url(artist).await?;
+    log::info!("[Deezer] Step 1 complete: Got URL: {}", cover_url);
 
     // Download and save the image
     save_cover_image(&cover_url, covers_dir, &filename).await
@@ -362,25 +365,17 @@ async fn get_album_cover_url(mbid: &str) -> Result<String, CoverArtError> {
 }
 
 
-async fn get_artist_cover_url(mbid: &str) -> Result<String, CoverArtError> {
-
-    // DEVELOPMENT
-    // Load in the API key from .env.local
-    let api_key = var("FANART_PROJECT_KEY").map_err(|e| {
-        log::error!("FANART_PROJECT_KEY environment variable not set: {}", e);
-        CoverArtError::ParseError("FANART_PROJECT_KEY not set".to_string())
-    })?;
-
-    // PROD
-    // let api_key = env!("FANART_PROJECT_KEY");
-
-
-    let api_url = format!("https://webservice.fanart.tv/v3.2/music/{}?api_key={}", mbid, api_key );
-    log::info!("[CoverArt] Fetching cover art metadata from: {}", api_url);
+/// Search Deezer for an artist by name and return the best picture URL.
+/// Prefers picture_big (500x500), falls back to picture_xl, then picture_medium.
+/// No API key required.
+async fn get_artist_cover_url(artist_name: &str) -> Result<String, CoverArtError> {
+    let encoded_name = urlencoding::encode(artist_name);
+    let api_url = format!("https://api.deezer.com/search/artist/?q={}", encoded_name);
+    log::info!("[Deezer] Fetching artist image from: {}", api_url);
 
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(30))
-        .redirect(reqwest::redirect::Policy::limited(10)) // Follow up to 10 redirects
+        .redirect(reqwest::redirect::Policy::limited(10))
         .build()
         .map_err(|e| CoverArtError::RequestError(e.to_string()))?;
 
@@ -390,57 +385,53 @@ async fn get_artist_cover_url(mbid: &str) -> Result<String, CoverArtError> {
         .send()
         .await
         .map_err(|e| {
-            log::error!("[CoverArt] Failed to fetch cover art metadata: {}", e);
+            log::error!("[Deezer] Failed to fetch artist image: {}", e);
             CoverArtError::RequestError(e.to_string())
         })?;
 
-    log::info!("[CoverArt] Response status: {}", response.status());
-
-    // We must parse the resonse. In this response we will want to grab the artistthumb array in which we will grab the image with the most ikes.
-    // We can grab the firstone from the array as it seems the response is ordered by likes.
-
-    //so will be artistthumb[0].url
-
-    // we will need a new struct for this response and will return the url. 
-
-    // Handle 404 - no cover art available
-    if response.status() == reqwest::StatusCode::NOT_FOUND {
-        log::info!("[CoverArt] No cover art found for MBID: {}", mbid);
-        return Err(CoverArtError::NotFound);
-    }
+    log::info!("[Deezer] Response status: {}", response.status());
 
     if !response.status().is_success() {
         let status = response.status();
-        log::error!("[FanArt] fanart tv returned status: {}", status);
+        log::error!("[Deezer] Deezer returned status: {}", status);
         return Err(CoverArtError::RequestError(format!("HTTP {}", status)));
     }
 
     let body_text = response.text().await.map_err(|e| {
-        log::error!("[FanArt] Failed to read response body: {}", e);
+        log::error!("[Deezer] Failed to read response body: {}", e);
         CoverArtError::RequestError(e.to_string())
     })?;
-    
-    log::info!("[FanArt] Response body length: {} bytes", body_text.len());
-    log::info!("[FanArt] Response body preview: {}", &body_text.chars().take(200).collect::<String>());
 
-    let cover_data: FanartResponse = serde_json::from_str(&body_text).map_err(|e| {
-        log::error!("[FanArt] Failed to parse cover art response: {}", e);
-        log::error!("[FanArt] Body was: {}", body_text);
+    log::info!("[Deezer] Response body length: {} bytes", body_text.len());
+    log::info!("[Deezer] Response body preview: {}", &body_text.chars().take(300).collect::<String>());
+
+    let search_result: DeezerSearchResponse = serde_json::from_str(&body_text).map_err(|e| {
+        log::error!("[Deezer] Failed to parse search response: {}", e);
+        log::error!("[Deezer] Body was: {}", body_text);
         CoverArtError::ParseError(e.to_string())
     })?;
 
+    // Take the first result (best match)
+    let artist = search_result.data.first().ok_or_else(|| {
+        log::info!("[Deezer] No artist found for: {}", artist_name);
+        CoverArtError::NotFound
+    })?;
 
-    // there is no option for image sizes just whatever it gives us we take the first one.
-    let thumbnail_url = cover_data.artistthumb
-        .first()
-        .map(|img| img.url.clone())
+    log::info!("[Deezer] Found artist: {}", artist.name);
+
+    // Prefer picture_big (500x500), then picture_xl (1000x1000), then picture_medium (250x250)
+    let thumbnail_url = artist
+        .picture_big
+        .as_ref()
+        .or(artist.picture_xl.as_ref())
+        .or(artist.picture_medium.as_ref())
         .ok_or_else(|| {
-            log::error!("[FanArt] No artist thumbnail found in response for MBID: {}", mbid);
+            log::error!("[Deezer] No picture URLs found for artist: {}", artist_name);
             CoverArtError::NotFound
         })?;
 
-    log::info!("[FanArt] Selected thumbnail URL: {}", thumbnail_url);
-    Ok(thumbnail_url)
+    log::info!("[Deezer] Selected thumbnail URL: {}", thumbnail_url);
+    Ok(thumbnail_url.clone())
 }
 
 /// Download image bytes from a URL.

@@ -3,7 +3,7 @@
 //! Commands for fetching and managing album and artist cover art.
 //! 
 //! Album covers are fetched from Cover Art Archive using MusicBrainz Release IDs.
-//! Artist covers are fetched from Fanart.tv using MusicBrainz Artist IDs.
+//! Artist covers are fetched from Deezer API by searching artist name (no API key required).
 //! 
 //! Cover files are named using a hash for stability across library compaction:
 //! - Albums: hash of "artist|||album"
@@ -128,23 +128,21 @@ pub async fn fetch_album_cover(
 /// Fetch and cache cover art for an artist.
 ///
 /// If cover already exists in cache, returns the cached path.
-/// Otherwise, fetches from Fanart.tv using the Artist MBID.
+/// Otherwise, fetches from Deezer API by searching the artist name.
+/// No MBID or API key required.
 /// Cover files are named using a hash of artist name for stability.
 ///
 /// # Arguments
 /// * `base_path` - Library base path
-/// * `artist` - Artist name (for stable filename generation)
-/// * `artist_mbid` - MusicBrainz Artist ID
+/// * `artist` - Artist name (used for search and for stable filename generation)
 #[tauri::command]
 pub async fn fetch_artist_cover(
     base_path: String,
     artist: String,
-    artist_mbid: String,
 ) -> Result<FetchCoverResult, String> {
     log::info!(
-        "fetch_artist_cover called: artist=\"{}\", artist_mbid={}",
+        "fetch_artist_cover called: artist=\"{}\"",
         artist,
-        artist_mbid
     );
 
     let artists_dir = Path::new(&base_path).join("jp3").join("assets").join("artists");
@@ -168,8 +166,8 @@ pub async fn fetch_artist_cover(
         })?;
     }
 
-    // Fetch and save artist cover from Fanart.tv
-    match cover_art_service::fetch_and_save_artist_cover(&artist_mbid, &artists_dir, &artist).await {
+    // Fetch and save artist cover from Deezer
+    match cover_art_service::fetch_and_save_artist_cover(&artists_dir, &artist).await {
         Ok(result) => Ok(FetchCoverResult {
             success: true,
             path: Some(result.path),
@@ -177,7 +175,7 @@ pub async fn fetch_artist_cover(
             was_cached: false,
         }),
         Err(cover_art_service::CoverArtError::NotFound) => {
-            log::info!("No artist cover art available for MBID: {}", artist_mbid);
+            log::info!("No artist cover art available for: {}", artist);
             Ok(FetchCoverResult {
                 success: false,
                 path: None,
