@@ -65,6 +65,21 @@ export async function fetchAlbumCover(basePath, artist, album, mbid, fallbackMbi
 }
 
 /**
+ * Fetch album cover from Deezer as a fallback
+ * 
+ * Used when CoverArtArchive is unavailable (5xx gateway errors).
+ * Searches Deezer by artist + album name — no MBID required.
+ * 
+ * @param {string} basePath - Library base path
+ * @param {string} artist - Artist name
+ * @param {string} album - Album name
+ * @returns {Promise<{success: boolean, path?: string, error?: string, wasCached: boolean}>}
+ */
+export async function fetchDeezerAlbumCover(basePath, artist, album) {
+  return await invoke('fetch_deezer_album_cover', { basePath, artist, album });
+}
+
+/**
  * Fetch and cache cover art for an artist
  * 
  * If cover already exists in cache, returns the cached path immediately.

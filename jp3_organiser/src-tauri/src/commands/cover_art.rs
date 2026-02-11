@@ -195,6 +195,81 @@ pub async fn fetch_artist_cover(
     }
 }
 
+/// Fetch and cache album cover art from Deezer as a fallback.
+///
+/// This is used when CoverArtArchive is unavailable (5xx errors).
+/// Searches Deezer by artist + album name — no MBID required.
+///
+/// # Arguments
+/// * `base_path` - Library base path
+/// * `artist` - Artist name
+/// * `album` - Album name
+#[tauri::command]
+pub async fn fetch_deezer_album_cover(
+    base_path: String,
+    artist: String,
+    album: String,
+) -> Result<FetchCoverResult, String> {
+    log::info!(
+        "fetch_deezer_album_cover called: artist=\"{}\", album=\"{}\"",
+        artist,
+        album
+    );
+
+    let albums_dir = Path::new(&base_path).join("jp3").join("assets").join("albums");
+
+    // Check if already cached (using artist+album hash)
+    if let Some(path) = cover_art_service::get_cover_path_by_name(&albums_dir, &artist, &album) {
+        log::info!("Album cover already cached (Deezer fallback): {}", path);
+        return Ok(FetchCoverResult {
+            success: true,
+            path: Some(path),
+            error: None,
+            was_cached: true,
+        });
+    }
+
+    // Ensure albums directory exists
+    if !albums_dir.exists() {
+        std::fs::create_dir_all(&albums_dir).map_err(|e| {
+            log::error!("Failed to create albums directory: {}", e);
+            format!("Failed to create albums directory: {}", e)
+        })?;
+    }
+
+    // Fetch from Deezer
+    match cover_art_service::fetch_and_save_deezer_album_cover(
+        &albums_dir,
+        &artist,
+        &album,
+    ).await {
+        Ok(result) => Ok(FetchCoverResult {
+            success: true,
+            path: Some(result.path),
+            error: None,
+            was_cached: false,
+        }),
+        Err(cover_art_service::CoverArtError::NotFound) => {
+            log::info!("No Deezer album cover available for: {} - {}", artist, album);
+            Ok(FetchCoverResult {
+                success: false,
+                path: None,
+                error: Some("No cover art available on Deezer".to_string()),
+                was_cached: false,
+            })
+        }
+        Err(e) => {
+            log::error!("Failed to fetch Deezer album cover: {}", e);
+            Ok(FetchCoverResult {
+                success: false,
+                path: None,
+                error: Some(e.to_string()),
+                was_cached: false,
+            })
+        }
+    }
+}
+
 /// Get the cached cover path for an album.
 ///
 /// Returns the path if the cover exists in cache, None otherwise.

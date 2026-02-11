@@ -58,6 +58,30 @@ pub struct DeezerSearchResponse {
     pub data: Vec<DeezerArtist>,
 }
 
+/// Deezer album search result item
+/// Represents a single track result from the Deezer search API.
+/// We extract the nested album.cover_big URL.
+#[derive(Debug, Deserialize)]
+pub struct DeezerAlbumSearchItem {
+    pub album: DeezerAlbumInfo,
+}
+
+/// Nested album info within a Deezer search result
+#[derive(Debug, Deserialize)]
+pub struct DeezerAlbumInfo {
+    pub cover_big: Option<String>,
+    pub cover_medium: Option<String>,
+    pub cover_xl: Option<String>,
+}
+
+/// Deezer album search API response structure
+/// GET https://api.deezer.com/search?q=artist:"NAME"album:"ALBUM"
+#[derive(Debug, Deserialize)]
+pub struct DeezerAlbumSearchResponse {
+    #[serde(default)]
+    pub data: Vec<DeezerAlbumSearchItem>,
+}
+
 
 
 #[derive(Debug, Deserialize)]
@@ -489,6 +513,94 @@ pub fn get_cover_path_by_name(covers_dir: &Path, artist: &str, album: &str) -> O
     } else {
         None
     }
+}
+
+/// Search Deezer for an album cover by artist and album name.
+///
+/// Uses the Deezer search API: `https://api.deezer.com/search?q=artist:"NAME"album:"ALBUM"`
+/// Returns the first result's `album.cover_big` URL.
+/// No API key required.
+///
+/// This is used as a fallback when CoverArtArchive is unavailable (5xx errors).
+pub async fn fetch_and_save_deezer_album_cover(
+    covers_dir: &Path,
+    artist: &str,
+    album: &str,
+) -> Result<FetchCoverResult, CoverArtError> {
+    let filename = cover_filename(artist, album);
+
+    log::info!("[Deezer] ========================================");
+    log::info!("[Deezer] fetch_and_save_deezer_album_cover called");
+    log::info!("[Deezer] Artist: {}, Album: {}", artist, album);
+    log::info!("[Deezer] Generated filename: {}", filename);
+
+    // Rate limit
+    sleep(Duration::from_millis(API_CALL_DELAY_MS)).await;
+
+    // Build Deezer search URL: artist:"NAME"album:"ALBUM"
+    let query = format!("artist:\"{}\"album:\"{}\"", artist, album);
+    let encoded_query = urlencoding::encode(&query);
+    let api_url = format!("https://api.deezer.com/search?q={}", encoded_query);
+    log::info!("[Deezer] Fetching album cover from: {}", api_url);
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(30))
+        .redirect(reqwest::redirect::Policy::limited(10))
+        .build()
+        .map_err(|e| CoverArtError::RequestError(e.to_string()))?;
+
+    let response = client
+        .get(&api_url)
+        .header("User-Agent", "JP3Organiser/1.0")
+        .send()
+        .await
+        .map_err(|e| {
+            log::error!("[Deezer] Failed to fetch album cover: {}", e);
+            CoverArtError::RequestError(e.to_string())
+        })?;
+
+    log::info!("[Deezer] Response status: {}", response.status());
+
+    if !response.status().is_success() {
+        let status = response.status();
+        log::error!("[Deezer] Deezer returned status: {}", status);
+        return Err(CoverArtError::RequestError(format!("HTTP {}", status)));
+    }
+
+    let body_text = response.text().await.map_err(|e| {
+        log::error!("[Deezer] Failed to read response body: {}", e);
+        CoverArtError::RequestError(e.to_string())
+    })?;
+
+    log::info!("[Deezer] Response body length: {} bytes", body_text.len());
+    log::info!("[Deezer] Response body preview: {}", &body_text.chars().take(300).collect::<String>());
+
+    let search_result: DeezerAlbumSearchResponse = serde_json::from_str(&body_text).map_err(|e| {
+        log::error!("[Deezer] Failed to parse album search response: {}", e);
+        log::error!("[Deezer] Body was: {}", body_text);
+        CoverArtError::ParseError(e.to_string())
+    })?;
+
+    // Take the first result
+    let item = search_result.data.first().ok_or_else(|| {
+        log::info!("[Deezer] No album results found for: {} - {}", artist, album);
+        CoverArtError::NotFound
+    })?;
+
+    // Prefer cover_big, then cover_xl, then cover_medium
+    let cover_url = item.album.cover_big
+        .as_ref()
+        .or(item.album.cover_xl.as_ref())
+        .or(item.album.cover_medium.as_ref())
+        .ok_or_else(|| {
+            log::error!("[Deezer] No cover URLs found for album: {} - {}", artist, album);
+            CoverArtError::NotFound
+        })?;
+
+    log::info!("[Deezer] Selected album cover URL: {}", cover_url);
+
+    // Download and save the image
+    save_cover_image(cover_url, covers_dir, &filename).await
 }
 
 

@@ -28,6 +28,7 @@ import {
   getAlbumCoverBlobUrl, 
   getArtistCoverBlobUrl,
   fetchAlbumCover,
+  fetchDeezerAlbumCover,
   fetchArtistCover 
 } from '../../services/coverArtService';
 import { getAlbumMbids } from '../../services/mbidStore';
@@ -249,8 +250,19 @@ const CoverArt = memo(function CoverArt({
               if (result.success) {
                 blobUrl = await getAlbumCoverBlobUrl(libraryPath, artist, album);
               } else if (isProxyError(result.error)) {
-                // 5xx — transient server issue, don't mark as not found
+                // 5xx — CoverArtArchive down, try Deezer as fallback
                 emitProxyError(result.error);
+                console.log('[CoverArt] CAA proxy error, trying Deezer fallback for:', artist, '-', album);
+                const deezerResult = await throttledFetch(() =>
+                  fetchDeezerAlbumCover(libraryPath, artist, album)
+                );
+                console.log('[CoverArt] Deezer album fallback result:', deezerResult);
+                if (deezerResult.success) {
+                  blobUrl = await getAlbumCoverBlobUrl(libraryPath, artist, album);
+                } else {
+                  // Both sources failed — mark as not found
+                  await markAlbumCoverNotFound(artist, album);
+                }
               } else {
                 // Genuine not-found — cache to avoid repeated API calls
                 await markAlbumCoverNotFound(artist, album);
