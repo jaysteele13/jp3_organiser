@@ -142,8 +142,11 @@ pub fn cover_filename(artist: &str, album: &str) -> String {
 
 /// Fetch cover art for a release and save it to the covers directory.
 ///
+/// Tries the primary MBID first, then falls back to the acoustic MBID if the primary fails.
+///
 /// # Arguments
-/// * `mbid` - MusicBrainz Release ID
+/// * `primary_mbid` - Primary MusicBrainz Release ID (from MusicBrainz search)
+/// * `fallback_mbid` - Fallback MBID (from AcousticID fingerprinting)
 /// * `covers_dir` - Directory to save covers (e.g., `{library}/jp3/assets/albums`)
 /// * `artist` - Artist name (for generating stable filename)
 /// * `album` - Album name (for generating stable filename)
@@ -152,30 +155,74 @@ pub fn cover_filename(artist: &str, album: &str) -> String {
 /// * `Ok(FetchCoverResult)` - Path and size of saved cover
 /// * `Err(CoverArtError)` - If fetch or save fails
 pub async fn fetch_and_save_album_cover(
-    mbid: &str,
+    primary_mbid: Option<&str>,
+    fallback_mbid: Option<&str>,
     covers_dir: &Path,
     artist: &str,
     album: &str,
 ) -> Result<FetchCoverResult, CoverArtError> {
     let filename = cover_filename(artist, album);
-    
+
     log::info!("[CoverArt] ========================================");
     log::info!("[CoverArt] fetch_and_save_album_cover called");
-    log::info!("[CoverArt] MBID: {}", mbid);
     log::info!("[CoverArt] Artist: {}, Album: {}", artist, album);
+    log::info!("[CoverArt] Primary MBID: {:?} (MusicBrainz search)", primary_mbid);
+    log::info!("[CoverArt] Fallback MBID: {:?} (AcousticID)", fallback_mbid);
     log::info!("[CoverArt] Generated filename: {}", filename);
     log::info!("[CoverArt] Covers dir: {:?}", covers_dir);
 
     // Rate limit
     sleep(Duration::from_millis(API_CALL_DELAY_MS)).await;
 
-    // Fetch cover art metadata from Cover Art Archive
-    log::info!("[CoverArt] Step 1: Getting cover URL from API...");
-    let cover_url = get_album_cover_url(mbid).await?;
-    log::info!("[CoverArt] Step 1 complete: Got URL: {}", cover_url);
+    // Collect all MBIDs to try in order
+    let mut mbid_attempts: Vec<(&str, &str)> = Vec::new();
 
-    // Download and save the image
-    save_cover_image(&cover_url, covers_dir, &filename).await
+    if let Some(mbid) = primary_mbid {
+        mbid_attempts.push((mbid, "primary (MusicBrainz)"));
+    }
+    if let Some(mbid) = fallback_mbid {
+        mbid_attempts.push((mbid, "fallback (AcousticID)"));
+    }
+
+    if mbid_attempts.is_empty() {
+        log::error!("[CoverArt] No MBID available (neither primary nor fallback)");
+        return Err(CoverArtError::NotFound);
+    }
+
+    log::info!("[CoverArt] Will try {} MBID(s): {:?}", mbid_attempts.len(), mbid_attempts);
+
+    // Try each MBID in order
+    for (mbid, mbid_type) in mbid_attempts {
+        log::info!("[CoverArt] Attempting {} MBID: {}", mbid_type, mbid);
+
+        match get_album_cover_url(mbid).await {
+            Ok(cover_url) => {
+                log::info!("[CoverArt] SUCCESS: {} MBID {} returned cover URL: {}", mbid_type, mbid, cover_url);
+                match save_cover_image(&cover_url, covers_dir, &filename).await {
+                    Ok(result) => {
+                        log::info!("[CoverArt] SUCCESS: Saved cover to {} ({} bytes)", result.path, result.size_bytes);
+                        return Ok(result);
+                    }
+                    Err(e) => {
+                        log::error!("[CoverArt] FAILED: {} MBID {} got URL but save failed: {}", mbid_type, mbid, e);
+                        return Err(e);
+                    }
+                }
+            }
+            Err(CoverArtError::NotFound) => {
+                log::warn!("[CoverArt] NOT_FOUND: {} MBID {} has no cover art", mbid_type, mbid);
+                continue;
+            }
+            Err(e) => {
+                log::warn!("[CoverArt] ERROR: {} MBID {} failed: {}", mbid_type, mbid, e);
+                continue;
+            }
+        }
+    }
+
+    log::error!("[CoverArt] ALL ATTEMPTS FAILED: No cover art found for any MBID");
+    log::error!("[CoverArt] Tried primary: {:?}, fallback: {:?}", primary_mbid, fallback_mbid);
+    Err(CoverArtError::NotFound)
 }
 
 /// Fetch artist cover art from Fanart.tv and save it to the covers directory.
@@ -222,14 +269,13 @@ async fn save_cover_image(
     filename: &str,
 ) -> Result<FetchCoverResult, CoverArtError> {
     // Download the image
-    log::info!("[CoverArt] Step 2: Downloading image...");
+    log::info!("[CoverArt] Downloading image from: {}", cover_url);
     let image_bytes = download_image(cover_url).await?;
-    log::info!("[CoverArt] Step 2 complete: Downloaded {} bytes", image_bytes.len());
+    log::info!("[CoverArt] Downloaded {} bytes", image_bytes.len());
 
     // Save to file
-    log::info!("[CoverArt] Step 3: Saving to disk...");
     let cover_path = covers_dir.join(format!("{}.jpg", filename));
-    log::info!("[CoverArt] Saving to: {:?}", cover_path);
+    log::info!("[CoverArt] Saving cover to: {:?}", cover_path);
     
     std::fs::write(&cover_path, &image_bytes).map_err(|e| {
         log::error!("[CoverArt] Failed to save cover art: {}", e);
@@ -333,13 +379,15 @@ async fn get_album_cover_url(mbid: &str) -> Result<String, CoverArtError> {
 
 async fn get_artist_cover_url(mbid: &str) -> Result<String, CoverArtError> {
 
+    // DEV
     // Load in the API key from .env.local
-    // let api_key = var("FANART_PROJECT_KEY").map_err(|e| {
-    //     log::error!("FANART_PROJECT_KEY environment variable not set: {}", e);
-    //     CoverArtError::ParseError("FANART_PROJECT_KEY not set".to_string())
-    // })?;
+    let api_key = var("FANART_PROJECT_KEY").map_err(|e| {
+        log::error!("FANART_PROJECT_KEY environment variable not set: {}", e);
+        CoverArtError::ParseError("FANART_PROJECT_KEY not set".to_string())
+    })?;
 
-    let api_key = env!("FANART_PROJECT_KEY");
+    // PROD
+    // let api_key = env!("FANART_PROJECT_KEY");
 
 
     let api_url = format!("https://webservice.fanart.tv/v3.2/music/{}?api_key={}", mbid, api_key );

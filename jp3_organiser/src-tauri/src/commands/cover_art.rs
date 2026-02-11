@@ -43,25 +43,28 @@ pub struct GetCoverPathResult {
 ///
 /// If cover already exists in cache, returns the cached path.
 /// Otherwise, fetches from Cover Art Archive using the MBID.
-/// Cover files are named using a hash of artist+album for stability.
+/// Tries the primary (MusicBrainz) MBID first, then falls back to the AcousticID MBID.
 ///
 /// # Arguments
 /// * `base_path` - Library base path
 /// * `artist` - Artist name (for stable filename generation)
 /// * `album` - Album name (for stable filename generation)
-/// * `mbid` - MusicBrainz Release ID
+/// * `mbid` - MusicBrainz Release ID (from MusicBrainz search - primary)
+/// * `acoustic_mbid` - AcousticID Release MBID (fallback, optional)
 #[tauri::command]
 pub async fn fetch_album_cover(
     base_path: String,
     artist: String,
     album: String,
     mbid: String,
+    acoustic_mbid: Option<String>,
 ) -> Result<FetchCoverResult, String> {
     log::info!(
-        "fetch_album_cover called: artist=\"{}\", album=\"{}\", mbid={}",
+        "fetch_album_cover called: artist=\"{}\", album=\"{}\", mbid={}, acoustic_mbid={:?}",
         artist,
         album,
-        mbid
+        mbid,
+        acoustic_mbid
     );
 
     let albums_dir = Path::new(&base_path).join("jp3").join("assets").join("albums");
@@ -85,8 +88,18 @@ pub async fn fetch_album_cover(
         })?;
     }
 
-    // Fetch and save album cover from Cover Art Archive
-    match cover_art_service::fetch_and_save_album_cover(&mbid, &albums_dir, &artist, &album).await {
+    // Determine primary and fallback MBIDs
+    let primary_mbid = if mbid.is_empty() { None } else { Some(mbid.as_str()) };
+    let fallback_mbid = acoustic_mbid.as_deref().filter(|s| !s.is_empty());
+
+    // Fetch and save album cover from Cover Art Archive with fallback
+    match cover_art_service::fetch_and_save_album_cover(
+        primary_mbid,
+        fallback_mbid,
+        &albums_dir,
+        &artist,
+        &album,
+    ).await {
         Ok(result) => Ok(FetchCoverResult {
             success: true,
             path: Some(result.path),
@@ -94,7 +107,7 @@ pub async fn fetch_album_cover(
             was_cached: false,
         }),
         Err(cover_art_service::CoverArtError::NotFound) => {
-            log::info!("No album cover art available for MBID: {}", mbid);
+            log::info!("No album cover art available for MBIDs: primary={:?}, fallback={:?}", primary_mbid, fallback_mbid);
             Ok(FetchCoverResult {
                 success: false,
                 path: None,

@@ -46,19 +46,22 @@ export async function searchAlbumMbidsBatch(queries) {
 
 /**
  * Fetch and cache cover art for an album
- * 
+ *
  * If cover already exists in cache, returns the cached path immediately.
  * Otherwise, fetches from Cover Art Archive using the MBID and caches it.
  * Cover files are named using a hash of artist+album for stability.
- * 
+ *
+ * Tries the primary (MusicBrainz) MBID first, then falls back to the AcousticID MBID.
+ *
  * @param {string} basePath - Library base path
  * @param {string} artist - Artist name (for stable filename generation)
  * @param {string} album - Album name (for stable filename generation)
- * @param {string} mbid - MusicBrainz Release ID
+ * @param {string} mbid - MusicBrainz Release ID (primary)
+ * @param {string} [acousticMbid] - AcousticID Release MBID (fallback, optional)
  * @returns {Promise<{success: boolean, path?: string, error?: string, wasCached: boolean}>}
  */
-export async function fetchAlbumCover(basePath, artist, album, mbid) {
-  return await invoke('fetch_album_cover', { basePath, artist, album, mbid });
+export async function fetchAlbumCover(basePath, artist, album, mbid, acousticMbid = null) {
+  return await invoke('fetch_album_cover', { basePath, artist, album, mbid, acousticMbid });
 }
 
 /**

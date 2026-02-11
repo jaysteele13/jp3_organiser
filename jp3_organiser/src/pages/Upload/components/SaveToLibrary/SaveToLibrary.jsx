@@ -17,7 +17,8 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { saveToLibrary, saveToPlaylist, addSongsToPlaylist, MetadataStatus, setMbids, hasMbid, searchAlbumMbidsBatch, setArtistMbid } from '../../../../services';
+import { saveToLibrary, saveToPlaylist, addSongsToPlaylist, MetadataStatus, searchAlbumMbidsBatch, setArtistMbid } from '../../../../services';
+import { setAlbumMbids, getAlbumMbids } from '../../../../services/mbidStore';
 import { useUploadCache } from '../../../../hooks';
 import { UPLOAD_MODE } from '../../../../utils';
 import styles from './SaveToLibrary.module.css';
@@ -64,7 +65,7 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
       if (album) {
         const key = `${artist}|||${album}`;
         if (!uniqueAlbums.has(key)) {
-          uniqueAlbums.set(key, { artist, album, releaseMbid });
+          uniqueAlbums.set(key, { artist, album, acoustidMbid: releaseMbid });
         }
       }
 
@@ -83,66 +84,66 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
       return;  // No albums to process
     }
 
-    // Filter out albums that already have anMBID stored
     const albumList = Array.from(uniqueAlbums.values());
-    const albumsToSearch = [];
-    
+
+    // Separate albums into those needing MusicBrainz search and those that just need acoustic MBID stored
+    const albumsNeedingMbSearch = [];
+    const albumsNeedingAcousticStorage = [];
+
     for (const albumInfo of albumList) {
-      const exists = await hasMbid(albumInfo.artist, albumInfo.album);
-      if (exists) {
-        console.log(`[SaveToLibrary] MBID already cached for "${albumInfo.album}" by "${albumInfo.artist}" - skipping`);
-      } else {
-        albumsToSearch.push(albumInfo);
+      const existing = await getAlbumMbids(albumInfo.artist, albumInfo.album);
+
+      // Always store acoustic MBID if we have it
+      if (albumInfo.acoustidMbid && !existing.acousticMbid) {
+        albumsNeedingAcousticStorage.push(albumInfo);
       }
-    }
-    
-    if (albumsToSearch.length === 0) {
-      console.log('[SaveToLibrary] All albums already have MBIDs cached');
-      return;
+
+      // Only search MusicBrainz if we don't have a musicbrainz MBID yet
+      if (!existing.musicbrainzMbid) {
+        albumsNeedingMbSearch.push(albumInfo);
+      } else if (existing.musicbrainzMbid) {
+        console.log(`[SaveToLibrary] MusicBrainz MBID already cached for "${albumInfo.album}" by "${albumInfo.artist}"`);
+      }
     }
 
-    // Prepare queries for batch MusicBrainz search
-    const queries = albumsToSearch.map(({ artist, album }) => ({ artist, album }));
-    
-    // Search MusicBrainz for albums without cached MBIDs
-    let searchResults = [];
-    try {
-      searchResults = await searchAlbumMbidsBatch(queries);
-    } catch (err) {
-      console.error('[SaveToLibrary] MusicBrainz batch search failed:', err);
-      // Fall back to AcoustID MBIDs only
-      searchResults = queries.map(() => ({ found: false }));
+    // Store acoustic MBIDs for albums that don't have them yet
+    for (const albumInfo of albumsNeedingAcousticStorage) {
+      console.log(`[SaveToLibrary] Storing acoustic MBID for "${albumInfo.album}" by "${albumInfo.artist}": ${albumInfo.acoustidMbid}`);
+      await setAlbumMbids(albumInfo.artist, albumInfo.album, null, albumInfo.acoustidMbid);
     }
 
-    // Build entries for mbidStore, preferring MusicBrainz results
-    const entries = [];
-    for (let i = 0; i < albumsToSearch.length; i++) {
-      const { acoustidMbid, artist, album } = albumsToSearch[i];
-      const searchResult = searchResults[i];
-      
-      // Prefer MusicBrainz MBID, fall back to AcoustID MBID
-      let mbid = null;
-      let source = null;
-      
-      if (searchResult?.found && searchResult.mbid) {
-        mbid = searchResult.mbid;
-        source = 'MusicBrainz';
-      } else if (acoustidMbid) {
-        mbid = acoustidMbid;
-        source = 'AcoustID';
+    // Search MusicBrainz for albums that don't have a musicbrainz MBID yet
+    if (albumsNeedingMbSearch.length > 0) {
+      console.log(`[SaveToLibrary] Searching MusicBrainz for ${albumsNeedingMbSearch.length} album(s)`);
+
+      const queries = albumsNeedingMbSearch.map(({ artist, album }) => ({ artist, album }));
+
+      let searchResults = [];
+      try {
+        searchResults = await searchAlbumMbidsBatch(queries);
+      } catch (err) {
+        console.error('[SaveToLibrary] MusicBrainz batch search failed:', err);
+        searchResults = queries.map(() => ({ found: false }));
       }
-      
-      if (mbid) {
-        entries.push({ artist, album, mbid });
-        console.log(`[SaveToLibrary] MBID for "${album}" by "${artist}": ${mbid} (source: ${source})`);
-      } else {
-        console.log(`[SaveToLibrary] No MBID found for "${album}" by "${artist}"`);
+
+      // Store results - musicbrainz MBID takes priority, preserve existing acoustic MBID
+      for (let i = 0; i < albumsNeedingMbSearch.length; i++) {
+        const albumInfo = albumsNeedingMbSearch[i];
+        const searchResult = searchResults[i];
+        const musicbrainzMbid = searchResult?.found && searchResult.mbid ? searchResult.mbid : null;
+
+        const existing = await getAlbumMbids(albumInfo.artist, albumInfo.album);
+        await setAlbumMbids(albumInfo.artist, albumInfo.album, musicbrainzMbid, existing.acousticMbid);
+
+        if (musicbrainzMbid) {
+          console.log(`[SaveToLibrary] MusicBrainz MBID for "${albumInfo.album}" by "${albumInfo.artist}": ${musicbrainzMbid}`);
+        } else {
+          console.log(`[SaveToLibrary] No MusicBrainz MBID found for "${albumInfo.album}" by "${albumInfo.artist}"`);
+        }
       }
     }
-    
-    if (entries.length > 0) {
-      await setMbids(entries);
-    }
+
+    console.log('[SaveToLibrary] MBID storage complete');
   }, []);
 
   const handleSaveToLibrary = useCallback(async () => {

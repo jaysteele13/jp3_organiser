@@ -87,14 +87,14 @@ export default function ViewHeader({
                 </div>
                 {/* REFRESH BUTTON FOR CACHE REMOVE BEFORE FINISHED in CoverArtService.js lib.rs and cover_art.rs */}
                 <div className={styles.buttonGroup}>
-                  {/* <button 
+                  <button 
                     className={styles.clearCacheButton} 
                     onClick={handleClearCache}
                     disabled={isClearingCache || !libraryPath}
                     title="Clear cached cover images and reset not-found cache (useful after API key changes)"
                   >
                     {isClearingCache ? 'Clearing...' : 'Clear Cache'}
-                  </button> */}
+                  </button>
                   <button 
                     className={styles.refreshButton} 
                     onClick={handleRefresh}
