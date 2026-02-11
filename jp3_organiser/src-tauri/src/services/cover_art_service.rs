@@ -142,17 +142,22 @@ pub fn cover_filename(artist: &str, album: &str) -> String {
 
 /// Fetch cover art for a release and save it to the covers directory.
 ///
+/// Tries the primary MBID first. If Cover Art Archive returns 404 (NotFound)
+/// and a fallback MBID is provided, retries with the fallback before giving up.
+///
 /// # Arguments
-/// * `mbid` - MusicBrainz Release ID
+/// * `mbid` - Primary MusicBrainz Release ID (typically from MusicBrainz search)
+/// * `fallback_mbid` - Optional fallback Release ID (typically from AcoustID fingerprinting)
 /// * `covers_dir` - Directory to save covers (e.g., `{library}/jp3/assets/albums`)
 /// * `artist` - Artist name (for generating stable filename)
 /// * `album` - Album name (for generating stable filename)
 ///
 /// # Returns
 /// * `Ok(FetchCoverResult)` - Path and size of saved cover
-/// * `Err(CoverArtError)` - If fetch or save fails
+/// * `Err(CoverArtError)` - If fetch or save fails for all MBIDs
 pub async fn fetch_and_save_album_cover(
     mbid: &str,
+    fallback_mbid: Option<&str>,
     covers_dir: &Path,
     artist: &str,
     album: &str,
@@ -161,7 +166,8 @@ pub async fn fetch_and_save_album_cover(
     
     log::info!("[CoverArt] ========================================");
     log::info!("[CoverArt] fetch_and_save_album_cover called");
-    log::info!("[CoverArt] MBID: {}", mbid);
+    log::info!("[CoverArt] Primary MBID: {}", mbid);
+    log::info!("[CoverArt] Fallback MBID: {:?}", fallback_mbid);
     log::info!("[CoverArt] Artist: {}, Album: {}", artist, album);
     log::info!("[CoverArt] Generated filename: {}", filename);
     log::info!("[CoverArt] Covers dir: {:?}", covers_dir);
@@ -169,10 +175,35 @@ pub async fn fetch_and_save_album_cover(
     // Rate limit
     sleep(Duration::from_millis(API_CALL_DELAY_MS)).await;
 
-    // Fetch cover art metadata from Cover Art Archive
-    log::info!("[CoverArt] Step 1: Getting cover URL from API...");
-    let cover_url = get_album_cover_url(mbid).await?;
-    log::info!("[CoverArt] Step 1 complete: Got URL: {}", cover_url);
+    // Fetch cover art metadata from Cover Art Archive (primary MBID)
+    log::info!("[CoverArt] Step 1: Getting cover URL from API (primary MBID)...");
+    let cover_url = match get_album_cover_url(mbid).await {
+        Ok(url) => {
+            log::info!("[CoverArt] Step 1 complete: Got URL from primary MBID: {}", url);
+            url
+        }
+        Err(CoverArtError::NotFound) => {
+            // Primary MBID has no cover art — try fallback if available
+            match fallback_mbid {
+                Some(fallback) if fallback != mbid => {
+                    log::info!(
+                        "[CoverArt] Primary MBID {} returned NotFound, trying fallback MBID: {}",
+                        mbid, fallback
+                    );
+                    // Rate limit before retry
+                    sleep(Duration::from_millis(API_CALL_DELAY_MS)).await;
+                    let url = get_album_cover_url(fallback).await?;
+                    log::info!("[CoverArt] Step 1 complete: Got URL from fallback MBID: {}", url);
+                    url
+                }
+                _ => {
+                    log::info!("[CoverArt] No fallback MBID available, returning NotFound");
+                    return Err(CoverArtError::NotFound);
+                }
+            }
+        }
+        Err(e) => return Err(e),
+    };
 
     // Download and save the image
     save_cover_image(&cover_url, covers_dir, &filename).await
@@ -333,13 +364,15 @@ async fn get_album_cover_url(mbid: &str) -> Result<String, CoverArtError> {
 
 async fn get_artist_cover_url(mbid: &str) -> Result<String, CoverArtError> {
 
+    // DEVELOPMENT
     // Load in the API key from .env.local
-    // let api_key = var("FANART_PROJECT_KEY").map_err(|e| {
-    //     log::error!("FANART_PROJECT_KEY environment variable not set: {}", e);
-    //     CoverArtError::ParseError("FANART_PROJECT_KEY not set".to_string())
-    // })?;
+    let api_key = var("FANART_PROJECT_KEY").map_err(|e| {
+        log::error!("FANART_PROJECT_KEY environment variable not set: {}", e);
+        CoverArtError::ParseError("FANART_PROJECT_KEY not set".to_string())
+    })?;
 
-    let api_key = env!("FANART_PROJECT_KEY");
+    // PROD
+    // let api_key = env!("FANART_PROJECT_KEY");
 
 
     let api_url = format!("https://webservice.fanart.tv/v3.2/music/{}?api_key={}", mbid, api_key );

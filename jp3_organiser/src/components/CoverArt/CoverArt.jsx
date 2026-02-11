@@ -27,7 +27,7 @@ import {
   fetchAlbumCover,
   fetchArtistCover 
 } from '../../services/coverArtService';
-import { getAlbumMbid, getArtistMbid } from '../../services/mbidStore';
+import { getAlbumMbids, getArtistMbid } from '../../services/mbidStore';
 import {
   isAlbumCoverNotFound,
   isArtistCoverNotFound,
@@ -188,13 +188,13 @@ const CoverArt = memo(function CoverArt({
               return null;
             }
 
-            // Look up MBID and fetch from API
-            console.log('[CoverArt] No cached album cover, looking up MBID...');
-            const mbid = await getAlbumMbid(artist, album);
-            console.log('[CoverArt] Album MBID:', mbid);
+            // Look up MBIDs and fetch from API
+            console.log('[CoverArt] No cached album cover, looking up MBIDs...');
+            const { mbid, acoustidMbid } = await getAlbumMbids(artist, album);
+            console.log('[CoverArt] Album MBID:', mbid, '| AcoustID fallback:', acoustidMbid);
 
             if (mbid) {
-              const result = await fetchAlbumCover(libraryPath, artist, album, mbid);
+              const result = await fetchAlbumCover(libraryPath, artist, album, mbid, acoustidMbid);
               console.log('[CoverArt] fetchAlbumCover result:', result);
               if (result.success) {
                 blobUrl = await getAlbumCoverBlobUrl(libraryPath, artist, album);

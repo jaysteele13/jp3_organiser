@@ -115,13 +115,15 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
     }
 
     // Build entries for mbidStore, preferring MusicBrainz results
+    // Also store the AcoustID MBID as a fallback for Cover Art Archive lookups
     const entries = [];
     for (let i = 0; i < albumsToSearch.length; i++) {
-      const { acoustidMbid, artist, album } = albumsToSearch[i];
+      const { releaseMbid, artist, album } = albumsToSearch[i];
       const searchResult = searchResults[i];
       
       // Prefer MusicBrainz MBID, fall back to AcoustID MBID
       let mbid = null;
+      let acoustidMbid = releaseMbid || null; // AcoustID release MBID from fingerprinting
       let source = null;
       
       if (searchResult?.found && searchResult.mbid) {
@@ -129,12 +131,13 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
         source = 'MusicBrainz';
       } else if (acoustidMbid) {
         mbid = acoustidMbid;
+        acoustidMbid = null; // Don't store as fallback if it's the primary
         source = 'AcoustID';
       }
       
       if (mbid) {
-        entries.push({ artist, album, mbid });
-        console.log(`[SaveToLibrary] MBID for "${album}" by "${artist}": ${mbid} (source: ${source})`);
+        entries.push({ artist, album, mbid, acoustidMbid });
+        console.log(`[SaveToLibrary] MBID for "${album}" by "${artist}": ${mbid} (source: ${source})${acoustidMbid ? `, fallback: ${acoustidMbid}` : ''}`);
       } else {
         console.log(`[SaveToLibrary] No MBID found for "${album}" by "${artist}"`);
       }
