@@ -18,7 +18,38 @@ import { useNavigate } from 'react-router-dom';
 import { SongTable, ActionMenu, FilterBar } from '../../../../../components';
 import { useMultiSelect } from '../../../../../hooks';
 import { TABS } from '../../../../../utils/enums';
+import { load } from '@tauri-apps/plugin-store';
 import styles from './SongView.module.css';
+
+const STORE_NAME = 'songview.json';
+const SORT_KEY = 'songSortIndex';
+
+const SORT_OPTIONS = [
+  { field: 'id', direction: 'asc', label: 'Oldest' },
+  { field: 'id', direction: 'desc', label: 'Newest' },
+  { field: 'title', direction: 'asc', label: 'A-Z' },
+  { field: 'title', direction: 'desc', label: 'Z-A' },
+];
+
+async function getStoredSortIndex() {
+  try {
+    const store = await load(STORE_NAME, { autoSave: true });
+    const index = await store.get(SORT_KEY);
+    return typeof index === 'number' ? index : 0;
+  } catch (error) {
+    console.error('Failed to load sort preference:', error);
+    return 0;
+  }
+}
+
+async function setStoredSortIndex(index) {
+  try {
+    const store = await load(STORE_NAME, { autoSave: true });
+    await store.set(SORT_KEY, index);
+  } catch (error) {
+    console.error('Failed to save sort preference:', error);
+  }
+}
 
 export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditSong, songFilter, onClearFilter }) {
   const navigate = useNavigate();
@@ -26,14 +57,54 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
   // Select mode toggle state
   const [isSelectMode, setIsSelectMode] = useState(false);
 
+  // Sort state - load from persistent storage
+  const [sortIndex, setSortIndex] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load saved sort index on mount
+  useEffect(() => {
+    getStoredSortIndex().then((index) => {
+      setSortIndex(index);
+      setIsLoaded(true);
+    });
+  }, []);
+
+  // Current sort option
+  const currentSort = SORT_OPTIONS[sortIndex];
+
+  // Toggle sort option and persist
+  const handleToggleSort = useCallback(() => {
+    setSortIndex((prev) => {
+      const next = (prev + 1) % SORT_OPTIONS.length;
+      setStoredSortIndex(next);
+      return next;
+    });
+  }, []);
+
   // Filter songs if a filter is active
   const displaySongs = useMemo(() => {
-    if (!songFilter) {
-      return library.songs;
-    }
-    // Filter to only show the selected song (by ID for exact match)
-    return library.songs.filter(song => song.id === songFilter.id);
-  }, [library.songs, songFilter]);
+    if (!isLoaded) return library.songs;
+
+    let songs = songFilter
+      ? library.songs.filter(song => song.id === songFilter.id)
+      : library.songs;
+
+    // Apply sorting
+    const { field, direction } = currentSort;
+    songs = [...songs].sort((a, b) => {
+      let comparison = 0;
+      if (field === 'id') {
+        comparison = a.id - b.id;
+      } else if (field === 'title') {
+        const aTitle = (a.title || '').toLowerCase();
+        const bTitle = (b.title || '').toLowerCase();
+        comparison = aTitle.localeCompare(bTitle);
+      }
+      return direction === 'desc' ? -comparison : comparison;
+    });
+
+    return songs;
+  }, [library.songs, songFilter, currentSort, isLoaded]);
 
   // Multiselect state
   const {
@@ -135,14 +206,24 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
       {/* Toolbar row - Select mode toggle and selection actions */}
       <div className={styles.toolbar}>
         { isEmpty && (
-             <button
-          type="button"
-          className={`${styles.selectModeBtn} ${isSelectMode ? styles.selectModeActive : ''}`}
-          onClick={handleToggleSelectMode}
-          aria-pressed={isSelectMode}
-        >
-          {isSelectMode ? 'Cancel' : 'Select'}
-        </button>
+          <div className={styles.toolbarLeft}>
+            <button
+              type="button"
+              className={styles.sortBtn}
+              onClick={handleToggleSort}
+              title="Change sort order"
+            >
+              Sort: {currentSort.label}
+            </button>
+            <button
+              type="button"
+              className={`${styles.selectModeBtn} ${isSelectMode ? styles.selectModeActive : ''}`}
+              onClick={handleToggleSelectMode}
+              aria-pressed={isSelectMode}
+            >
+              {isSelectMode ? 'Cancel' : 'Select'}
+            </button>
+          </div>
         )}
      
 
