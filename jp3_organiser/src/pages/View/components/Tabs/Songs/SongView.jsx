@@ -24,6 +24,7 @@ import styles from './SongView.module.css';
 const STORE_NAME = 'songview.json';
 const SORT_KEY = 'songSortIndex';
 const PAGE_SIZE_KEY = 'songPageSize';
+const PAGE_KEY = 'songPage';
 
 const SORT_OPTIONS = [
   { field: 'id', direction: 'asc', label: 'Oldest' },
@@ -40,13 +41,15 @@ async function getStoredPreferences() {
     const store = await load(STORE_NAME, { autoSave: true });
     const sortIndex = await store.get(SORT_KEY);
     const pageSize = await store.get(PAGE_SIZE_KEY);
+    const page = await store.get(PAGE_KEY);
     return {
       sortIndex: typeof sortIndex === 'number' ? sortIndex : 0,
       pageSize: typeof pageSize === 'number' && PAGE_SIZE_OPTIONS.includes(pageSize) ? pageSize : DEFAULT_PAGE_SIZE,
+      page: typeof page === 'number' && page > 0 ? page : 1,
     };
   } catch (error) {
     console.error('Failed to load preferences:', error);
-    return { sortIndex: 0, pageSize: DEFAULT_PAGE_SIZE };
+    return { sortIndex: 0, pageSize: DEFAULT_PAGE_SIZE, page: 1 };
   }
 }
 
@@ -68,6 +71,15 @@ async function setStoredPageSize(size) {
   }
 }
 
+async function setStoredPage(page) {
+  try {
+    const store = await load(STORE_NAME, { autoSave: true });
+    await store.set(PAGE_KEY, page);
+  } catch (error) {
+    console.error('Failed to save page preference:', error);
+  }
+}
+
 export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditSong, songFilter, onClearFilter }) {
   const navigate = useNavigate();
 
@@ -77,13 +89,15 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
   // Sort and pagination state - load from persistent storage
   const [sortIndex, setSortIndex] = useState(0);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load saved preferences on mount
   useEffect(() => {
-    getStoredPreferences().then(({ sortIndex: savedSort, pageSize: savedPageSize }) => {
+    getStoredPreferences().then(({ sortIndex: savedSort, pageSize: savedPageSize, page: savedPage }) => {
       setSortIndex(savedSort);
       setPageSize(savedPageSize);
+      setCurrentPage(savedPage);
       setIsLoaded(true);
     });
   }, []);
@@ -103,7 +117,15 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
   // Handle page size change and persist
   const handlePageSizeChange = useCallback((newSize) => {
     setPageSize(newSize);
+    setCurrentPage(1);
     setStoredPageSize(newSize);
+    setStoredPage(1);
+  }, []);
+
+  // Handle page change and persist
+  const handlePageChange = useCallback((page) => {
+    setCurrentPage(page);
+    setStoredPage(page);
   }, []);
 
   // Filter songs if a filter is active
@@ -275,8 +297,10 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
         variant="table"
         columns={['title', 'artist', 'album', 'path']}
         pageSize={pageSize}
+        initialPage={currentPage}
         pageSizeOptions={PAGE_SIZE_OPTIONS}
         onPageSizeChange={handlePageSizeChange}
+        onPageChange={handlePageChange}
         onTitleClick={handleTitleClick}
         onArtistClick={handleArtistClick}
         onAlbumClick={handleAlbumClick}

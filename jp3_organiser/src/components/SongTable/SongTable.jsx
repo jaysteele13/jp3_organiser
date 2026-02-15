@@ -30,8 +30,10 @@ export default function SongTable({
   songs = [],
   variant = 'table',
   pageSize = DEFAULT_PAGE_SIZE,
+  initialPage = 1,
   pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
   onPageSizeChange,
+  onPageChange,
   emptyMessage = 'No songs available',
   columns = DEFAULT_COLUMNS,
   renderActions,
@@ -54,6 +56,8 @@ export default function SongTable({
   const state = useSongTableState({
     songs,
     pageSize,
+    initialPage,
+    onPageChange,
   });
 
   const {
@@ -175,77 +179,79 @@ export default function SongTable({
         </div>
       )}
 
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className={styles.pagination}>
-          <div className={styles.paginationLeft}>
-            <label className={styles.pageSizeLabel}>
-              Show:
-              <select
-                className={styles.pageSizeSelect}
-                value={itemsPerPage}
-                onChange={handlePageSizeChange}
-              >
-                {pageSizeOptions.map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <div className={styles.paginationCenter}>
-            <button
-              className={styles.pageBtn}
-              onClick={goToFirstPage}
-              disabled={!hasPreviousPage}
-              aria-label="First page"
-              type="button"
+      {/* Pagination Controls - always show page size selector */}
+      <div className={styles.pagination}>
+        <div className={styles.paginationLeft}>
+          <label className={styles.pageSizeLabel}>
+            Show:
+            <select
+              className={styles.pageSizeSelect}
+              value={itemsPerPage}
+              onChange={handlePageSizeChange}
             >
-              ««
-            </button>
-            <button
-              className={styles.pageBtn}
-              onClick={goToPreviousPage}
-              disabled={!hasPreviousPage}
-              aria-label="Previous page"
-              type="button"
-            >
-              «
-            </button>
-            
-            <span className={styles.pageInfo}>
-              {startIndex}–{endIndex} of {totalItems}
-            </span>
-            
-            <button
-              className={styles.pageBtn}
-              onClick={goToNextPage}
-              disabled={!hasNextPage}
-              aria-label="Next page"
-              type="button"
-            >
-              »
-            </button>
-            <button
-              className={styles.pageBtn}
-              onClick={goToLastPage}
-              disabled={!hasNextPage}
-              aria-label="Last page"
-              type="button"
-            >
-              »»
-            </button>
-          </div>
-
-          <div className={styles.paginationRight}>
-            <span className={styles.pageNumber}>
-              Page {currentPage} of {totalPages}
-            </span>
-          </div>
+              {pageSizeOptions.map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
-      )}
+
+        {totalPages > 1 && (
+          <>
+            <div className={styles.paginationCenter}>
+              <button
+                className={styles.pageBtn}
+                onClick={goToFirstPage}
+                disabled={!hasPreviousPage}
+                aria-label="First page"
+                type="button"
+              >
+                ««
+              </button>
+              <button
+                className={styles.pageBtn}
+                onClick={goToPreviousPage}
+                disabled={!hasPreviousPage}
+                aria-label="Previous page"
+                type="button"
+              >
+                «
+              </button>
+              
+              <span className={styles.pageInfo}>
+                {startIndex}–{endIndex} of {totalItems}
+              </span>
+              
+              <button
+                className={styles.pageBtn}
+                onClick={goToNextPage}
+                disabled={!hasNextPage}
+                aria-label="Next page"
+                type="button"
+              >
+                »
+              </button>
+              <button
+                className={styles.pageBtn}
+                onClick={goToLastPage}
+                disabled={!hasNextPage}
+                aria-label="Last page"
+                type="button"
+              >
+                »»
+              </button>
+            </div>
+
+            <div className={styles.paginationRight}>
+              <span className={styles.pageNumber}>
+                Page {currentPage} of {totalPages}
+              </span>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
