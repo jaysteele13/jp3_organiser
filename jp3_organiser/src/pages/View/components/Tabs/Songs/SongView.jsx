@@ -23,6 +23,7 @@ import styles from './SongView.module.css';
 
 const STORE_NAME = 'songview.json';
 const SORT_KEY = 'songSortIndex';
+const PAGE_SIZE_KEY = 'songPageSize';
 
 const SORT_OPTIONS = [
   { field: 'id', direction: 'asc', label: 'Oldest' },
@@ -31,14 +32,21 @@ const SORT_OPTIONS = [
   { field: 'title', direction: 'desc', label: 'Z-A' },
 ];
 
-async function getStoredSortIndex() {
+const DEFAULT_PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
+async function getStoredPreferences() {
   try {
     const store = await load(STORE_NAME, { autoSave: true });
-    const index = await store.get(SORT_KEY);
-    return typeof index === 'number' ? index : 0;
+    const sortIndex = await store.get(SORT_KEY);
+    const pageSize = await store.get(PAGE_SIZE_KEY);
+    return {
+      sortIndex: typeof sortIndex === 'number' ? sortIndex : 0,
+      pageSize: typeof pageSize === 'number' && PAGE_SIZE_OPTIONS.includes(pageSize) ? pageSize : DEFAULT_PAGE_SIZE,
+    };
   } catch (error) {
-    console.error('Failed to load sort preference:', error);
-    return 0;
+    console.error('Failed to load preferences:', error);
+    return { sortIndex: 0, pageSize: DEFAULT_PAGE_SIZE };
   }
 }
 
@@ -51,20 +59,31 @@ async function setStoredSortIndex(index) {
   }
 }
 
+async function setStoredPageSize(size) {
+  try {
+    const store = await load(STORE_NAME, { autoSave: true });
+    await store.set(PAGE_SIZE_KEY, size);
+  } catch (error) {
+    console.error('Failed to save page size preference:', error);
+  }
+}
+
 export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditSong, songFilter, onClearFilter }) {
   const navigate = useNavigate();
 
   // Select mode toggle state
   const [isSelectMode, setIsSelectMode] = useState(false);
 
-  // Sort state - load from persistent storage
+  // Sort and pagination state - load from persistent storage
   const [sortIndex, setSortIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load saved sort index on mount
+  // Load saved preferences on mount
   useEffect(() => {
-    getStoredSortIndex().then((index) => {
-      setSortIndex(index);
+    getStoredPreferences().then(({ sortIndex: savedSort, pageSize: savedPageSize }) => {
+      setSortIndex(savedSort);
+      setPageSize(savedPageSize);
       setIsLoaded(true);
     });
   }, []);
@@ -79,6 +98,12 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
       setStoredSortIndex(next);
       return next;
     });
+  }, []);
+
+  // Handle page size change and persist
+  const handlePageSizeChange = useCallback((newSize) => {
+    setPageSize(newSize);
+    setStoredPageSize(newSize);
   }, []);
 
   // Filter songs if a filter is active
@@ -207,6 +232,14 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
       <div className={styles.toolbar}>
         { isEmpty && (
           <div className={styles.toolbarLeft}>
+              <button
+              type="button"
+              className={`${styles.selectModeBtn} ${isSelectMode ? styles.selectModeActive : ''}`}
+              onClick={handleToggleSelectMode}
+              aria-pressed={isSelectMode}
+            >
+              {isSelectMode ? 'Cancel' : 'Select'}
+            </button>
             <button
               type="button"
               className={styles.sortBtn}
@@ -215,14 +248,7 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
             >
               Sort: {currentSort.label}
             </button>
-            <button
-              type="button"
-              className={`${styles.selectModeBtn} ${isSelectMode ? styles.selectModeActive : ''}`}
-              onClick={handleToggleSelectMode}
-              aria-pressed={isSelectMode}
-            >
-              {isSelectMode ? 'Cancel' : 'Select'}
-            </button>
+          
           </div>
         )}
      
@@ -248,6 +274,9 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
         songs={displaySongs}
         variant="table"
         columns={['title', 'artist', 'album', 'path']}
+        pageSize={pageSize}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
+        onPageSizeChange={handlePageSizeChange}
         onTitleClick={handleTitleClick}
         onArtistClick={handleArtistClick}
         onAlbumClick={handleAlbumClick}

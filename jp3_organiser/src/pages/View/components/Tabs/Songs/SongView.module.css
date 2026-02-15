@@ -28,7 +28,7 @@
   font-size: 0.8rem;
   font-family: inherit;
   font-weight: 500;
-  color: #000;
+  color: var(--sketch-bg);
   background-color: var(--tertiary);
   border: 1px solid var(--primary);
   cursor: pointer;

@@ -31,6 +31,7 @@ export default function SongTable({
   variant = 'table',
   pageSize = DEFAULT_PAGE_SIZE,
   pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
+  onPageSizeChange,
   emptyMessage = 'No songs available',
   columns = DEFAULT_COLUMNS,
   renderActions,
@@ -73,8 +74,10 @@ export default function SongTable({
   } = state;
 
   const handlePageSizeChange = useCallback((e) => {
-    updateItemsPerPage(Number(e.target.value));
-  }, [updateItemsPerPage]);
+    const newSize = Number(e.target.value);
+    updateItemsPerPage(newSize);
+    onPageSizeChange?.(newSize);
+  }, [updateItemsPerPage, onPageSizeChange]);
 
   // Calculate the actual display index for each song (accounting for pagination)
   const getDisplayIndex = useCallback((index) => {
