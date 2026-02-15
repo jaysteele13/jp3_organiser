@@ -5,6 +5,7 @@ import { clearNotFoundCache } from '../../../../services/coverArtNotFoundStore';
 import { clearCoverArtCache } from '../../../../components/CoverArt/CoverArt';
 import { useToast } from '../../../../hooks/useToast';
 import styles from './ViewHeader.module.css'
+import { clearMbids } from '../../../../services';
 
 /**
  * ViewHeader Component
@@ -34,7 +35,9 @@ export default function ViewHeader({
 
       // Clear the JS-side not-found cache (allows API retries)
       // Note: MBIDs are NOT cleared — they're valuable data from upload fingerprinting
+    
       await clearNotFoundCache();
+        await clearMbids();
 
       // Flush in-memory blob URL cache so covers re-fetch on next render
       clearCoverArtCache();
@@ -98,14 +101,14 @@ export default function ViewHeader({
                   >
                     {isLoading ? 'Loading...' : 'Refresh'}
                   </button>
-                  <button 
+                  {/* <button 
                     className={styles.clearCacheButton} 
                     onClick={handleClearCache}
                     disabled={isClearingCache || !libraryPath}
                     title="Clear cached cover images and reset not-found cache"
                   >
                     {isClearingCache ? 'Clearing...' : '♻ CoverArt'}
-                  </button>
+                  </button> */}
                 </div>
               </header>
         </>

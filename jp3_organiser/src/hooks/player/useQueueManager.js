@@ -122,14 +122,31 @@ export function useQueueManager() {
   }, [playingFromUserQueue]);
 
   /**
-   * Clear everything (context + user queue).
+   * Clear everything (context + user queue), but preserve currently playing track.
    */
   const clearQueue = useCallback(() => {
-    setContext([]);
-    setContextIndex(-1);
-    setUserQueue([]);
-    setPlayingFromUserQueue(false);
-  }, []);
+    // Preserve current track if playing
+    if (playingFromUserQueue && userQueue.length > 0) {
+      // Keep first user queue item as sole context
+      setContext([userQueue[0]]);
+      setContextIndex(0);
+      setUserQueue([]);
+      setPlayingFromUserQueue(false);
+    } else if (contextIndex >= 0 && contextIndex < context.length) {
+      // Keep current context track as sole item
+      const currentTrackItem = context[contextIndex];
+      setContext([currentTrackItem]);
+      setContextIndex(0);
+      setUserQueue([]);
+      setPlayingFromUserQueue(false);
+    } else {
+      // Nothing playing, clear everything
+      setContext([]);
+      setContextIndex(-1);
+      setUserQueue([]);
+      setPlayingFromUserQueue(false);
+    }
+  }, [playingFromUserQueue, userQueue, context, contextIndex]);
 
   /**
    * Move to next track.

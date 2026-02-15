@@ -18,7 +18,67 @@ import { useNavigate } from 'react-router-dom';
 import { SongTable, ActionMenu, FilterBar } from '../../../../../components';
 import { useMultiSelect } from '../../../../../hooks';
 import { TABS } from '../../../../../utils/enums';
+import { load } from '@tauri-apps/plugin-store';
 import styles from './SongView.module.css';
+
+const STORE_NAME = 'songview.json';
+const SORT_KEY = 'songSortIndex';
+const PAGE_SIZE_KEY = 'songPageSize';
+const PAGE_KEY = 'songPage';
+
+const SORT_OPTIONS = [
+  { field: 'id', direction: 'asc', label: 'Oldest' },
+  { field: 'id', direction: 'desc', label: 'Newest' },
+  { field: 'title', direction: 'asc', label: 'A-Z' },
+  { field: 'title', direction: 'desc', label: 'Z-A' },
+];
+
+const DEFAULT_PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
+async function getStoredPreferences() {
+  try {
+    const store = await load(STORE_NAME, { autoSave: true });
+    const sortIndex = await store.get(SORT_KEY);
+    const pageSize = await store.get(PAGE_SIZE_KEY);
+    const page = await store.get(PAGE_KEY);
+    return {
+      sortIndex: typeof sortIndex === 'number' ? sortIndex : 0,
+      pageSize: typeof pageSize === 'number' && PAGE_SIZE_OPTIONS.includes(pageSize) ? pageSize : DEFAULT_PAGE_SIZE,
+      page: typeof page === 'number' && page > 0 ? page : 1,
+    };
+  } catch (error) {
+    console.error('Failed to load preferences:', error);
+    return { sortIndex: 0, pageSize: DEFAULT_PAGE_SIZE, page: 1 };
+  }
+}
+
+async function setStoredSortIndex(index) {
+  try {
+    const store = await load(STORE_NAME, { autoSave: true });
+    await store.set(SORT_KEY, index);
+  } catch (error) {
+    console.error('Failed to save sort preference:', error);
+  }
+}
+
+async function setStoredPageSize(size) {
+  try {
+    const store = await load(STORE_NAME, { autoSave: true });
+    await store.set(PAGE_SIZE_KEY, size);
+  } catch (error) {
+    console.error('Failed to save page size preference:', error);
+  }
+}
+
+async function setStoredPage(page) {
+  try {
+    const store = await load(STORE_NAME, { autoSave: true });
+    await store.set(PAGE_KEY, page);
+  } catch (error) {
+    console.error('Failed to save page preference:', error);
+  }
+}
 
 export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditSong, songFilter, onClearFilter }) {
   const navigate = useNavigate();
@@ -26,14 +86,72 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
   // Select mode toggle state
   const [isSelectMode, setIsSelectMode] = useState(false);
 
+  // Sort and pagination state - load from persistent storage
+  const [sortIndex, setSortIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load saved preferences on mount
+  useEffect(() => {
+    getStoredPreferences().then(({ sortIndex: savedSort, pageSize: savedPageSize, page: savedPage }) => {
+      setSortIndex(savedSort);
+      setPageSize(savedPageSize);
+      setCurrentPage(savedPage);
+      setIsLoaded(true);
+    });
+  }, []);
+
+  // Current sort option
+  const currentSort = SORT_OPTIONS[sortIndex];
+
+  // Toggle sort option and persist
+  const handleToggleSort = useCallback(() => {
+    setSortIndex((prev) => {
+      const next = (prev + 1) % SORT_OPTIONS.length;
+      setStoredSortIndex(next);
+      return next;
+    });
+  }, []);
+
+  // Handle page size change and persist
+  const handlePageSizeChange = useCallback((newSize) => {
+    setPageSize(newSize);
+    setCurrentPage(1);
+    setStoredPageSize(newSize);
+    setStoredPage(1);
+  }, []);
+
+  // Handle page change and persist
+  const handlePageChange = useCallback((page) => {
+    setCurrentPage(page);
+    setStoredPage(page);
+  }, []);
+
   // Filter songs if a filter is active
   const displaySongs = useMemo(() => {
-    if (!songFilter) {
-      return library.songs;
-    }
-    // Filter to only show the selected song (by ID for exact match)
-    return library.songs.filter(song => song.id === songFilter.id);
-  }, [library.songs, songFilter]);
+    if (!isLoaded) return library.songs;
+
+    let songs = songFilter
+      ? library.songs.filter(song => song.id === songFilter.id)
+      : library.songs;
+
+    // Apply sorting
+    const { field, direction } = currentSort;
+    songs = [...songs].sort((a, b) => {
+      let comparison = 0;
+      if (field === 'id') {
+        comparison = a.id - b.id;
+      } else if (field === 'title') {
+        const aTitle = (a.title || '').toLowerCase();
+        const bTitle = (b.title || '').toLowerCase();
+        comparison = aTitle.localeCompare(bTitle);
+      }
+      return direction === 'desc' ? -comparison : comparison;
+    });
+
+    return songs;
+  }, [library.songs, songFilter, currentSort, isLoaded]);
 
   // Multiselect state
   const {
@@ -135,14 +253,25 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
       {/* Toolbar row - Select mode toggle and selection actions */}
       <div className={styles.toolbar}>
         { isEmpty && (
-             <button
-          type="button"
-          className={`${styles.selectModeBtn} ${isSelectMode ? styles.selectModeActive : ''}`}
-          onClick={handleToggleSelectMode}
-          aria-pressed={isSelectMode}
-        >
-          {isSelectMode ? 'Cancel' : 'Select'}
-        </button>
+          <div className={styles.toolbarLeft}>
+              <button
+              type="button"
+              className={`${styles.selectModeBtn} ${isSelectMode ? styles.selectModeActive : ''}`}
+              onClick={handleToggleSelectMode}
+              aria-pressed={isSelectMode}
+            >
+              {isSelectMode ? 'Cancel' : 'Select'}
+            </button>
+            <button
+              type="button"
+              className={styles.sortBtn}
+              onClick={handleToggleSort}
+              title="Change sort order"
+            >
+              Sort: {currentSort.label}
+            </button>
+          
+          </div>
         )}
      
 
@@ -167,6 +296,11 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
         songs={displaySongs}
         variant="table"
         columns={['title', 'artist', 'album', 'path']}
+        pageSize={pageSize}
+        initialPage={currentPage}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
+        onPageSizeChange={handlePageSizeChange}
+        onPageChange={handlePageChange}
         onTitleClick={handleTitleClick}
         onArtistClick={handleArtistClick}
         onAlbumClick={handleAlbumClick}

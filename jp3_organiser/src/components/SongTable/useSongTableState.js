@@ -21,9 +21,21 @@ const DEFAULT_PAGE_SIZE = 25;
 export function useSongTableState({
   songs = [],
   pageSize = DEFAULT_PAGE_SIZE,
+  initialPage = 1,
+  onPageChange,
 }) {
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(initialPage);
   const [itemsPerPage, setItemsPerPage] = useState(pageSize);
+
+  // Update itemsPerPage when pageSize prop changes
+  useEffect(() => {
+    setItemsPerPage(pageSize);
+  }, [pageSize]);
+
+  // Update currentPage when initialPage prop changes
+  useEffect(() => {
+    setCurrentPage(initialPage);
+  }, [initialPage]);
 
   // Calculate pagination values
   const totalItems = songs.length;
@@ -50,7 +62,8 @@ export function useSongTableState({
   const goToPage = useCallback((page) => {
     const newPage = Math.min(Math.max(1, page), totalPages);
     setCurrentPage(newPage);
-  }, [totalPages]);
+    onPageChange?.(newPage);
+  }, [totalPages, onPageChange]);
 
   const goToNextPage = useCallback(() => {
     goToPage(currentPage + 1);
@@ -71,8 +84,11 @@ export function useSongTableState({
   // Update items per page
   const updateItemsPerPage = useCallback((count) => {
     setItemsPerPage(count);
-    setCurrentPage(1); // Reset to first page when changing page size
-  }, []);
+    const newTotalPages = Math.max(1, Math.ceil(totalItems / count));
+    const newPage = Math.min(currentPage, newTotalPages);
+    setCurrentPage(newPage);
+    onPageChange?.(newPage);
+  }, [totalItems, currentPage, onPageChange]);
 
   return {
     // State
