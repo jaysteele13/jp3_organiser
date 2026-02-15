@@ -165,9 +165,8 @@ export function PlayerProvider({ children }) {
   }, [nextTrack]);
 
   const clearQueue = useCallback(() => {
-    stop();
     clearQueueState();
-  }, [stop, clearQueueState]);
+  }, [clearQueueState]);
 
   const setVolume = useCallback((value) => {
     setVolumeState(Math.max(0, Math.min(1, value)));
