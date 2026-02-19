@@ -121,9 +121,12 @@
   font-size: 0.9rem;
   font-weight: 600;
   color: #000;
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
 .cardSubtitle {
+  padding: .5rem;
   font-size: 0.75rem;
   color: #333;
 }
