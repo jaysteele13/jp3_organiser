@@ -464,12 +464,17 @@ pub fn save_to_library(
     let artist_table_bytes: Vec<u8> = artists.iter().flat_map(|a| a.to_bytes()).collect();
     let album_table_bytes: Vec<u8> = albums.iter().flat_map(|a| a.to_bytes()).collect();
     let song_table_bytes: Vec<u8> = songs.iter().flat_map(|s| s.to_bytes()).collect();
+    let album_song_index_bytes: Vec<u8> = Vec::new();
+    let artist_song_index_bytes: Vec<u8> = Vec::new();
 
     // Calculate offsets
     let string_table_offset = HEADER_SIZE;
     let artist_table_offset = string_table_offset + string_table_bytes.len() as u32;
     let album_table_offset = artist_table_offset + artist_table_bytes.len() as u32;
     let song_table_offset = album_table_offset + album_table_bytes.len() as u32;
+    let album_song_index_table_offset = song_table_offset + song_table_bytes.len() as u32;
+    let artist_song_index_table_offset =
+        album_song_index_table_offset + album_song_index_bytes.len() as u32;
 
     let header = LibraryHeader {
         magic: *crate::models::LIBRARY_MAGIC,
@@ -481,6 +486,8 @@ pub fn save_to_library(
         artist_table_offset,
         album_table_offset,
         song_table_offset,
+        album_song_index_table_offset,
+        artist_song_index_table_offset,
     };
 
     // Write library.bin
@@ -496,6 +503,10 @@ pub fn save_to_library(
         .map_err(|e| format!("Failed to write album table: {}", e))?;
     file.write_all(&song_table_bytes)
         .map_err(|e| format!("Failed to write song table: {}", e))?;
+    file.write_all(&album_song_index_bytes)
+        .map_err(|e| format!("Failed to write album song index table: {}", e))?;
+    file.write_all(&artist_song_index_bytes)
+        .map_err(|e| format!("Failed to write artist song index table: {}", e))?;
 
     Ok(SaveToLibraryResult {
         files_saved,
@@ -827,7 +838,18 @@ pub fn edit_song_metadata(
     ));
 
     // Rebuild and write library.bin
-    write_library_bin(&library_bin_path, &string_table, &artists, &albums, &songs)?;
+    // TODO: Rebuild index tables properly in Stage 2
+    let empty_album_index: Vec<crate::models::AlbumSongIndexEntry> = Vec::new();
+    let empty_artist_index: Vec<crate::models::ArtistSongIndexEntry> = Vec::new();
+    write_library_bin(
+        &library_bin_path,
+        &string_table,
+        &artists,
+        &albums,
+        &songs,
+        &empty_album_index,
+        &empty_artist_index,
+    )?;
 
     // Remap old song ID to new song ID in all playlists
     let playlists_updated = remap_song_id_in_playlists(&jp3_path, song_id, new_song_id)?;
@@ -1087,12 +1109,17 @@ pub fn compact_library(base_path: String) -> Result<crate::models::CompactResult
     let strings_removed = old_strings.len() as u32 - new_string_table.len() as u32;
 
     // Write new library.bin
+    // TODO: Rebuild index tables properly in Stage 3
+    let empty_album_index: Vec<crate::models::AlbumSongIndexEntry> = Vec::new();
+    let empty_artist_index: Vec<crate::models::ArtistSongIndexEntry> = Vec::new();
     write_library_bin(
         &library_bin_path,
         &new_string_table,
         &new_artists,
         &new_albums,
         &new_songs,
+        &empty_album_index,
+        &empty_artist_index,
     )?;
 
     let new_size_bytes = fs::metadata(&library_bin_path)
@@ -1177,16 +1204,29 @@ fn write_library_bin(
     artists: &[ArtistEntry],
     albums: &[AlbumEntry],
     songs: &[SongEntry],
+    album_song_index_table: &[crate::models::AlbumSongIndexEntry],
+    artist_song_index_table: &[crate::models::ArtistSongIndexEntry],
 ) -> Result<(), String> {
     let string_table_bytes = string_table.to_bytes();
     let artist_table_bytes: Vec<u8> = artists.iter().flat_map(|a| a.to_bytes()).collect();
     let album_table_bytes: Vec<u8> = albums.iter().flat_map(|a| a.to_bytes()).collect();
     let song_table_bytes: Vec<u8> = songs.iter().flat_map(|s| s.to_bytes()).collect();
+    let album_song_index_bytes: Vec<u8> = album_song_index_table
+        .iter()
+        .flat_map(|e| e.to_bytes())
+        .collect();
+    let artist_song_index_bytes: Vec<u8> = artist_song_index_table
+        .iter()
+        .flat_map(|e| e.to_bytes())
+        .collect();
 
     let string_table_offset = HEADER_SIZE;
     let artist_table_offset = string_table_offset + string_table_bytes.len() as u32;
     let album_table_offset = artist_table_offset + artist_table_bytes.len() as u32;
     let song_table_offset = album_table_offset + album_table_bytes.len() as u32;
+    let album_song_index_table_offset = song_table_offset + song_table_bytes.len() as u32;
+    let artist_song_index_table_offset =
+        album_song_index_table_offset + album_song_index_bytes.len() as u32;
 
     let header = LibraryHeader {
         magic: *crate::models::LIBRARY_MAGIC,
@@ -1198,6 +1238,8 @@ fn write_library_bin(
         artist_table_offset,
         album_table_offset,
         song_table_offset,
+        album_song_index_table_offset,
+        artist_song_index_table_offset,
     };
 
     let mut file =
@@ -1212,6 +1254,10 @@ fn write_library_bin(
         .map_err(|e| format!("Failed to write album table: {}", e))?;
     file.write_all(&song_table_bytes)
         .map_err(|e| format!("Failed to write song table: {}", e))?;
+    file.write_all(&album_song_index_bytes)
+        .map_err(|e| format!("Failed to write album song index table: {}", e))?;
+    file.write_all(&artist_song_index_bytes)
+        .map_err(|e| format!("Failed to write artist song index table: {}", e))?;
     file.sync_all()
         .map_err(|e| format!("Failed to sync: {}", e))?;
 
@@ -1417,12 +1463,17 @@ pub fn edit_album(
         .collect();
 
     // Write updated library
+    // TODO: Rebuild index tables properly in Stage 5
+    let empty_album_index: Vec<crate::models::AlbumSongIndexEntry> = Vec::new();
+    let empty_artist_index: Vec<crate::models::ArtistSongIndexEntry> = Vec::new();
     write_library_bin(
         &library_bin_path,
         &string_table,
         &artists,
         &albums,
         &updated_songs,
+        &empty_album_index,
+        &empty_artist_index,
     )?;
 
     Ok(crate::models::EditAlbumResult {
@@ -1504,7 +1555,18 @@ pub fn edit_artist(
     let albums_affected = albums.iter().filter(|a| a.artist_id == artist_id).count() as u32;
 
     // Write updated library
-    write_library_bin(&library_bin_path, &string_table, &artists, &albums, &songs)?;
+    // TODO: Rebuild index tables properly in Stage 5
+    let empty_album_index: Vec<crate::models::AlbumSongIndexEntry> = Vec::new();
+    let empty_artist_index: Vec<crate::models::ArtistSongIndexEntry> = Vec::new();
+    write_library_bin(
+        &library_bin_path,
+        &string_table,
+        &artists,
+        &albums,
+        &songs,
+        &empty_album_index,
+        &empty_artist_index,
+    )?;
 
     Ok(crate::models::EditArtistResult {
         songs_affected,

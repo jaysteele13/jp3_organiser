@@ -11,11 +11,11 @@ use serde::Serialize;
 // Binary format constants
 pub const LIBRARY_MAGIC: &[u8; 4] = b"LIB1";
 pub const LIBRARY_VERSION: u32 = 1;
-pub const HEADER_SIZE: u32 = 40;
+pub const HEADER_SIZE: u32 = 48;
 
 /// Library header structure for binary serialization.
 ///
-/// Binary layout (40 bytes total):
+/// Binary layout (48 bytes total):
 /// ```text
 /// Offset  Size  Field
 /// 0x00    4     magic ("LIB1")
@@ -40,6 +40,8 @@ pub struct LibraryHeader {
     pub artist_table_offset: u32,
     pub album_table_offset: u32,
     pub song_table_offset: u32,
+    pub album_song_index_table_offset: u32,
+    pub artist_song_index_table_offset: u32,
 }
 
 impl LibraryHeader {
@@ -55,6 +57,8 @@ impl LibraryHeader {
             artist_table_offset: HEADER_SIZE,
             album_table_offset: HEADER_SIZE,
             song_table_offset: HEADER_SIZE,
+            album_song_index_table_offset: HEADER_SIZE,
+            artist_song_index_table_offset: HEADER_SIZE,
         }
     }
 
@@ -70,6 +74,8 @@ impl LibraryHeader {
         bytes.extend_from_slice(&self.artist_table_offset.to_le_bytes());
         bytes.extend_from_slice(&self.album_table_offset.to_le_bytes());
         bytes.extend_from_slice(&self.song_table_offset.to_le_bytes());
+        bytes.extend_from_slice(&self.album_song_index_table_offset.to_le_bytes());
+        bytes.extend_from_slice(&self.artist_song_index_table_offset.to_le_bytes());
         // Reserved 4 bytes for future use
         bytes.extend_from_slice(&0u32.to_le_bytes());
         bytes
@@ -97,6 +103,8 @@ impl LibraryHeader {
             artist_table_offset: u32::from_le_bytes(bytes[24..28].try_into().ok()?),
             album_table_offset: u32::from_le_bytes(bytes[28..32].try_into().ok()?),
             song_table_offset: u32::from_le_bytes(bytes[32..36].try_into().ok()?),
+            album_song_index_table_offset: u32::from_le_bytes(bytes[36..40].try_into().ok()?),
+            artist_song_index_table_offset: u32::from_le_bytes(bytes[40..44].try_into().ok()?),
         })
     }
 }
@@ -341,6 +349,43 @@ impl StringTable {
     #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.strings.is_empty()
+    }
+}
+
+// 6 bytes
+#[derive(Debug, Clone)]
+pub struct AlbumSongIndexEntry {
+    pub song_count: u16,     // 2 bytes
+    pub first_song_pos: u32, // 4 bytes
+}
+
+impl AlbumSongIndexEntry {
+    pub const SIZE: u32 = 6;
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(Self::SIZE as usize);
+        bytes.extend_from_slice(&self.song_count.to_le_bytes());
+        bytes.extend_from_slice(&self.first_song_pos.to_le_bytes());
+        bytes.extend_from_slice(&[0u8; 6]); // reserved not sure what this should be
+        bytes
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ArtistSongIndexEntry {
+    pub song_count: u16,     // 2 bytes
+    pub first_song_pos: u32, // 4 bytes
+}
+
+impl ArtistSongIndexEntry {
+    pub const SIZE: u32 = 6;
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(Self::SIZE as usize);
+        bytes.extend_from_slice(&self.song_count.to_le_bytes());
+        bytes.extend_from_slice(&self.first_song_pos.to_le_bytes());
+        bytes.extend_from_slice(&[0u8; 6]); // reserved not sure what this should be
+        bytes
     }
 }
 
