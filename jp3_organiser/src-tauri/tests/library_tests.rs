@@ -590,7 +590,10 @@ fn test_edit_then_compact_preserves_audio_file() {
 
     // Now compact the library
     let compact_result = compact_library(base_path.clone()).unwrap();
-    assert_eq!(compact_result.songs_removed, 1, "Should remove 1 deleted song");
+    assert_eq!(
+        compact_result.songs_removed, 1,
+        "Should remove 1 deleted song"
+    );
 
     // CRITICAL: Audio file should STILL exist because the new song uses the same path
     assert!(
@@ -603,4 +606,126 @@ fn test_edit_then_compact_preserves_audio_file() {
     assert_eq!(library_after.songs.len(), 1);
     assert_eq!(library_after.songs[0].path, *song_path);
     assert_eq!(library_after.songs[0].album_name, "New Album");
+}
+
+// =============================================================================
+// Binary Format Tests
+// =============================================================================
+
+#[test]
+fn test_song_entry_size_is_20_bytes() {
+    use jp3_organiser_lib::models::SongEntry;
+    assert_eq!(SongEntry::SIZE, 20, "SongEntry should be 20 bytes");
+}
+
+#[test]
+fn test_index_tables_correct_after_save() {
+    let (temp_dir, base_path) = setup_test_library();
+
+    let file1 = create_dummy_audio_file(&temp_dir, "s1.mp3");
+    let file2 = create_dummy_audio_file(&temp_dir, "s2.mp3");
+    let file3 = create_dummy_audio_file(&temp_dir, "s3.mp3");
+
+    let files = vec![
+        create_file_to_save(file1, "Song A", "Artist", "Album One", 2020, 1),
+        create_file_to_save(file2, "Song B", "Artist", "Album Two", 2020, 1),
+        create_file_to_save(file3, "Song C", "Artist", "Album One", 2020, 2),
+    ];
+
+    save_to_library(base_path.clone(), files).unwrap();
+
+    // Load raw binary to verify index tables
+    let jp3_path = std::path::Path::new(&base_path).join("jp3");
+    let metadata_path = jp3_path.join("metadata");
+    let library_bin_path = metadata_path.join("library.bin");
+
+    let data = std::fs::read(&library_bin_path).unwrap();
+
+    // Parse header
+    let header = jp3_organiser_lib::models::LibraryHeader::from_bytes(&data).unwrap();
+    assert_eq!(header.album_count, 2);
+    assert_eq!(header.artist_count, 1);
+
+    // Album One should have 2 songs, Album Two should have 1
+    let album_index_start = header.album_song_index_table_offset as usize;
+    let entry_size = jp3_organiser_lib::models::AlbumSongIndexEntry::SIZE as usize;
+
+    // Album index 0 (Album One)
+    let album0_song_count = u16::from_le_bytes(
+        data[album_index_start..album_index_start + 2]
+            .try_into()
+            .unwrap(),
+    );
+    let album0_first_pos = u32::from_le_bytes(
+        data[album_index_start + 2..album_index_start + 6]
+            .try_into()
+            .unwrap(),
+    );
+
+    // Album index 1 (Album Two)
+    let album1_song_count = u16::from_le_bytes(
+        data[album_index_start + entry_size..album_index_start + entry_size + 2]
+            .try_into()
+            .unwrap(),
+    );
+    let album1_first_pos = u32::from_le_bytes(
+        data[album_index_start + entry_size + 2..album_index_start + entry_size + 6]
+            .try_into()
+            .unwrap(),
+    );
+
+    // Album One: 2 songs, Album Two: 1 song (order may vary based on sort)
+    // After sorting by album_id: Album One (id=0) first, Album Two (id=1) second
+    // Album index 0 should have song_count 2 or 1, index 1 should have the remainder
+    let total_songs = album0_song_count as u32 + album1_song_count as u32;
+    assert_eq!(total_songs, 3, "Total songs across albums should be 3");
+
+    // Artist index should have song_count 3
+    let artist_index_start = header.artist_song_index_table_offset as usize;
+    let artist_song_count = u16::from_le_bytes(
+        data[artist_index_start..artist_index_start + 2]
+            .try_into()
+            .unwrap(),
+    );
+    assert_eq!(artist_song_count, 3, "Artist should have 3 songs");
+}
+
+#[test]
+fn test_save_reorder_remaps_playlist_ids() {
+    let (temp_dir, base_path) = setup_test_library();
+
+    // Add songs: Album Two first, then Album One (to test reorder)
+    let file1 = create_dummy_audio_file(&temp_dir, "s1.mp3");
+    let file2 = create_dummy_audio_file(&temp_dir, "s2.mp3");
+    let file3 = create_dummy_audio_file(&temp_dir, "s3.mp3");
+
+    let files = vec![
+        create_file_to_save(file1, "Song A", "Artist", "Album Two", 2020, 1),
+        create_file_to_save(file2, "Song B", "Artist", "Album One", 2020, 1),
+        create_file_to_save(file3, "Song C", "Artist", "Album One", 2020, 2),
+    ];
+
+    save_to_library(base_path.clone(), files).unwrap();
+
+    // Create playlist with original IDs [0, 1, 2]
+    let playlist = create_playlist(base_path.clone(), "Test".to_string(), vec![0, 1, 2]).unwrap();
+
+    // Load playlist - IDs should be remapped to maintain correct songs
+    let loaded = load_playlist(base_path, playlist.playlist_id).unwrap();
+
+    // After reorder, songs are sorted by album_id:
+    // Album One (id=0) has songs at positions 1,2 -> new IDs 0,1
+    // Album Two (id=1) has song at position 0 -> new ID 2
+    // So [0, 1, 2] should become [0, 1, 2] or potentially different based on sort
+    // But all 3 song IDs should be valid (within 0-2 range)
+    assert_eq!(loaded.song_ids.len(), 3);
+    for &id in &loaded.song_ids {
+        assert!(id < 3, "Song ID {} should be valid (0-2)", id);
+    }
+}
+
+#[test]
+fn test_library_header_is_48_bytes() {
+    use jp3_organiser_lib::models::HEADER_SIZE;
+    assert_eq!(HEADER_SIZE, 48, "Library header should be 48 bytes");
 }

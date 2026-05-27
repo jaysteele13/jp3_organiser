@@ -194,7 +194,7 @@ pub mod song_flags {
     pub const DELETED: u8 = 0x01;
 }
 
-/// Song table entry (24 bytes).
+/// Song table entry (20 bytes).
 ///
 /// Binary layout:
 /// ```text
@@ -203,10 +203,8 @@ pub mod song_flags {
 /// 0x04    4     artist_id
 /// 0x08    4     album_id
 /// 0x0C    4     path_string_id (relative path in library)
-/// 0x10    2     track_number
-/// 0x12    2     duration_sec
-/// 0x14    1     flags (0x00 = active, 0x01 = deleted)
-/// 0x15    3     reserved
+/// 0x10    1     flags (0x00 = active, 0x01 = deleted)
+/// 0x11    7     reserved
 /// ```
 #[derive(Debug, Clone)]
 pub struct SongEntry {
@@ -214,30 +212,19 @@ pub struct SongEntry {
     pub artist_id: u32,
     pub album_id: u32,
     pub path_string_id: u32,
-    pub track_number: u16,
-    pub duration_sec: u16,
     pub flags: u8,
 }
 
 impl SongEntry {
-    pub const SIZE: u32 = 24;
+    pub const SIZE: u32 = 20;
 
     /// Create a new active song entry.
-    pub fn new(
-        title_string_id: u32,
-        artist_id: u32,
-        album_id: u32,
-        path_string_id: u32,
-        track_number: u16,
-        duration_sec: u16,
-    ) -> Self {
+    pub fn new(title_string_id: u32, artist_id: u32, album_id: u32, path_string_id: u32) -> Self {
         Self {
             title_string_id,
             artist_id,
             album_id,
             path_string_id,
-            track_number,
-            duration_sec,
             flags: song_flags::ACTIVE,
         }
     }
@@ -258,10 +245,8 @@ impl SongEntry {
         bytes.extend_from_slice(&self.artist_id.to_le_bytes());
         bytes.extend_from_slice(&self.album_id.to_le_bytes());
         bytes.extend_from_slice(&self.path_string_id.to_le_bytes());
-        bytes.extend_from_slice(&self.track_number.to_le_bytes());
-        bytes.extend_from_slice(&self.duration_sec.to_le_bytes());
         bytes.push(self.flags);
-        bytes.extend_from_slice(&[0u8; 3]); // reserved
+        bytes.extend_from_slice(&[0u8; 7]); // reserved
         bytes
     }
 
@@ -275,9 +260,7 @@ impl SongEntry {
             artist_id: u32::from_le_bytes(data[4..8].try_into().ok()?),
             album_id: u32::from_le_bytes(data[8..12].try_into().ok()?),
             path_string_id: u32::from_le_bytes(data[12..16].try_into().ok()?),
-            track_number: u16::from_le_bytes(data[16..18].try_into().ok()?),
-            duration_sec: u16::from_le_bytes(data[18..20].try_into().ok()?),
-            flags: data[20],
+            flags: data[16],
         })
     }
 }
@@ -366,7 +349,6 @@ impl AlbumSongIndexEntry {
         let mut bytes = Vec::with_capacity(Self::SIZE as usize);
         bytes.extend_from_slice(&self.song_count.to_le_bytes());
         bytes.extend_from_slice(&self.first_song_pos.to_le_bytes());
-        bytes.extend_from_slice(&[0u8; 6]); // reserved not sure what this should be
         bytes
     }
 }
@@ -384,7 +366,6 @@ impl ArtistSongIndexEntry {
         let mut bytes = Vec::with_capacity(Self::SIZE as usize);
         bytes.extend_from_slice(&self.song_count.to_le_bytes());
         bytes.extend_from_slice(&self.first_song_pos.to_le_bytes());
-        bytes.extend_from_slice(&[0u8; 6]); // reserved not sure what this should be
         bytes
     }
 }

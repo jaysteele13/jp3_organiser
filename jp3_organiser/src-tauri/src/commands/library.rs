@@ -253,8 +253,6 @@ fn load_existing_library_data(
                 artist_id: raw.artist_id,
                 album_id: raw.album_id,
                 path_string_id: raw.path_string_id,
-                track_number: raw.track_number,
-                duration_sec: raw.duration_sec,
                 flags: raw.flags,
             }
         })
@@ -389,8 +387,20 @@ pub fn save_to_library(
         // Check for duplicate song (same title, artist, album)
         // We need to check using the title_string_id that would be assigned
         let title_string_id = string_table.get_or_peek(title);
+        log::debug!(
+            "Checking song: title='{}', title_string_id={:?}, artist_id={}, album_id={}",
+            title,
+            title_string_id,
+            artist_id,
+            album_id
+        );
         if let Some(tid) = title_string_id {
             let song_key = (tid, artist_id, album_id);
+            log::debug!(
+                "  song_key={:?}, song_set contains: {}",
+                song_key,
+                song_set.contains(&song_key)
+            );
             if song_set.contains(&song_key) {
                 log::info!(
                     "Skipping duplicate song: '{}' by '{}' on '{}'",
@@ -449,8 +459,6 @@ pub fn save_to_library(
             artist_id,
             album_id,
             path_string_id,
-            metadata.track_number.unwrap_or(0) as u16,
-            metadata.duration_secs.unwrap_or(0) as u16,
         ));
 
         saved_song_ids.push(new_song_id);
@@ -459,54 +467,56 @@ pub fn save_to_library(
         files_saved += 1;
     }
 
-    // Build library.bin
-    let string_table_bytes = string_table.to_bytes();
-    let artist_table_bytes: Vec<u8> = artists.iter().flat_map(|a| a.to_bytes()).collect();
-    let album_table_bytes: Vec<u8> = albums.iter().flat_map(|a| a.to_bytes()).collect();
-    let song_table_bytes: Vec<u8> = songs.iter().flat_map(|s| s.to_bytes()).collect();
-    let album_song_index_bytes: Vec<u8> = Vec::new();
-    let artist_song_index_bytes: Vec<u8> = Vec::new();
+    // Build index tables - track from existing songs first, then new songs
+    // Existing songs already have their positions, we just need to continue tracking
+    let mut final_album_first_song_idx: HashMap<u32, u32> = HashMap::new();
+    let mut final_album_song_count: HashMap<u32, u16> = HashMap::new();
+    let mut final_artist_first_song_idx: HashMap<u32, u32> = HashMap::new();
+    let mut final_artist_song_count: HashMap<u32, u16> = HashMap::new();
 
-    // Calculate offsets
-    let string_table_offset = HEADER_SIZE;
-    let artist_table_offset = string_table_offset + string_table_bytes.len() as u32;
-    let album_table_offset = artist_table_offset + artist_table_bytes.len() as u32;
-    let song_table_offset = album_table_offset + album_table_bytes.len() as u32;
-    let album_song_index_table_offset = song_table_offset + song_table_bytes.len() as u32;
-    let artist_song_index_table_offset =
-        album_song_index_table_offset + album_song_index_bytes.len() as u32;
+    // Build index from all songs (existing + new) in original order
+    for (idx, song) in songs.iter().enumerate() {
+        let song_idx = idx as u32;
+        let album_id = song.album_id;
+        let artist_id = song.artist_id;
 
-    let header = LibraryHeader {
-        magic: *crate::models::LIBRARY_MAGIC,
-        version: crate::models::LIBRARY_VERSION,
-        song_count: songs.len() as u32,
-        artist_count: artists.len() as u32,
-        album_count: albums.len() as u32,
-        string_table_offset,
-        artist_table_offset,
-        album_table_offset,
-        song_table_offset,
-        album_song_index_table_offset,
-        artist_song_index_table_offset,
-    };
+        final_album_first_song_idx
+            .entry(album_id)
+            .or_insert(song_idx);
+        *final_album_song_count.entry(album_id).or_insert(0) += 1;
 
-    // Write library.bin
-    let mut file = fs::File::create(&library_bin_path)
-        .map_err(|e| format!("Failed to create library.bin: {}", e))?;
-    file.write_all(&header.to_bytes())
-        .map_err(|e| format!("Failed to write header: {}", e))?;
-    file.write_all(&string_table_bytes)
-        .map_err(|e| format!("Failed to write string table: {}", e))?;
-    file.write_all(&artist_table_bytes)
-        .map_err(|e| format!("Failed to write artist table: {}", e))?;
-    file.write_all(&album_table_bytes)
-        .map_err(|e| format!("Failed to write album table: {}", e))?;
-    file.write_all(&song_table_bytes)
-        .map_err(|e| format!("Failed to write song table: {}", e))?;
-    file.write_all(&album_song_index_bytes)
-        .map_err(|e| format!("Failed to write album song index table: {}", e))?;
-    file.write_all(&artist_song_index_bytes)
-        .map_err(|e| format!("Failed to write artist song index table: {}", e))?;
+        final_artist_first_song_idx
+            .entry(artist_id)
+            .or_insert(song_idx);
+        *final_artist_song_count.entry(artist_id).or_insert(0) += 1;
+    }
+
+    // Build index tables - existing songs keep their original IDs, new songs follow
+    let album_song_index_table: Vec<crate::models::AlbumSongIndexEntry> = (0..albums.len() as u32)
+        .map(|album_id| crate::models::AlbumSongIndexEntry {
+            song_count: *final_album_song_count.get(&album_id).unwrap_or(&0),
+            first_song_pos: *final_album_first_song_idx.get(&album_id).unwrap_or(&0),
+        })
+        .collect();
+
+    let artist_song_index_table: Vec<crate::models::ArtistSongIndexEntry> = (0..artists.len()
+        as u32)
+        .map(|artist_id| crate::models::ArtistSongIndexEntry {
+            song_count: *final_artist_song_count.get(&artist_id).unwrap_or(&0),
+            first_song_pos: *final_artist_first_song_idx.get(&artist_id).unwrap_or(&0),
+        })
+        .collect();
+
+    // Write library.bin using helper function - songs in original order (no reorder)
+    write_library_bin(
+        &library_bin_path,
+        &string_table,
+        &artists,
+        &albums,
+        &songs,
+        &album_song_index_table,
+        &artist_song_index_table,
+    )?;
 
     Ok(SaveToLibraryResult {
         files_saved,
@@ -744,13 +754,6 @@ pub fn edit_song_metadata(
         .cloned()
         .ok_or("Failed to get old song path")?;
 
-    // Also get the old duration if not provided in new_metadata
-    let old_duration_sec = u16::from_le_bytes(
-        data[song_offset + 18..song_offset + 20]
-            .try_into()
-            .map_err(|_| "Failed to read duration_sec")?,
-    );
-
     // Now soft-delete the old song WITHOUT deleting the audio file
     // We do this by directly marking the flags byte as DELETED
     {
@@ -760,7 +763,7 @@ pub fn edit_song_metadata(
             .open(&library_bin_path)
             .map_err(|e| format!("Failed to open library.bin for writing: {}", e))?;
 
-        let flags_offset = song_offset as u64 + 20;
+        let flags_offset = song_offset as u64 + 16;
         write_file
             .seek(SeekFrom::Start(flags_offset))
             .map_err(|e| format!("Failed to seek to song {}: {}", song_id, e))?;
@@ -823,32 +826,55 @@ pub fn edit_song_metadata(
     let path_string_id = string_table.add(&old_path); // Reuse path, dedup handles it
 
     let new_song_id = songs.len() as u32;
-    // Preserve duration from old song if not provided in new_metadata
-    let duration = new_metadata
-        .duration_secs
-        .map(|d| d as u16)
-        .unwrap_or(old_duration_sec);
     songs.push(SongEntry::new(
         title_string_id,
         artist_id,
         album_id,
         path_string_id,
-        new_metadata.track_number.unwrap_or(0) as u16,
-        duration,
     ));
 
     // Rebuild and write library.bin
-    // TODO: Rebuild index tables properly in Stage 2
-    let empty_album_index: Vec<crate::models::AlbumSongIndexEntry> = Vec::new();
-    let empty_artist_index: Vec<crate::models::ArtistSongIndexEntry> = Vec::new();
+    // Build index tables
+    let mut album_first_song_idx: HashMap<u32, u32> = HashMap::new();
+    let mut album_song_count: HashMap<u32, u16> = HashMap::new();
+    let mut artist_first_song_idx: HashMap<u32, u32> = HashMap::new();
+    let mut artist_song_count: HashMap<u32, u16> = HashMap::new();
+
+    for (idx, song) in songs.iter().enumerate() {
+        let song_idx = idx as u32;
+        let album_id = song.album_id;
+        let artist_id = song.artist_id;
+
+        album_first_song_idx.entry(album_id).or_insert(song_idx);
+        *album_song_count.entry(album_id).or_insert(0) += 1;
+
+        artist_first_song_idx.entry(artist_id).or_insert(song_idx);
+        *artist_song_count.entry(artist_id).or_insert(0) += 1;
+    }
+
+    let album_song_index_table: Vec<crate::models::AlbumSongIndexEntry> = (0..albums.len() as u32)
+        .map(|album_id| crate::models::AlbumSongIndexEntry {
+            song_count: *album_song_count.get(&album_id).unwrap_or(&0),
+            first_song_pos: *album_first_song_idx.get(&album_id).unwrap_or(&0),
+        })
+        .collect();
+
+    let artist_song_index_table: Vec<crate::models::ArtistSongIndexEntry> = (0..artists.len()
+        as u32)
+        .map(|artist_id| crate::models::ArtistSongIndexEntry {
+            song_count: *artist_song_count.get(&artist_id).unwrap_or(&0),
+            first_song_pos: *artist_first_song_idx.get(&artist_id).unwrap_or(&0),
+        })
+        .collect();
+
     write_library_bin(
         &library_bin_path,
         &string_table,
         &artists,
         &albums,
         &songs,
-        &empty_album_index,
-        &empty_artist_index,
+        &album_song_index_table,
+        &artist_song_index_table,
     )?;
 
     // Remap old song ID to new song ID in all playlists
@@ -1081,8 +1107,6 @@ pub fn compact_library(base_path: String) -> Result<crate::models::CompactResult
             new_artist_id,
             new_album_id,
             path_string_id,
-            song.track_number,
-            song.duration_sec,
         ));
     }
 
@@ -1108,18 +1132,49 @@ pub fn compact_library(base_path: String) -> Result<crate::models::CompactResult
     let albums_removed = header.album_count - new_albums.len() as u32;
     let strings_removed = old_strings.len() as u32 - new_string_table.len() as u32;
 
+    // Build index tables for compacted library
+    let mut album_first_song_idx: HashMap<u32, u32> = HashMap::new();
+    let mut album_song_count: HashMap<u32, u16> = HashMap::new();
+    let mut artist_first_song_idx: HashMap<u32, u32> = HashMap::new();
+    let mut artist_song_count: HashMap<u32, u16> = HashMap::new();
+
+    for (idx, song) in new_songs.iter().enumerate() {
+        let song_idx = idx as u32;
+        let album_id = song.album_id;
+        let artist_id = song.artist_id;
+
+        album_first_song_idx.entry(album_id).or_insert(song_idx);
+        *album_song_count.entry(album_id).or_insert(0) += 1;
+
+        artist_first_song_idx.entry(artist_id).or_insert(song_idx);
+        *artist_song_count.entry(artist_id).or_insert(0) += 1;
+    }
+
+    let album_song_index_table: Vec<crate::models::AlbumSongIndexEntry> = (0..new_albums.len()
+        as u32)
+        .map(|album_id| crate::models::AlbumSongIndexEntry {
+            song_count: *album_song_count.get(&album_id).unwrap_or(&0),
+            first_song_pos: *album_first_song_idx.get(&album_id).unwrap_or(&0),
+        })
+        .collect();
+
+    let artist_song_index_table: Vec<crate::models::ArtistSongIndexEntry> = (0..new_artists.len()
+        as u32)
+        .map(|artist_id| crate::models::ArtistSongIndexEntry {
+            song_count: *artist_song_count.get(&artist_id).unwrap_or(&0),
+            first_song_pos: *artist_first_song_idx.get(&artist_id).unwrap_or(&0),
+        })
+        .collect();
+
     // Write new library.bin
-    // TODO: Rebuild index tables properly in Stage 3
-    let empty_album_index: Vec<crate::models::AlbumSongIndexEntry> = Vec::new();
-    let empty_artist_index: Vec<crate::models::ArtistSongIndexEntry> = Vec::new();
     write_library_bin(
         &library_bin_path,
         &new_string_table,
         &new_artists,
         &new_albums,
         &new_songs,
-        &empty_album_index,
-        &empty_artist_index,
+        &album_song_index_table,
+        &artist_song_index_table,
     )?;
 
     let new_size_bytes = fs::metadata(&library_bin_path)
@@ -1727,8 +1782,8 @@ pub fn load_library(base_path: String) -> Result<ParsedLibrary, String> {
                     .get(s.path_string_id as usize)
                     .cloned()
                     .unwrap_or_else(|| "".to_string()),
-                track_number: s.track_number,
-                duration_sec: s.duration_sec,
+                track_number: 0,
+                duration_sec: 0,
             }
         })
         .collect();
@@ -1857,8 +1912,6 @@ struct RawSong {
     artist_id: u32,
     album_id: u32,
     path_string_id: u32,
-    track_number: u16,
-    duration_sec: u16,
     flags: u8,
 }
 
@@ -1869,7 +1922,7 @@ fn parse_song_table(data: &[u8], start: usize, count: usize) -> Result<Vec<RawSo
 
     for i in 0..count {
         let offset = start + i * entry_size;
-        if offset + 21 > data.len() {
+        if offset + entry_size > data.len() {
             return Err("Song table extends beyond file".to_string());
         }
         let title_string_id = u32::from_le_bytes(
@@ -1892,24 +1945,12 @@ fn parse_song_table(data: &[u8], start: usize, count: usize) -> Result<Vec<RawSo
                 .try_into()
                 .map_err(|_| "Failed to read song path_string_id")?,
         );
-        let track_number = u16::from_le_bytes(
-            data[offset + 16..offset + 18]
-                .try_into()
-                .map_err(|_| "Failed to read song track_number")?,
-        );
-        let duration_sec = u16::from_le_bytes(
-            data[offset + 18..offset + 20]
-                .try_into()
-                .map_err(|_| "Failed to read song duration_sec")?,
-        );
-        let flags = data[offset + 20];
+        let flags = data[offset + 16];
         songs.push(RawSong {
             title_string_id,
             artist_id,
             album_id,
             path_string_id,
-            track_number,
-            duration_sec,
             flags,
         });
     }
