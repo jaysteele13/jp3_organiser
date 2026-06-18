@@ -12,7 +12,7 @@ export function useAudioEngine({ onEnded, volume = 1 }) {
   const pauseOffsetRef = useRef(0);
   const rafRef = useRef(null);
   const loadVersionRef = useRef(0);
-  const mountedRef = useRef(true);
+  const mountedRef = useRef(false);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +24,12 @@ export function useAudioEngine({ onEnded, volume = 1 }) {
     const ctx = new AudioContext();
     const gain = ctx.createGain();
     gain.connect(ctx.destination);
-
+    // Initialize gain value to the current volume when creating the context
+    try {
+      gain.gain.value = volume;
+    } catch (err) {
+      console.warn("Failed to set initial gain value", err);
+    }
     ctxRef.current = ctx;
     gainRef.current = gain;
     return ctx;
