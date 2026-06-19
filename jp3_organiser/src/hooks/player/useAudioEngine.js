@@ -11,6 +11,8 @@ export function useAudioEngine({ onEnded, volume = 1 }) {
   const startTimeRef = useRef(0);
   const pauseOffsetRef = useRef(0);
   const rafRef = useRef(null);
+  const lastPosUpdateRef = useRef(0);
+  const POSITION_UPDATE_MS = 100; // emit position updates at most every 100ms
   const loadVersionRef = useRef(0);
   const mountedRef = useRef(false);
 
@@ -101,7 +103,18 @@ export function useAudioEngine({ onEnded, volume = 1 }) {
       const newPos = Math.min(pos, currentDuration);
 
       if (mountedRef.current) {
-        setPosition(newPos);
+        // Throttle position updates to reduce React renders and CPU usage.
+        // Update at most once per POSITION_UPDATE_MS interval.
+        try {
+          const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+          if (now - lastPosUpdateRef.current >= POSITION_UPDATE_MS) {
+            setPosition(newPos);
+            lastPosUpdateRef.current = now;
+          }
+        } catch (err) {
+          // Fallback: ensure we still update if performance API throws
+          setPosition(newPos);
+        }
       }
 
       rafRef.current = requestAnimationFrame(tick);
