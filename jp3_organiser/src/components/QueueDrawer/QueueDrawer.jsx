@@ -17,8 +17,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { usePlayer } from '../../hooks';
 import styles from './QueueDrawer.module.css';
+import DraggableHandle from './DraggableHandle';
 
 export default function QueueDrawer({ isOpen, onClose }) {
+  // Feature flag: toggle manual reordering affordances
+  const ENABLE_MANUAL_REORDER = true;
   const {
     displayQueue,
     context,
@@ -274,12 +277,14 @@ export default function QueueDrawer({ isOpen, onClose }) {
                               className={`${styles.queueItem} ${styles.userQueueItem} ${
                                 dragOverIndex === actualIndex ? styles.dragOver : ''
                               }`}
-                              draggable
-                              onDragStart={(e) => handleDragStart(e, actualIndex)}
-                              onDragEnd={handleDragEnd}
-                              onDragOver={(e) => handleDragOver(e, actualIndex)}
+                              draggable={ENABLE_MANUAL_REORDER}
+                              onDragStart={ENABLE_MANUAL_REORDER ? (e) => handleDragStart(e, actualIndex) : undefined}
+                              onDragEnd={ENABLE_MANUAL_REORDER ? handleDragEnd : undefined}
+                              onDragOver={ENABLE_MANUAL_REORDER ? (e) => handleDragOver(e, actualIndex) : undefined}
                             >
-                              <span className={styles.dragHandle}>☰</span>
+                              {ENABLE_MANUAL_REORDER && (
+                                <DraggableHandle isDragging={dragIndex === actualIndex} />
+                              )}
                               <span className={styles.trackNumber}>{actualIndex + 1}</span>
                               <div className={styles.trackInfo}>
                                 <span className={styles.trackTitle}>{track.title}</span>
