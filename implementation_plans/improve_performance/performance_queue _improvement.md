@@ -26,6 +26,7 @@ This document describes a concrete, testable implementation plan to add manual r
 1. Feature gating and affordance
    - If the feature is not yet implemented, hide or disable the drag handle to avoid misleading users.
    - Create a small `DraggableHandle` component (presentational) to show on reorderable rows.
+   - This code represents the icons that means it can be dragged:  <span className={styles.dragHandle}>☰</span>
 
 2. Drag lifecycle in `QueueDrawer.jsx`
    - `onDragStart(event)`
@@ -101,6 +102,13 @@ This document describes a concrete, testable implementation plan to add manual r
 2. QA manual reorders, fix edge cases, ensure playback correctness.
 3. Add small accessibility improvements and docs.
 4. Remove any misleading drag affordances until feature is fully validated (if starting from a UI-only affordance).
+
+## Stage 3: Stabilize, document, and release
+- Finalize performance smoothing and ensure drag feedback remains responsive under real library sizes.
+- Complete accessibility checks for keyboard and screen-reader users, including `aria-grabbed`, roles, and clear drag handle affordances.
+- Add or update documentation notes in `README.md` or project docs describing manual queue reorder limitations and expected behavior.
+- Run end-to-end validation: reorder several items, verify current-playback continuity, and confirm persisted queue state if applicable.
+- Remove any remaining temporary feature gating or development-only UI hints once the behavior is validated.
 
 ---
 

@@ -41,6 +41,7 @@ export default function QueueDrawer({ isOpen, onClose }) {
   const [dragIndex, setDragIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const dragNodeRef = useRef(null);
+  const sourceIndexRef = useRef(null);
   const lastDragOverUpdateRef = useRef(0);
   const DRAG_OVER_THROTTLE_MS = 250; // Throttle dragOverIndex updates to reduce re-renders
 
@@ -53,9 +54,12 @@ export default function QueueDrawer({ isOpen, onClose }) {
   const OVERSCAN = 6; // items to render above/below viewport
 
   const handleDragStart = (e, index) => {
+    sourceIndexRef.current = index;
     setDragIndex(index);
-    dragNodeRef.current = e.target;
+    dragNodeRef.current = e.currentTarget;
     e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+
     setTimeout(() => {
       if (dragNodeRef.current) {
         dragNodeRef.current.classList.add(styles.dragging);
@@ -67,11 +71,8 @@ export default function QueueDrawer({ isOpen, onClose }) {
     if (dragNodeRef.current) {
       dragNodeRef.current.classList.remove(styles.dragging);
     }
-    
-    if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
-      reorderUserQueue(dragIndex, dragOverIndex);
-    }
-    
+
+    sourceIndexRef.current = null;
     setDragIndex(null);
     setDragOverIndex(null);
     dragNodeRef.current = null;
@@ -79,9 +80,8 @@ export default function QueueDrawer({ isOpen, onClose }) {
 
   const handleDragOver = (e, index) => {
     e.preventDefault();
-    if (dragIndex === null) return;
-    
-    // Throttle dragOverIndex updates to reduce re-renders (60Hz → 10Hz)
+    if (sourceIndexRef.current === null) return;
+
     const now = performance.now();
     if (now - lastDragOverUpdateRef.current >= DRAG_OVER_THROTTLE_MS) {
       if (index !== dragOverIndex) {
@@ -89,6 +89,29 @@ export default function QueueDrawer({ isOpen, onClose }) {
         lastDragOverUpdateRef.current = now;
       }
     }
+  };
+
+  const handleDrop = (e, index) => {
+    e.preventDefault();
+
+    const sourceIndex = sourceIndexRef.current ?? Number(e.dataTransfer.getData('text/plain'));
+    if (sourceIndex === null || Number.isNaN(sourceIndex)) {
+      return;
+    }
+
+    const targetIndex = index;
+    if (sourceIndex !== targetIndex) {
+      reorderUserQueue(sourceIndex, targetIndex);
+    }
+
+    if (dragNodeRef.current) {
+      dragNodeRef.current.classList.remove(styles.dragging);
+    }
+
+    sourceIndexRef.current = null;
+    setDragIndex(null);
+    setDragOverIndex(null);
+    dragNodeRef.current = null;
   };
 
   useEffect(() => {
@@ -281,6 +304,7 @@ export default function QueueDrawer({ isOpen, onClose }) {
                               onDragStart={ENABLE_MANUAL_REORDER ? (e) => handleDragStart(e, actualIndex) : undefined}
                               onDragEnd={ENABLE_MANUAL_REORDER ? handleDragEnd : undefined}
                               onDragOver={ENABLE_MANUAL_REORDER ? (e) => handleDragOver(e, actualIndex) : undefined}
+                              onDrop={ENABLE_MANUAL_REORDER ? (e) => handleDrop(e, actualIndex) : undefined}
                             >
                               {ENABLE_MANUAL_REORDER && (
                                 <DraggableHandle isDragging={dragIndex === actualIndex} />
