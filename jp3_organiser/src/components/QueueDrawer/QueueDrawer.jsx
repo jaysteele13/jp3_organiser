@@ -35,6 +35,7 @@ export default function QueueDrawer({ isOpen, onClose }) {
     clearUserQueue,
     clearQueue,
     shuffleUserQueue,
+    playTrack,
   } = usePlayer();
 
   // Drag state for user queue
@@ -112,6 +113,18 @@ export default function QueueDrawer({ isOpen, onClose }) {
     setDragIndex(null);
     setDragOverIndex(null);
     dragNodeRef.current = null;
+  };
+
+  const handleDoubleClick = (index) => {
+    // Get the track at the specified index in the user queue
+    const track = userQueue[index];
+    if (track) {
+      // Play the track with playTrack (doesn't clear the user queue)
+      // Pass a single-track context so it plays this track
+      playTrack(track, [track]);
+      // Remove it from the queue
+      removeFromUserQueue(index);
+    }
   };
 
   useEffect(() => {
@@ -305,6 +318,7 @@ export default function QueueDrawer({ isOpen, onClose }) {
                               onDragEnd={ENABLE_MANUAL_REORDER ? handleDragEnd : undefined}
                               onDragOver={ENABLE_MANUAL_REORDER ? (e) => handleDragOver(e, actualIndex) : undefined}
                               onDrop={ENABLE_MANUAL_REORDER ? (e) => handleDrop(e, actualIndex) : undefined}
+                              onDoubleClick={() => handleDoubleClick(actualIndex)}
                             >
                               {ENABLE_MANUAL_REORDER && (
                                 <DraggableHandle isDragging={dragIndex === actualIndex} />
