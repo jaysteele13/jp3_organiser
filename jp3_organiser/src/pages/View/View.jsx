@@ -11,9 +11,10 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLibraryConfig, useToast } from '../../hooks';
-import { useEntityModal } from '../../hooks/useEntityModal';
+import { useSongActions } from '../../hooks/useSongActions';
+import { useAlbumActions } from '../../hooks/useAlbumActions';
+import { useArtistActions } from '../../hooks/useArtistActions';
 import { useLibrary } from '../../hooks/useLibrary';
-import { deleteSongs, deleteAlbum, deleteArtist, editSongMetadata, editAlbum, editArtist } from '../../services/libraryService';
 import { LoadingState, ErrorState, EmptyState, Toast, ConfirmModal, LibrarySearch } from '../../components';
 import styles from './View.module.css';
 
@@ -70,25 +71,46 @@ export default function View() {
     navigate('/player');
   }, [navigate]);
 
-  // Delete song modal state
-  const songDelete = useEntityModal();
-  const [isDeleting, setIsDeleting] = useState(false);
+  // Entity action hooks
+  const {
+    songDelete,
+    songEdit,
+    isDeleting: songIsDeleting,
+    isSaving: songIsSaving,
+    handleDeleteSongRequest,
+    handleDeleteSongsRequest,
+    handleConfirmDeleteSong,
+    handleCancelDeleteSong,
+    handleEditRequest,
+    handleConfirmEdit,
+    handleCancelEdit,
+  } = useSongActions(libraryPath, handleRefresh, toast);
 
-  // Delete album modal state
-  const albumDelete = useEntityModal();
+  const {
+    albumDelete,
+    albumEdit,
+    isDeleting: albumIsDeleting,
+    isSaving: albumIsSaving,
+    handleDeleteAlbumRequest,
+    handleConfirmDeleteAlbum,
+    handleCancelDeleteAlbum,
+    handleEditAlbumRequest,
+    handleConfirmEditAlbum,
+    handleCancelEditAlbum,
+  } = useAlbumActions(libraryPath, handleRefresh, toast);
 
-  // Delete artist modal state
-  const artistDelete = useEntityModal();
-
-  // Edit modal state
-  const songEdit = useEntityModal();
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Edit album modal state
-  const albumEdit = useEntityModal();
-
-  // Edit artist modal state
-  const artistEdit = useEntityModal();
+  const {
+    artistDelete,
+    artistEdit,
+    isDeleting: artistIsDeleting,
+    isSaving: artistIsSaving,
+    handleDeleteArtistRequest,
+    handleConfirmDeleteArtist,
+    handleCancelDeleteArtist,
+    handleEditArtistRequest,
+    handleConfirmEditArtist,
+    handleCancelEditArtist,
+  } = useArtistActions(libraryPath, handleRefresh, toast);
 
   // Consolidated filter state used by the active tab content
   const [filter, setFilter] = useState(null); // { type: 'song'|'album'|'artist'|'playlist', value } | null
@@ -180,196 +202,21 @@ export default function View() {
   }, [clearAllFilters]);
 
   // ============ SONG DELETE HANDLERS ============
-  const handleDeleteSongRequest = (song) => {
-    songDelete.open([song]);
-  };
-
-  // Handle bulk delete request (from multiselect)
-  const handleDeleteSongsRequest = (songs) => {
-    songDelete.open(songs);
-  };
-
-  const handleConfirmDeleteSong = async () => {
-    const songsToDelete = songDelete.item ?? [];
-    if (songsToDelete.length === 0 || !libraryPath) return;
-
-    setIsDeleting(true);
-    try {
-      const songIds = songsToDelete.map(song => song.id);
-      await deleteSongs(libraryPath, songIds);
-      songDelete.close();
-      handleRefresh();
-    } catch (err) {
-      console.error('Failed to delete songs:', err);
-      toast.showToast('Failed to delete song', 'error');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleCancelDeleteSong = () => {
-    if (isDeleting) return;
-    songDelete.close();
-  };
 
   // ============ ALBUM DELETE HANDLERS ============
-  const handleDeleteAlbumRequest = (album) => {
-    albumDelete.open(album);
-  };
-
-  const handleConfirmDeleteAlbum = async () => {
-    if (!albumDelete.item || !libraryPath) return;
-
-    setIsDeleting(true);
-    try {
-      const result = await deleteAlbum(libraryPath, albumDelete.item.id);
-      albumDelete.close();
-      handleRefresh();
-      toast.showToast(
-        `Deleted album "${result.albumName}" (${pluralize(result.songsDeleted, 'song')})`,
-        'success'
-      );
-    } catch (err) {
-      console.error('Failed to delete album:', err);
-      toast.showToast('Failed to delete album', 'error');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleCancelDeleteAlbum = () => {
-    if (isDeleting) return;
-    albumDelete.close();
-  };
+  // Album action handlers are provided by useAlbumActions
 
   // ============ ARTIST DELETE HANDLERS ============
-  const handleDeleteArtistRequest = (artist) => {
-    artistDelete.open(artist);
-  };
-
-  const handleConfirmDeleteArtist = async () => {
-    if (!artistDelete.item || !libraryPath) return;
-
-    setIsDeleting(true);
-    try {
-      const result = await deleteArtist(libraryPath, artistDelete.item.id);
-      artistDelete.close();
-      handleRefresh();
-      toast.showToast(
-        `Deleted artist "${result.artistName}" (${pluralize(result.songsDeleted, 'song')}, ${pluralize(result.albumsAffected, 'album')})`,
-        'success'
-      );
-    } catch (err) {
-      console.error('Failed to delete artist:', err);
-      toast.showToast('Failed to delete artist', 'error');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleCancelDeleteArtist = () => {
-    if (isDeleting) return;
-    artistDelete.close();
-  };
+  // Artist action handlers are provided by useArtistActions
 
   // ============ EDIT HANDLERS ============
-  const handleEditRequest = (song) => {
-    songEdit.open(song);
-  };
-
-  const handleConfirmEdit = async (songId, metadata) => {
-    if (!libraryPath) return;
-
-    setIsSaving(true);
-    try {
-      const result = await editSongMetadata(libraryPath, songId, metadata);
-      songEdit.close();
-      handleRefresh();
-
-      // Show toast with edit result
-      const messages = ['Song updated'];
-      if (result.artistCreated) messages.push('new artist created');
-      if (result.albumCreated) messages.push('new album created');
-      if (result.playlistsUpdated > 0) {
-        messages.push(`${pluralize(result.playlistsUpdated, 'playlist')} updated`);
-      }
-      toast.showToast(messages.join(', '), 'success');
-    } catch (err) {
-      console.error('Failed to edit song:', err);
-      toast.showToast('Failed to edit song', 'error');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleCancelEdit = () => {
-    if (isSaving) return;
-    songEdit.close();
-  };
+  // Song edit handlers are provided by useSongActions
 
   // ============ EDIT ALBUM HANDLERS ============
-  const handleEditAlbumRequest = (album) => {
-    albumEdit.open(album);
-  };
-
-  const handleConfirmEditAlbum = async (albumId, newName, newArtistName, newYear) => {
-    if (!libraryPath) return;
-
-    setIsSaving(true);
-    try {
-      const result = await editAlbum(libraryPath, albumId, newName, newArtistName, newYear);
-      albumEdit.close();
-      handleRefresh();
-
-      // Show toast with edit result
-      const messages = [`Album updated: "${result.oldName}" → "${result.newName}"`];
-      if (result.artistCreated) messages.push('new artist created');
-      messages.push(`${pluralize(result.songsUpdated, 'song')} updated`);
-      toast.showToast(messages.join(', '), 'success');
-    } catch (err) {
-      console.error('Failed to edit album:', err);
-      toast.showToast(err.toString() || 'Failed to edit album', 'error');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleCancelEditAlbum = () => {
-    if (isSaving) return;
-    albumEdit.close();
-  };
+  // Album edit handlers are provided by useAlbumActions
 
   // ============ EDIT ARTIST HANDLERS ============
-  const handleEditArtistRequest = (artist) => {
-    artistEdit.open(artist);
-  };
-
-  const handleConfirmEditArtist = async (artistId, newName) => {
-    if (!libraryPath) return;
-
-    setIsSaving(true);
-    try {
-      const result = await editArtist(libraryPath, artistId, newName);
-      artistEdit.close();
-      handleRefresh();
-
-      // Show toast with edit result
-      toast.showToast(
-        `Artist updated: "${result.oldName}" → "${result.newName}" (${pluralize(result.songsAffected, 'song')}, ${pluralize(result.albumsAffected, 'album')})`,
-        'success'
-      );
-    } catch (err) {
-      console.error('Failed to edit artist:', err);
-      toast.showToast(err.toString() || 'Failed to edit artist', 'error');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleCancelEditArtist = () => {
-    if (isSaving) return;
-    artistEdit.close();
-  };
+  // Artist edit handlers are provided by useArtistActions
 
   if (configLoading) {
     return <LoadingState message="Loading configuration..." />;
@@ -461,7 +308,7 @@ export default function View() {
           songs={songDelete.item}
           onConfirm={handleConfirmDeleteSong}
           onCancel={handleCancelDeleteSong}
-          isDeleting={isDeleting}
+          isDeleting={songIsDeleting}
         />
       )}
 
@@ -474,7 +321,7 @@ export default function View() {
           variant="danger"
           onConfirm={handleConfirmDeleteAlbum}
           onCancel={handleCancelDeleteAlbum}
-          isLoading={isDeleting}
+          isLoading={albumIsDeleting}
         >
           <div className={styles.deleteInfo}>
             <div className={styles.deleteInfoTitle}>{albumDelete.item.name}</div>
@@ -492,7 +339,7 @@ export default function View() {
           variant="danger"
           onConfirm={handleConfirmDeleteArtist}
           onCancel={handleCancelDeleteArtist}
-          isLoading={isDeleting}
+          isLoading={artistIsDeleting}
         >
           <div className={styles.deleteInfo}>
             <div className={styles.deleteInfoTitle}>{artistDelete.item.name}</div>
@@ -506,7 +353,7 @@ export default function View() {
           libraryPath={libraryPath}
           onSave={handleConfirmEdit}
           onCancel={handleCancelEdit}
-          isSaving={isSaving}
+          isSaving={songIsSaving}
         />
       )}
 
@@ -516,7 +363,7 @@ export default function View() {
           album={albumEdit.item}
           onSave={handleConfirmEditAlbum}
           onCancel={handleCancelEditAlbum}
-          isSaving={isSaving}
+          isSaving={albumIsSaving}
         />
       )}
 
@@ -526,7 +373,7 @@ export default function View() {
           artist={artistEdit.item}
           onSave={handleConfirmEditArtist}
           onCancel={handleCancelEditArtist}
-          isSaving={isSaving}
+          isSaving={artistIsSaving}
         />
       )}
 
