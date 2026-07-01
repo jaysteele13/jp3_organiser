@@ -17,6 +17,7 @@ import { LoadingState, ErrorState, EmptyState, Toast, ConfirmModal, LibrarySearc
 import styles from './View.module.css';
 
 import { TABS, VIEW_TABS } from '../../utils/enums';
+import { pluralize } from '../../utils/pluralize';
 
 // Custom Components
 import ViewHeader from './components/ViewHeader';
@@ -94,24 +95,16 @@ export default function View() {
   const [artistToEdit, setArtistToEdit] = useState(null);
   const [showEditArtistModal, setShowEditArtistModal] = useState(false);
 
-  // Song filter state - used to filter SongTable when selecting from LibrarySearch
-  const [songFilter, setSongFilter] = useState(null); // stores song object or null
+  // Consolidated filter state used by the active tab content
+  const [filter, setFilter] = useState(null); // { type: 'song'|'album'|'artist'|'playlist', value } | null
 
-  // Album filter state - used to filter AlbumView when selecting from LibrarySearch
-  const [albumFilter, setAlbumFilter] = useState(null); // stores album object or null
-
-  // Artist filter state - used to filter ArtistView when selecting from LibrarySearch
-  const [artistFilter, setArtistFilter] = useState(null); // stores artist object or null
-
-  // Playlist filter state - used to filter PlaylistView when selecting from LibrarySearch
-  const [playlistFilter, setPlaylistFilter] = useState(null); // stores playlist object or null
-
-  // Clear all filters
   const clearAllFilters = useCallback(() => {
-    setSongFilter(null);
-    setAlbumFilter(null);
-    setArtistFilter(null);
-    setPlaylistFilter(null);
+    setFilter(null);
+  }, []);
+
+  const selectAndSwitchTab = useCallback((type, value, tab) => {
+    setFilter({ type, value });
+    setActiveTab(tab);
   }, []);
 
   // Handle navigation from Player with pre-set filters
@@ -125,20 +118,16 @@ export default function View() {
       
       // Set appropriate filter based on what was passed
       if (state.filterSong) {
-        clearAllFilters();
-        setSongFilter(state.filterSong);
+        setFilter({ type: 'song', value: state.filterSong });
         setActiveTab(TABS.SONGS);
       } else if (state.filterAlbum) {
-        clearAllFilters();
-        setAlbumFilter(state.filterAlbum);
+        setFilter({ type: 'album', value: state.filterAlbum });
         setActiveTab(TABS.ALBUMS);
       } else if (state.filterArtist) {
-        clearAllFilters();
-        setArtistFilter(state.filterArtist);
+        setFilter({ type: 'artist', value: state.filterArtist });
         setActiveTab(TABS.ARTISTS);
       } else if (state.filterPlaylist) {
-        clearAllFilters();
-        setPlaylistFilter(state.filterPlaylist);
+        setFilter({ type: 'playlist', value: state.filterPlaylist });
         setActiveTab(TABS.PLAYLISTS);
       }
       
@@ -173,32 +162,21 @@ export default function View() {
 
   // ============ SEARCH HANDLERS ============
   const handleSelectPlaylist = useCallback((playlist) => {
-    // Set filter to show this playlist, then switch to Playlists tab
-    clearAllFilters();
-    setPlaylistFilter(playlist);
-    setActiveTab(TABS.PLAYLISTS);
-  }, [clearAllFilters]);
+    selectAndSwitchTab('playlist', playlist, TABS.PLAYLISTS);
+  }, [selectAndSwitchTab]);
 
   const handleSelectArtist = useCallback((artist) => {
-    // Set filter to show this artist, then switch to Artists tab
-    clearAllFilters();
-    setArtistFilter(artist);
-    setActiveTab(TABS.ARTISTS);
-  }, [clearAllFilters]);
+    selectAndSwitchTab('artist', artist, TABS.ARTISTS);
+  }, [selectAndSwitchTab]);
 
   const handleSelectAlbum = useCallback((album) => {
-    // Set filter to show this album, then switch to Albums tab
-    clearAllFilters();
-    setAlbumFilter(album);
-    setActiveTab(TABS.ALBUMS);
-  }, [clearAllFilters]);
+    selectAndSwitchTab('album', album, TABS.ALBUMS);
+  }, [selectAndSwitchTab]);
 
   const handleSelectSong = useCallback((song) => {
-    // Set filter to show this song in the table, then switch to Songs tab
-    clearAllFilters();
-    setSongFilter(song);
-    setActiveTab(TABS.SONGS);
-  }, [clearAllFilters]);
+    selectAndSwitchTab('song', song, TABS.SONGS);
+  }, [selectAndSwitchTab]);
+
 
   // Handle tab change - clear all filters when switching tabs
   const handleTabChange = useCallback((tab) => {
@@ -258,7 +236,7 @@ export default function View() {
       setAlbumToDelete(null);
       handleRefresh();
       toast.showToast(
-        `Deleted album "${result.albumName}" (${result.songsDeleted} song${result.songsDeleted !== 1 ? 's' : ''})`,
+        `Deleted album "${result.albumName}" (${pluralize(result.songsDeleted, 'song')})`,
         'success'
       );
     } catch (err) {
@@ -291,7 +269,7 @@ export default function View() {
       setArtistToDelete(null);
       handleRefresh();
       toast.showToast(
-        `Deleted artist "${result.artistName}" (${result.songsDeleted} song${result.songsDeleted !== 1 ? 's' : ''}, ${result.albumsAffected} album${result.albumsAffected !== 1 ? 's' : ''})`,
+        `Deleted artist "${result.artistName}" (${pluralize(result.songsDeleted, 'song')}, ${pluralize(result.albumsAffected, 'album')})`,
         'success'
       );
     } catch (err) {
@@ -329,7 +307,7 @@ export default function View() {
       if (result.artistCreated) messages.push('new artist created');
       if (result.albumCreated) messages.push('new album created');
       if (result.playlistsUpdated > 0) {
-        messages.push(`${result.playlistsUpdated} playlist${result.playlistsUpdated > 1 ? 's' : ''} updated`);
+        messages.push(`${pluralize(result.playlistsUpdated, 'playlist')} updated`);
       }
       toast.showToast(messages.join(', '), 'success');
     } catch (err) {
@@ -365,7 +343,7 @@ export default function View() {
       // Show toast with edit result
       const messages = [`Album updated: "${result.oldName}" → "${result.newName}"`];
       if (result.artistCreated) messages.push('new artist created');
-      messages.push(`${result.songsUpdated} song${result.songsUpdated !== 1 ? 's' : ''} updated`);
+      messages.push(`${pluralize(result.songsUpdated, 'song')} updated`);
       toast.showToast(messages.join(', '), 'success');
     } catch (err) {
       console.error('Failed to edit album:', err);
@@ -399,7 +377,7 @@ export default function View() {
 
       // Show toast with edit result
       toast.showToast(
-        `Artist updated: "${result.oldName}" → "${result.newName}" (${result.songsAffected} song${result.songsAffected !== 1 ? 's' : ''}, ${result.albumsAffected} album${result.albumsAffected !== 1 ? 's' : ''})`,
+        `Artist updated: "${result.oldName}" → "${result.newName}" (${pluralize(result.songsAffected, 'song')}, ${pluralize(result.albumsAffected, 'album')})`,
         'success'
       );
     } catch (err) {
@@ -473,14 +451,14 @@ export default function View() {
               activeTab={activeTab} 
               library={library}
               libraryPath={libraryPath}
-              songFilter={songFilter}
-              albumFilter={albumFilter}
-              artistFilter={artistFilter}
-              playlistFilter={playlistFilter}
-              onClearSongFilter={() => setSongFilter(null)}
-              onClearAlbumFilter={() => setAlbumFilter(null)}
-              onClearArtistFilter={() => setArtistFilter(null)}
-              onClearPlaylistFilter={() => setPlaylistFilter(null)}
+              songFilter={filter?.type === 'song' ? filter.value : null}
+              albumFilter={filter?.type === 'album' ? filter.value : null}
+              artistFilter={filter?.type === 'artist' ? filter.value : null}
+              playlistFilter={filter?.type === 'playlist' ? filter.value : null}
+              onClearSongFilter={() => setFilter((current) => current?.type === 'song' ? null : current)}
+              onClearAlbumFilter={() => setFilter((current) => current?.type === 'album' ? null : current)}
+              onClearArtistFilter={() => setFilter((current) => current?.type === 'artist' ? null : current)}
+              onClearPlaylistFilter={() => setFilter((current) => current?.type === 'playlist' ? null : current)}
               onDeleteSong={handleDeleteSongRequest}
               onDeleteSongs={handleDeleteSongsRequest}
               onEditSong={handleEditRequest}
