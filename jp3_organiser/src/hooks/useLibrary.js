@@ -1,61 +1,64 @@
 import { useState, useEffect, useCallback } from 'react';
 import { loadLibrary, listPlaylists, loadPlaylist } from '../services';
+import { getCachedLibrary, loadLibraryFromCache, invalidateLibraryCache } from './libraryCache';
 
-/**
- * useLibrary Hook
- * 
- * Fetches and manages library data including songs, albums, artists, and playlists.
- * All data is loaded together to maintain consistency.
- * 
- * @param {string} libraryPath - The base library directory path
- * @returns {Object} Library state and actions
- */
 export function useLibrary(libraryPath) {
-  const [library, setLibrary] = useState(null);
+  const [library, setLibrary] = useState(() => getCachedLibrary(libraryPath));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchLibrary = useCallback(async () => {
+  const fetchLibrary = useCallback(async (force = false) => {
     if (!libraryPath) return;
+    if (!force) {
+      const cached = getCachedLibrary(libraryPath);
+      if (cached) {
+        setLibrary(cached);
+        return cached;
+      }
+    }
 
     setIsLoading(true);
     setError(null);
     try {
-      // Fetch library and playlist summaries in parallel
       const [libraryData, playlistSummaries] = await Promise.all([
-        loadLibrary(libraryPath),
-        listPlaylists(libraryPath).catch(() => []), // Gracefully handle missing playlists
+        loadLibraryFromCache(libraryPath, () => loadLibrary(libraryPath)),
+        listPlaylists(libraryPath).catch(() => []),
       ]);
 
-      // Fetch full playlist data (with songIds) for each playlist
       let fullPlaylists = [];
       if (playlistSummaries.length > 0) {
         fullPlaylists = await Promise.all(
-          playlistSummaries.map(summary => 
+          playlistSummaries.map((summary) =>
             loadPlaylist(libraryPath, summary.id).catch(() => ({
               ...summary,
-              songIds: [], // Fallback if individual playlist fails to load
+              songIds: [],
             }))
           )
         );
       }
 
-      // Combine into single library object
-      setLibrary({
-        ...libraryData,
-        playlists: fullPlaylists,
-      });
+      const nextLibrary = { ...libraryData, playlists: fullPlaylists };
+      setLibrary(nextLibrary);
+      return nextLibrary;
     } catch (err) {
       setError(err.toString());
       setLibrary(null);
+      throw err;
     } finally {
       setIsLoading(false);
     }
   }, [libraryPath]);
 
   useEffect(() => {
-    fetchLibrary();
-  }, [fetchLibrary]);
+    if (!libraryPath) return;
+    fetchLibrary().catch(() => {});
+  }, [fetchLibrary, libraryPath]);
 
-  return { library, isLoading, error, handleRefresh: fetchLibrary };
+  return {
+    library,
+    isLoading,
+    error,
+    handleRefresh: () => fetchLibrary(true),
+    invalidateCache: () => invalidateLibraryCache(libraryPath),
+  };
 }

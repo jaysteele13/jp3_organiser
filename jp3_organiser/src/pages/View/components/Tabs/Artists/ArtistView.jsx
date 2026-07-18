@@ -13,6 +13,7 @@
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArtistGrid, FilterBar } from '../../../../../components';
+import { getCachedViewData } from '../../../utils/viewDataCache';
 import styles from './ArtistView.module.css';
 
 
@@ -38,12 +39,14 @@ export default function ArtistView({ library, libraryPath, onDeleteArtist, onEdi
     return counts;
   }, [library.artists, library.songs, library.albums]);
 
-  // Filter artists if a filter is active
   const displayArtists = useMemo(() => {
-    if (!filter) {
-      return library.artists;
-    }
-    return library.artists.filter(artist => artist.id === filter.id);
+    const cacheKey = filter?.id ?? 'all';
+    return getCachedViewData(library.artists, cacheKey, () => {
+      if (!filter) {
+        return library.artists;
+      }
+      return library.artists.filter(artist => artist.id === filter.id);
+    });
   }, [library.artists, filter]);
 
   const getActions = useCallback((artist) => [

@@ -12,6 +12,7 @@
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CardList, CoverArt, FilterBar } from '../../../../../components';
+import { getCachedViewData } from '../../../utils/viewDataCache';
 import styles from './AlbumView.module.css';
 
 export default function AlbumView({ library, libraryPath, onDeleteAlbum, onEditAlbum, filter, onClearFilter }) {
@@ -26,12 +27,14 @@ export default function AlbumView({ library, libraryPath, onDeleteAlbum, onEditA
     return counts;
   }, [library.songs]);
 
-  // Filter albums if a filter is active
   const displayAlbums = useMemo(() => {
-    if (!filter) {
-      return library.albums;
-    }
-    return library.albums.filter(album => album.id === filter.id);
+    const cacheKey = filter?.id ?? 'all';
+    return getCachedViewData(library.albums, cacheKey, () => {
+      if (!filter) {
+        return library.albums;
+      }
+      return library.albums.filter(album => album.id === filter.id);
+    });
   }, [library.albums, filter]);
 
   const handleTitleClick = useCallback((album) => {
