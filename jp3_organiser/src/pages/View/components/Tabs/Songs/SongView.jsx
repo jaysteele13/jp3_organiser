@@ -19,6 +19,7 @@ import { SongTable, ActionMenu, FilterBar } from '../../../../../components';
 import { useMultiSelect } from '../../../../../hooks';
 import { TABS } from '../../../../../utils/enums';
 import { load } from '@tauri-apps/plugin-store';
+import { getCachedViewData } from '../../../utils/viewDataCache';
 import styles from './SongView.module.css';
 
 const STORE_NAME = 'songview.json';
@@ -36,17 +37,25 @@ const SORT_OPTIONS = [
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
+let cachedPreferences = {
+  sortIndex: 0,
+  pageSize: DEFAULT_PAGE_SIZE,
+  page: 1,
+};
+
 async function getStoredPreferences() {
   try {
     const store = await load(STORE_NAME, { autoSave: true });
     const sortIndex = await store.get(SORT_KEY);
     const pageSize = await store.get(PAGE_SIZE_KEY);
     const page = await store.get(PAGE_KEY);
-    return {
+    const nextPreferences = {
       sortIndex: typeof sortIndex === 'number' ? sortIndex : 0,
       pageSize: typeof pageSize === 'number' && PAGE_SIZE_OPTIONS.includes(pageSize) ? pageSize : DEFAULT_PAGE_SIZE,
       page: typeof page === 'number' && page > 0 ? page : 1,
     };
+  cachedPreferences = nextPreferences;
+  return nextPreferences;
   } catch (error) {
     console.error('Failed to load preferences:', error);
     return { sortIndex: 0, pageSize: DEFAULT_PAGE_SIZE, page: 1 };
@@ -54,6 +63,7 @@ async function getStoredPreferences() {
 }
 
 async function setStoredSortIndex(index) {
+  cachedPreferences = { ...cachedPreferences, sortIndex: index };
   try {
     const store = await load(STORE_NAME, { autoSave: true });
     await store.set(SORT_KEY, index);
@@ -63,6 +73,7 @@ async function setStoredSortIndex(index) {
 }
 
 async function setStoredPageSize(size) {
+  cachedPreferences = { ...cachedPreferences, pageSize: size };
   try {
     const store = await load(STORE_NAME, { autoSave: true });
     await store.set(PAGE_SIZE_KEY, size);
@@ -72,6 +83,7 @@ async function setStoredPageSize(size) {
 }
 
 async function setStoredPage(page) {
+  cachedPreferences = { ...cachedPreferences, page: page };
   try {
     const store = await load(STORE_NAME, { autoSave: true });
     await store.set(PAGE_KEY, page);
@@ -87,18 +99,16 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
   const [isSelectMode, setIsSelectMode] = useState(false);
 
   // Sort and pagination state - load from persistent storage
-  const [sortIndex, setSortIndex] = useState(0);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [sortIndex, setSortIndex] = useState(cachedPreferences.sortIndex);
+  const [pageSize, setPageSize] = useState(cachedPreferences.pageSize);
+  const [currentPage, setCurrentPage] = useState(cachedPreferences.page);
 
-  // Load saved preferences on mount
+  // Load saved preferences on mount and keep the last-used values available immediately
   useEffect(() => {
     getStoredPreferences().then(({ sortIndex: savedSort, pageSize: savedPageSize, page: savedPage }) => {
       setSortIndex(savedSort);
       setPageSize(savedPageSize);
       setCurrentPage(savedPage);
-      setIsLoaded(true);
     });
   }, []);
 
@@ -114,6 +124,30 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
     });
   }, []);
 
+  const displaySongs = useMemo(() => {
+    if (!library.songs?.length) return [];
+
+    const cacheKey = `${songFilter?.id ?? 'all'}::${currentSort.field}::${currentSort.direction}`;
+    return getCachedViewData(library.songs, cacheKey, () => {
+      let songs = songFilter
+        ? library.songs.filter(song => song.id === songFilter.id)
+        : library.songs;
+
+      const { field, direction } = currentSort;
+      return [...songs].sort((a, b) => {
+        let comparison = 0;
+        if (field === 'id') {
+          comparison = a.id - b.id;
+        } else if (field === 'title') {
+          const aTitle = (a.title || '').toLowerCase();
+          const bTitle = (b.title || '').toLowerCase();
+          comparison = aTitle.localeCompare(bTitle);
+        }
+        return direction === 'desc' ? -comparison : comparison;
+      });
+    });
+  }, [library.songs, songFilter, currentSort]);
+
   // Handle page size change and persist
   const handlePageSizeChange = useCallback((newSize) => {
     setPageSize(newSize);
@@ -127,31 +161,6 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
     setCurrentPage(page);
     setStoredPage(page);
   }, []);
-
-  // Filter songs if a filter is active
-  const displaySongs = useMemo(() => {
-    if (!isLoaded) return library.songs;
-
-    let songs = songFilter
-      ? library.songs.filter(song => song.id === songFilter.id)
-      : library.songs;
-
-    // Apply sorting
-    const { field, direction } = currentSort;
-    songs = [...songs].sort((a, b) => {
-      let comparison = 0;
-      if (field === 'id') {
-        comparison = a.id - b.id;
-      } else if (field === 'title') {
-        const aTitle = (a.title || '').toLowerCase();
-        const bTitle = (b.title || '').toLowerCase();
-        comparison = aTitle.localeCompare(bTitle);
-      }
-      return direction === 'desc' ? -comparison : comparison;
-    });
-
-    return songs;
-  }, [library.songs, songFilter, currentSort, isLoaded]);
 
   // Multiselect state
   const {
