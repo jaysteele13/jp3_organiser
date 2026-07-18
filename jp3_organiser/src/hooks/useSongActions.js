@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useEntityModal } from './useEntityModal';
 import { deleteSongs, editSongMetadata } from '../services/libraryService';
+import { invalidateLibraryCache } from './libraryCache';
 
 export function useSongActions(libraryPath, handleRefresh, toast) {
   const songDelete = useEntityModal();
@@ -30,6 +31,7 @@ export function useSongActions(libraryPath, handleRefresh, toast) {
     try {
       const songIds = songsToDelete.map((song) => song.id);
       await deleteSongs(libraryPath, songIds);
+      invalidateLibraryCache(libraryPath);
       songDelete.close();
       handleRefresh();
     } catch (err) {
@@ -59,6 +61,7 @@ export function useSongActions(libraryPath, handleRefresh, toast) {
       setIsSaving(true);
       try {
         const result = await editSongMetadata(libraryPath, songId, metadata);
+        invalidateLibraryCache(libraryPath);
         songEdit.close();
         handleRefresh();
 

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useEntityModal } from './useEntityModal';
 import { deleteAlbum, editAlbum } from '../services/libraryService';
+import { invalidateLibraryCache } from './libraryCache';
 import { pluralize } from '../utils/pluralize';
 
 export function useAlbumActions(libraryPath, handleRefresh, toast) {
@@ -22,6 +23,7 @@ export function useAlbumActions(libraryPath, handleRefresh, toast) {
     setIsDeleting(true);
     try {
       const result = await deleteAlbum(libraryPath, albumDelete.item.id);
+      invalidateLibraryCache(libraryPath);
       albumDelete.close();
       handleRefresh();
       toast.showToast(
@@ -54,6 +56,7 @@ export function useAlbumActions(libraryPath, handleRefresh, toast) {
       setIsSaving(true);
       try {
         const result = await editAlbum(libraryPath, albumId, newName, newArtistName, newYear);
+        invalidateLibraryCache(libraryPath);
         albumEdit.close();
         handleRefresh();
 

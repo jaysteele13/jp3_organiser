@@ -20,6 +20,7 @@ import React, { useState, useCallback } from 'react';
 import { saveToLibrary, saveToPlaylist, addSongsToPlaylist, MetadataStatus, setMbids, hasMbid, searchAlbumMbidsBatch, setArtistMbid } from '../../../../services';
 import { removeAlbumNotFound, removeArtistNotFound } from '../../../../services/coverArtNotFoundStore';
 import { useUploadCache } from '../../../../hooks';
+import { invalidateLibraryCache } from '../../../../hooks/libraryCache';
 import { UPLOAD_MODE } from '../../../../utils';
 import styles from './SaveToLibrary.module.css';
 
@@ -243,6 +244,8 @@ export default function SaveToLibrary({ libraryPath, workflow, toast }) {
         }
       }
 
+      invalidateLibraryCache(libraryPath);
+      invalidateLibraryCache(libraryPath);
       toast.showToast(message, 'success');
       removeConfirmedFiles();
       workflow.saveComplete();
