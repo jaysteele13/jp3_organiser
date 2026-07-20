@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { loadLibrary, listPlaylists, loadPlaylist } from '../services';
-import { getCachedLibrary, loadLibraryFromCache, invalidateLibraryCache } from './libraryCache';
+import { getCachedLibrary, loadLibraryFromCache, invalidateLibraryCache, setCachedLibrary } from './libraryCache';
 
 export function useLibrary(libraryPath) {
   const [library, setLibrary] = useState(() => getCachedLibrary(libraryPath));
@@ -39,6 +39,7 @@ export function useLibrary(libraryPath) {
 
       const nextLibrary = { ...libraryData, playlists: fullPlaylists };
       setLibrary(nextLibrary);
+      setCachedLibrary(libraryPath, nextLibrary);
       return nextLibrary;
     } catch (err) {
       setError(err.toString());
