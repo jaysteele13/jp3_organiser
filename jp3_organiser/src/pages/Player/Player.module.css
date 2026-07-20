@@ -21,8 +21,7 @@
 }
 
 .fadeIn {
-  animation: pageFadeIn 220ms ease-out;
-  will-change: opacity, transform;
+  animation: pageFadeIn 200ms ease-out forwards;
 }
 
 /* Content area - fill remaining space */
@@ -47,14 +46,10 @@
 }
 
 @keyframes pageFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  
+  0% { opacity: 0;}
+100% { opacity: 1;}
+
 }
 
 /* Responsive */
