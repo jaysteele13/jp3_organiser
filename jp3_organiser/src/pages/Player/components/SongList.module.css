@@ -30,5 +30,5 @@
 .actionBtn.secondary:hover,
 .actionBtn.outline:hover {
   color: var(--sketch-bg);
-  transform: scale(1.05);
+  /**transform: scale(1.05);*/
 }

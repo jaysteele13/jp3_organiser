@@ -17,7 +17,7 @@
   background-color: var(--sketch-bg-fade);
   border: 1px dashed var(--primary);
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  /*transition: background-color 0.15s ease;*/
 }
 
 .row:hover {
@@ -94,7 +94,7 @@
   border: none;
   color: #000;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  /*transition: background-color 0.15s ease;*/
   box-shadow: none;
 }
 

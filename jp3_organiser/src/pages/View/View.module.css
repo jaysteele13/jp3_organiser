@@ -10,21 +10,7 @@
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   margin: 1rem 0;
 }
-.fadeIn {
-  animation: pageFadeIn 200ms ease-out forwards;
 
-}
-
-@keyframes pageFadeIn {
-  0% { opacity: 0;}
-100% { opacity: 1;}
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .fadeIn {
-    animation: none;
-  }
-}
 /* Content area */
 .content {
   min-height: 300px;

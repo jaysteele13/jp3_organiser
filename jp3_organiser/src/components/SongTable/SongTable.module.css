@@ -42,7 +42,7 @@
   border: 1px solid rgba(0, 0, 0, 0.1);
 
   color: #000;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
 }
 
 .searchInput:focus {
@@ -73,7 +73,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.15s ease, background-color 0.15s ease;
 }
 
 .clearBtn:hover {
@@ -114,8 +113,9 @@
 .tableContainer {
   overflow-x: auto;
   background-color: transparent;
-   border: 1px solid var(--primary);
-  
+  border: 1px solid var(--primary);
+  contain: layout style;
+  will-change: transform;
 }
 
 .table {
@@ -149,8 +149,8 @@
 
 /* Table rows */
 .tableRow {
-  transition: background-color 0.15s ease;
   text-align: start;
+  contain: content;
 }
 
 .tableRow:hover {
@@ -209,7 +209,6 @@
   align-items: center;
   justify-content: center;
   vertical-align: middle;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
   padding: 0;
   margin: 0;
 }
@@ -343,8 +342,6 @@
   align-items: center;
   padding: 0.75rem 1rem;
   background-color: var(--tertiary);
-  
-  transition: background-color 0.15s ease;
 }
 
 .cardClickable {
@@ -406,7 +403,6 @@
   color: #444;
   cursor: pointer;
   text-decoration: none;
-  transition: color 0.15s ease;
 }
 
 .subtitleLink:hover {
@@ -492,7 +488,6 @@
   background-color: var(--tertiary);
   border: 1px solid rgba(0, 0, 0, 0.15);
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
