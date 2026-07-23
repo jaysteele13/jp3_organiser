@@ -26,7 +26,7 @@ const COLUMN_LABELS = {
   path: 'Path',
 };
 
-export default function SongTable({
+function SongTable({
   songs = [],
   variant = 'table',
   pageSize = DEFAULT_PAGE_SIZE,
@@ -255,3 +255,9 @@ export default function SongTable({
     </div>
   );
 }
+
+export default React.memo(SongTable, (prev, next) => {
+  const pKeys = Object.keys(prev);
+  if (pKeys.length !== Object.keys(next).length) return false;
+  return pKeys.every(k => prev[k] === next[k]);
+});

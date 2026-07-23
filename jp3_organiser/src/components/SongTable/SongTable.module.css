@@ -113,8 +113,9 @@
 .tableContainer {
   overflow-x: auto;
   background-color: transparent;
-   border: 1px solid var(--primary);
-  
+  border: 1px solid var(--primary);
+  contain: layout style;
+  will-change: transform;
 }
 
 .table {
@@ -149,6 +150,7 @@
 /* Table rows */
 .tableRow {
   text-align: start;
+  contain: content;
 }
 
 .tableRow:hover {
