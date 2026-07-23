@@ -12,6 +12,7 @@
   align-items: center;
   gap: 0.5rem;
   text-align: center;
+  
 }
 
 /* Wrapper allows action overlay to overflow the circle */
@@ -26,12 +27,11 @@
   border-radius: 50%;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .circleContainer:hover {
   transform: scale(1.05);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .circleContainer:focus {
@@ -134,12 +134,12 @@
   text-align: center;
   cursor: pointer;
   padding: 0.25rem 0.5rem;
-  
-  transition: background-color 0.15s ease;
+  border-bottom: 1px solid transparent;
+  transition: background-color 0.15s ease, border-bottom-color 0.15s ease;
 }
 
 .artistName:hover {
-  text-decoration: underline;
+  border-bottom-color: currentColor;
 }
 
 .artistName:focus {
