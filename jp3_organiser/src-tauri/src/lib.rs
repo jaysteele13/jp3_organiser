@@ -93,6 +93,7 @@ use commands::{
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     dotenv().ok();
+    env_logger::init();
 
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::new().build())
