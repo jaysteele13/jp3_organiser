@@ -49,7 +49,6 @@ fn splash_screen(app: AppHandle) -> Result<(), String> {
 
 use commands::{
     // Audio commands
-    get_audio_metadata,
     process_audio_files,
     process_single_audio_file,
     // Config commands
@@ -105,7 +104,6 @@ pub fn run() {
             // Audio commands
             process_audio_files,
             process_single_audio_file,
-            get_audio_metadata,
             // Config commands
             get_library_path,
             set_library_path,

@@ -302,6 +302,7 @@ jp3_organiser/
 │   │   │   └── playlist.rs   # Playlist binary format, parsed types
 │   │   ├── services/         # Business logic services
 │   │   │   ├── fingerprint_service.rs  # Audio fingerprinting + AcoustID
+│   │   │   ├── metadata_enrichment_service.rs  # Enrichment pipeline entry point
 │   │   │   └── metadata_ranking_service.rs  # Metadata ranking algorithm
 │   │   ├── lib.rs            # Tauri plugin setup and exports
 │   │   └── main.rs           # Entry point
@@ -317,7 +318,7 @@ jp3_organiser/
 
 ### Implemented
 1. **File Upload** - Select MP3/WAV/FLAC/M4A/OGG/OPUS files via native file picker
-2. **Metadata Extraction** - Read ID3 tags (MP3) + AcoustID fingerprinting for all formats
+2. **Metadata Extraction** - AcoustID fingerprinting for all supported formats
 3. **Metadata Ranking** - Algorithm to select best metadata from AcoustID results
 4. **Manual Metadata Entry** - Form to complete missing metadata
 5. **Review Mode** - Step through incomplete files one-by-one
@@ -410,7 +411,7 @@ Commands are organized into modules under `src-tauri/src/commands/`:
 
 | Module | Commands |
 |--------|----------|
-| `audio.rs` | `process_audio_files`, `process_single_audio_file`, `get_audio_metadata`, `get_audio_metadata_from_acoustic_id` |
+| `audio.rs` | `process_audio_files`, `process_single_audio_file` |
 | `config.rs` | `get_library_path`, `set_library_path`, `clear_library_path` |
 | `library.rs` | `initialize_library`, `get_library_info`, `save_to_library`, `load_library`, `delete_songs`, `edit_song_metadata`, `get_library_stats`, `compact_library` |
 | `playlist.rs` | `create_playlist`, `load_playlist`, `list_playlists`, `delete_playlist_by_name`, `rename_playlist`, `save_to_playlist`, `add_songs_to_playlist`, `remove_songs_from_playlist` |
@@ -436,6 +437,7 @@ Services are in `src-tauri/src/services/`:
 | Service | Purpose |
 |---------|---------|
 | `fingerprint_service.rs` | Audio fingerprinting via fpcalc + AcoustID API lookup |
+| `metadata_enrichment_service.rs` | Single entry point for metadata enrichment pipeline (fingerprint → AcoustID → ranking) |
 | `metadata_ranking_service.rs` | Ranking algorithm to select best metadata from AcoustID results |
 
 **Fingerprint Service:**
