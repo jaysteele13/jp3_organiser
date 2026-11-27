@@ -85,6 +85,13 @@ export function useAudioEngine({ onEnded, volume = 1 }) {
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
 
+  // The ended handler is attached when a song starts, so read the latest
+  // onEnded from a ref to see queue changes made while the song was playing.
+  const onEndedRef = useRef(onEnded);
+  useEffect(() => {
+    onEndedRef.current = onEnded;
+  }, [onEnded]);
+
   const startPositionTracking = useCallback(() => {
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
@@ -227,10 +234,12 @@ export function useAudioEngine({ onEnded, volume = 1 }) {
         if (!endedNaturallyRef.current) return;
         stopPositionTracking();
         if (mountedRef.current) {
+          // Position tracking stops when the window is hidden, so mark the end here.
+          setPosition(source.buffer.duration);
           setIsPlaying(false);
         }
         pauseOffsetRef.current = 0;
-        onEnded?.();
+        onEndedRef.current?.();
       };
 
       startTimeRef.current = ctx.currentTime - offset;
@@ -250,7 +259,7 @@ export function useAudioEngine({ onEnded, volume = 1 }) {
 
       sourceRef.current = source;
     },
-    [ensureAudioContext, onEnded, resetAudio, stopPositionTracking]
+    [ensureAudioContext, resetAudio, stopPositionTracking]
   );
 
   const resume = useCallback(
