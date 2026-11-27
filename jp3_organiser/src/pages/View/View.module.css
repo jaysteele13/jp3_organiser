@@ -37,7 +37,7 @@
 
 .error {
   padding: 1rem;
-  background-color: var(--primary);
+  background-color: var(--sketch-text);
   margin-bottom: 1rem;
   font-size: 0.9rem;
 }
@@ -45,7 +45,7 @@
 .emptyState {
   text-align: center;
   padding: 3rem;
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: color-mix(in srgb, var(--sketch-text) 10%, transparent);
  
 }
 
@@ -62,10 +62,11 @@
 
 /* Delete confirmation info */
 .deleteInfo {
-  background-color: #fff;
+  composes: surface from global;
+  background-color: var(--sketch-bg);
   padding: 1rem;
   margin-bottom: 1rem;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
 }
 
 .deleteInfoTitle {

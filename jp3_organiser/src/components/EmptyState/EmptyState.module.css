@@ -1,12 +1,12 @@
 .emptyState {
   text-align: center;
   padding: 3rem 2rem;
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
 }
 
 .emptyState h2 {
   margin-bottom: 0.5rem;
-  color: #333;
+  color: color-mix(in srgb, var(--sketch-text) 85%, transparent);
 }
 
 .emptyState p {

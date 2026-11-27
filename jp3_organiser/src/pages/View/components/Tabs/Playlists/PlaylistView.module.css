@@ -11,7 +11,7 @@
   text-align: center;
   padding: 3rem;
   
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
 }
 
 .emptyState h3 {
@@ -27,7 +27,7 @@
 /* Playlist card */
 .card {
   background-color: transparent;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
   overflow: hidden;
   transition: box-shadow 0.15s ease;
 }
@@ -48,8 +48,8 @@
 /* Manage button (right side) */
 .manageBtn {
   background-color: transparent;
-  border: 1px solid var(--primary);
-  color: var(--primary);
+  border: 1px solid var(--sketch-border);
+  color: var(--sketch-text);
   padding: 0.5rem 0.9rem;
   font-size: 0.85rem;
   font-weight: 500;
@@ -59,7 +59,7 @@
 }
 
 .manageBtn:hover {
-  background-color: var(--primary);
+  background-color: var(--sketch-text);
   color: var(--sketch-bg);
 }
 
@@ -90,14 +90,14 @@
 .cardTitle {
   font-weight: 600;
   font-size: 1rem;
-  color: #000;
+  color: var(--sketch-text);
 }
 
 /* Clickable title link */
 .cardTitleLink {
   font-weight: 600;
   font-size: 1rem;
-  color: #000;
+  color: var(--sketch-text);
   cursor: pointer;
 }
 
@@ -115,12 +115,13 @@
 .cardMeta {
   font-size: 0.8rem;
   opacity: 0.6;
-  color: #000;
+  color: var(--sketch-text);
 }
 
 /* Song list (expanded) */
 .songList {
-  border-top: 1px dashed var(--primary);
+  composes: surface from global;
+  border-top: 1px dashed var(--sketch-border);
   padding: 0.75rem 1rem;
   background-color: var(--sketch-bg);
 }
@@ -136,7 +137,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid color-mix(in srgb, var(--sketch-border) 5%, transparent);
 }
 
 .songItem:last-child {
@@ -149,7 +150,7 @@
   opacity: 0.5;
   text-align: right;
   flex-shrink: 0;
-  color: #000;
+  color: var(--sketch-text);
 }
 
 .songDetails {
@@ -163,7 +164,7 @@
 .songTitle {
   font-size: 0.9rem;
   font-weight: 500;
-  color: #000;
+  color: var(--sketch-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -172,7 +173,7 @@
 .songArtist {
   font-size: 0.8rem;
   opacity: 0.6;
-  color: #000;
+  color: var(--sketch-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -183,7 +184,7 @@
   opacity: 0.6;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
-  color: #000;
+  color: var(--sketch-text);
 }
 
 /* No songs message */
@@ -192,7 +193,7 @@
   padding: 0.5rem 0;
   font-size: 0.85rem;
   opacity: 0.6;
-  color: #000;
+  color: var(--sketch-text);
   font-style: italic;
 }
 
@@ -202,5 +203,5 @@
   padding: 0.5rem 0;
   font-size: 0.85rem;
   opacity: 0.6;
-  color: #000;
+  color: var(--sketch-text);
 }

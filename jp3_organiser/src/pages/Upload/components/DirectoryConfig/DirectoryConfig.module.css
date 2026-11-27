@@ -28,6 +28,7 @@
 }
 
 .structurePreview {
+  composes: surface from global;
   background-color: var(--sketch-bg);
   padding: 0.75rem 1rem;
   margin-bottom: 1.25rem;
@@ -40,7 +41,7 @@
   font-weight: bold;
   opacity: 0.7;
   margin-bottom: 0.5rem;
-  color: #000;
+  color: var(--sketch-text);
 }
 
 .structureCode {
@@ -95,6 +96,7 @@
 }
 
 .compactCard {
+  composes: surface from global;
   background-color: var(--sketch-bg);
   border-radius: 0px;
   border: 1px solid var(--sketch-border);
@@ -153,6 +155,7 @@
 
 /* Status indicator */
 .compactStatus {
+  composes: surface from global;
   font-size: 0.65rem;
   padding: 0.15rem 0.4rem;
   background-color: var(--sketch-bg);
@@ -179,6 +182,7 @@
 }
 
 .compactButton {
+  composes: surface from global;
   padding: 0.25rem 0.5rem;
   font-size: 0.7rem;
   background-color: var(--sketch-bg);

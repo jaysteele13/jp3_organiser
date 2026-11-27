@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import styles from './navbar.module.css';
+import ThemeSettings from '../ThemeSettings';
 
 const NAV_ITEMS = [
     { to: '/upload', label: 'Upload', icon: '↑' },
@@ -8,7 +9,7 @@ const NAV_ITEMS = [
     { to: '/about', label: 'About', icon: '?' },
 ];
 
-export default function Navbar({ isCollapsed, onToggle }) {
+export default function Navbar({ isCollapsed }) {
     return (
         <nav className={`${styles.navbar} ${isCollapsed ? styles.collapsed : ''}`}>
             <div className={styles.header}>
@@ -33,13 +34,7 @@ export default function Navbar({ isCollapsed, onToggle }) {
             </div>
 
             <div className={styles.footer}>
-                <button
-                    className={styles.collapseBtn}
-                    onClick={onToggle}
-                    title={isCollapsed ? 'Expand (Ctrl+S)' : 'Collapse (Ctrl+S)'}
-                >
-                    {isCollapsed ? '→' : '←'}
-                </button>
+                <ThemeSettings isCollapsed={isCollapsed} />
             </div>
         </nav>
     );

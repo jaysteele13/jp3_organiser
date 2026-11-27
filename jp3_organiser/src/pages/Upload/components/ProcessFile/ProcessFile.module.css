@@ -238,6 +238,7 @@
 }
 
 .fileItem {
+  composes: surface from global;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -306,6 +307,7 @@
 }
 
 .sectionTitle {
+  composes: surface from global;
   font-size: 0.8rem;
   font-weight: 800;
   text-transform: uppercase;

@@ -4,7 +4,8 @@
     position: fixed;
     left: 0;
     top: 0;
-    height: 100vh;
+    /* Stop above the fixed PlayerBar so the footer stays visible */
+    bottom: var(--player-bar-height);
     width: 200px;
     background-color: transparent;
     border-right: 1px solid var(--sketch-border);
@@ -57,6 +58,10 @@
     white-space: nowrap;
     overflow: hidden;
     border-color: var(--sketch-border);
+    /* Lets <button>s (e.g. the Theme cog) reuse this look */
+    background-color: transparent;
+    font: inherit;
+    cursor: pointer;
 }
 
 .navLink:hover {
@@ -92,35 +97,9 @@
     font-weight: 500;
 }
 
-/* Footer / Collapse button */
+/* Footer (Theme cog) */
 .footer {
-    padding: 0.5rem;
-    padding-bottom: 1.5rem;
+    padding-top: 0.5rem;
     border-top: 1px solid var(--sketch-border);
     margin-top: auto;
-}
-
-.collapseBtn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    min-height: 36px;
-    padding: 0.5rem 0.75rem;
-    background-color: var(--secondary);
-    border: 1px solid var(--sketch-border);
-    color: #fff;
-    border-radius: 0;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    line-height: 1;
-    box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.2);
-    
-}
-
-.collapseBtn:hover {
-    background-color: var(--tertiary);
-    border-color: var(--sketch-border);
-    color: #fff;
-    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
 }

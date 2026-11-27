@@ -11,6 +11,7 @@
 
 /* Input wrapper */
 .inputWrapper {
+  composes: surface from global;
   display: flex;
   align-items: center;
   background-color: var(--sketch-bg);
@@ -26,7 +27,7 @@
 
 /* Search icon */
 .searchIcon {
-  color: #888;
+  color: color-mix(in srgb, var(--sketch-text) 50%, transparent);
   display: flex;
   align-items: center;
   flex-shrink: 0;
@@ -45,7 +46,7 @@
 }
 
 .input::placeholder {
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
 }
 
 /* Selected value display */
@@ -73,7 +74,7 @@
 }
 
 .songCount {
-  color: #888;
+  color: color-mix(in srgb, var(--sketch-text) 50%, transparent);
   font-size: 0.85rem;
   flex-shrink: 0;
 }
@@ -82,7 +83,7 @@
 .clearBtn {
   background: transparent;
   border: none;
-  color: #888;
+  color: color-mix(in srgb, var(--sketch-text) 50%, transparent);
   cursor: pointer;
   font-size: 1.2rem;
   padding: 0;
@@ -103,7 +104,7 @@
 
 /* Chevron icon */
 .chevron {
-  color: #888;
+  color: color-mix(in srgb, var(--sketch-text) 50%, transparent);
   display: flex;
   align-items: center;
   cursor: pointer;
@@ -117,6 +118,7 @@
 
 /* Dropdown list */
 .dropdown {
+  composes: surface from global;
   position: absolute;
   top: 100%;
   left: 0;
@@ -184,11 +186,11 @@
 .emptyItem,
 .loadingItem {
   padding: 0.75rem;
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
   text-align: center;
   font-size: 0.9rem;
 }
 
 .loadingItem {
-  color: #888;
+  color: color-mix(in srgb, var(--sketch-text) 50%, transparent);
 }

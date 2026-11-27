@@ -61,6 +61,7 @@
 
 /* Variants */
 .success {
+  composes: surface from global;
   background-color: var(--sketch-bg);
   color: var(--primary);
 }
@@ -72,5 +73,5 @@
 
 .info {
   background-color: var(--tertiary);
-  color: #fff;
+  color: var(--on-tertiary);
 }

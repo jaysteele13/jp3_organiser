@@ -29,7 +29,7 @@
 }
 
 .fileItemActive {
-  background-color: rgba(0, 0, 0, 0.25);
+  background-color: color-mix(in srgb, var(--sketch-text) 25%, transparent);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -90,6 +90,7 @@
 }
 
 .saveButton {
+  composes: surface from global;
   flex: 2;
   padding: 0.85rem 1.5rem;
   background-color: var(--sketch-bg);
@@ -137,6 +138,7 @@
 }
 
 .confirmedList {
+  composes: surface from global;
   border: 1px solid var(--primary);
   background-color: var(--sketch-bg);
   border-left-color: var(--secondary);

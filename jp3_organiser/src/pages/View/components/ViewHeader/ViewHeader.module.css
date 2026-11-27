@@ -10,7 +10,7 @@
 .backButton {
   padding: 0.5rem 0.75rem;
   background-color: var(--secondary);
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
   color: var(--sketch-bg);
   font-size: 0.85rem;
   cursor: pointer;
@@ -43,7 +43,7 @@
   margin: 0 0 0.5rem 0;
   font-size: 1.75rem;
   font-weight: 600;
-  color: var(--primary);
+  color: var(--sketch-text);
   
 }
 
@@ -55,7 +55,7 @@
 }
 
 .subtitle code {
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: color-mix(in srgb, var(--sketch-text) 20%, transparent);
   padding: 0.2rem 0.4rem;
   border-radius: 3px;
   font-size: 0.8rem;
@@ -64,12 +64,12 @@
 .refreshButton {
   padding: 0.6rem 1.2rem;
   background-color: transparent;
-  color: var(--primary);
+  color: var(--sketch-text);
   flex-shrink: 0;
 }
 
 .refreshButton:hover {
-  background-color: var(--primary);
+  background-color: var(--sketch-text);
   color: var(--sketch-bg);
 }
 
@@ -81,7 +81,7 @@
 
 .clearCacheButton {
   background-color: var(--tertiary);
-  color: #fff;
+  color: var(--on-tertiary);
   flex-shrink: 0;
   font-size: 0.9rem;
   opacity: 0;

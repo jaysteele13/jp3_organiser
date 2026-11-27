@@ -26,8 +26,8 @@
 
 .backBtn {
   background: none;
-  border: 1px solid var(--primary);
-  color: var(--primary);
+  border: 1px solid var(--sketch-border);
+  color: var(--sketch-text);
   padding: 0.5rem 1rem;
   cursor: pointer;
   font-size: 0.9rem;
@@ -41,7 +41,7 @@
 /* Delete button in header */
 .deleteBtn {
     background-color: transparent;
-  color: var(--primary);
+  color: var(--sketch-text);
   padding: 0.5rem 1rem;
   font-size: 0.9rem;
   font-weight: 500;
@@ -50,8 +50,8 @@
 }
 
 .deleteBtn:hover {
-  background-color: var(--primary);
-  border: 1px solid var(--primary);
+  background-color: var(--sketch-text);
+  border: 1px solid var(--sketch-border);
   color: var(--sketch-bg);
 }
 
@@ -65,8 +65,8 @@
 /* Upload new songs button */
 .uploadBtn {
   background-color: var(--tertiary);
-  border: 1px solid var(--primary);
-  color: #fff;
+  border: 1px solid var(--sketch-border);
+  color: var(--on-tertiary);
   padding: 0.5rem 1rem;
   
   font-size: 0.9rem;
@@ -95,13 +95,13 @@
   margin: 0;
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--primary);
+  color: var(--sketch-text);
 }
 
 .editNameBtn {
   background: none;
   border: none;
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
   padding: 0.25rem;
   border-radius: 4px;
   cursor: pointer;
@@ -112,13 +112,13 @@
 }
 
 .editNameBtn:hover {
-  color: var(--primary);
-  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--sketch-text);
+  background-color: color-mix(in srgb, var(--sketch-text) 5%, transparent);
 }
 
 .subtitle {
   font-size: 0.9rem;
-  color: #444;
+  color: color-mix(in srgb, var(--sketch-text) 85%, transparent);
 }
 
 /* Main content - two columns */
@@ -136,7 +136,7 @@
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  color: var(--primary);
+  color: var(--sketch-text);
   min-height: 0;
   
 }
@@ -155,7 +155,7 @@
   margin: 0 0 1rem 0;
   font-size: 1.1rem;
   font-weight: 600;
-   color: var(--primary);
+   color: var(--sketch-text);
 }
 
 .sectionHeader .sectionTitle {
@@ -171,13 +171,13 @@
 
 .selectionCount {
   font-size: 0.85rem;
-  color: #888;
+  color: color-mix(in srgb, var(--sketch-text) 50%, transparent);
 }
 
 .clearBtn {
   background: none;
-  border: 1px solid var(--primary);
-  color: var(--primary);
+  border: 1px solid var(--sketch-border);
+  color: var(--sketch-text);
   padding: 0.4rem 0.75rem;
   font-size: 0.8rem;
   cursor: pointer;
@@ -185,14 +185,14 @@
 }
 
 .clearBtn:hover {
-  background-color: var(--primary);
+  background-color: var(--sketch-text);
   color: var(--sketch-bg);
 }
 
 .addBtn {
   background-color: var(--secondary);
-   border: 1px solid var(--primary);
-  color: #fff;
+   border: 1px solid var(--sketch-border);
+  color: var(--on-secondary);
   padding: 0.45rem 1rem;
   font-size: 0.85rem;
   font-weight: 500;
@@ -213,10 +213,10 @@
 .searchInput {
   width: 100%;
   padding: 0.65rem 1rem;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
   
   background-color: transparent;
-  color: var(--primary);
+  color: var(--sketch-text);
   font-size: 0.9rem;
   margin-bottom: 1rem;
   box-sizing: border-box;
@@ -229,7 +229,7 @@
 }
 
 .searchInput::placeholder {
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
 }
 
 /* Table container */
@@ -244,7 +244,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
 }
 
 .table thead {
@@ -258,19 +258,19 @@
   text-align: left;
   padding: 0.75rem 0.75rem;
   font-weight: 600;
-  color: var(--primary);
+  color: var(--sketch-text);
  
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 1px solid var(--primary);
+  border-bottom: 1px solid var(--sketch-border);
 }
 
 .table td {
   padding: 0.6rem 0.75rem;
 
-  border-bottom: 1px dashed var(--primary);
-  color: var(--primary);
+  border-bottom: 1px dashed var(--sketch-border);
+  color: var(--sketch-text);
   background-color: var(--sketch-bg);
 }
 
@@ -286,7 +286,7 @@
 }
 
 .cellIndex {
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
 }
 
 .thCheckbox,
@@ -302,7 +302,7 @@
   height: 14px;
   min-width: 17px;
   min-height: 17px;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
   background-color: transparent;
   cursor: pointer;
   position: relative;
@@ -317,7 +317,7 @@
 
 .checkbox:checked {
   background-color: transparent;
-  border-color: var(--primary);
+  border-color: var(--sketch-border);
 }
 
 .checkbox:checked::after {
@@ -325,7 +325,7 @@
   position: absolute;
   font-size: 14px;
   line-height: 1;
-  color: var(--primary);
+  color: var(--sketch-text);
   font-weight: 700;
 }
 
@@ -343,17 +343,17 @@
 
 .cellTitle {
   font-weight: 500;
-  color: #fff;
+  color: var(--sketch-text);
 }
 
 .cellArtist,
 .cellAlbum {
-  color: #aaa;
+  color: color-mix(in srgb, var(--sketch-text) 50%, transparent);
 }
 
 /* Song row hover */
 .songRow:hover {
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: color-mix(in srgb, var(--sketch-text) 3%, transparent);
 }
 
 /* Picker row states */
@@ -363,7 +363,7 @@
 }
 
 .pickerRow:hover:not(.pickerRowDisabled) {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: color-mix(in srgb, var(--sketch-text) 5%, transparent);
 }
 
 .pickerRowSelected {
@@ -382,8 +382,8 @@
 /* Remove button */
 .removeBtn {
   background: none;
-  border: 1px solid var(--primary);
-  color: var(--primary);
+  border: 1px solid var(--sketch-border);
+  color: var(--sketch-text);
   width: 28px;
   height: 28px;
   cursor: pointer;
@@ -394,8 +394,8 @@
 }
 
 .removeBtn:hover:not(:disabled) {
-  background-color: var(--primary);
-  color: #fff;
+  background-color: var(--sketch-text);
+  color: var(--sketch-bg);
 }
 
 .removeBtn:disabled {
@@ -406,7 +406,7 @@
 /* In playlist badge */
 .inPlaylistBadge {
   font-size: 0.7rem;
-  color: var(--primary);
+  color: var(--sketch-text);
   background-color: rgba(73, 182, 156, 0.15);
   padding: 0.2rem 0.5rem;
 
@@ -421,7 +421,7 @@
   align-items: center;
   padding: 2rem;
   text-align: center;
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
 }
 
 .emptySection p {
@@ -470,16 +470,16 @@
 
 .renameLabel {
   font-size: 0.85rem;
-  color: #888;
+  color: color-mix(in srgb, var(--sketch-text) 50%, transparent);
   font-weight: 500;
 }
 
 .renameInput {
   width: 100%;
   padding: 0.65rem 1rem;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
   background-color: transparent;
-  color: var(--primary);
+  color: var(--sketch-text);
   font-size: 0.95rem;
   box-sizing: border-box;
   transition: border-color 0.15s ease;
@@ -491,14 +491,14 @@
 }
 
 .renameInput::placeholder {
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
 }
 
 .renameInputError {
-  border-color: var(--primary);
+  border-color: var(--sketch-border);
 }
 
 .renameErrorText {
   font-size: 0.8rem;
-  color: var(--primary);
+  color: var(--sketch-text);
 }

@@ -55,6 +55,7 @@
 .content {
   margin-left: 200px;
   flex: 1;
+  min-width: 0; /* let wide children (e.g. scroll rows) shrink instead of widening the page */
   padding: 2rem;
   display: flex;
   flex-direction: column;

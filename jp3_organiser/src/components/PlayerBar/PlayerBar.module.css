@@ -10,11 +10,12 @@
    ============================================ */
 
 .playerBar {
+  composes: surface from global;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 80px;
+  height: var(--player-bar-height);
   background-color: var(--sketch-bg);
   border-top: 1px solid var(--sketch-border);
   border-bottom: none;
@@ -109,6 +110,7 @@
 }
 
 .controlBtn {
+  composes: surface from global;
   background-color: var(--sketch-bg);
   border: 1px solid var(--sketch-border);
   color: var(--sketch-text);
@@ -123,7 +125,7 @@
 .controlBtn:hover:not(:disabled) {
   background-color: var(--secondary);
   border-color: var(--secondary);
-  color: #fff;
+  color: var(--on-secondary);
   box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
 }
 
@@ -135,7 +137,7 @@
 .controlBtn.active {
   background-color: var(--secondary);
   border-color: var(--secondary);
-  color: #fff;
+  color: var(--on-secondary);
   box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
 }
 
@@ -147,7 +149,7 @@
 .playBtn {
   background-color: var(--secondary);
   border-color: var(--secondary);
-  color: #fff;
+  color: var(--on-secondary);
   padding: 0.45rem 1rem;
   font-size: 0.85rem;
   font-weight: 600;
@@ -303,6 +305,7 @@
 }
 
 .volumeBtn {
+  composes: surface from global;
   background-color: var(--sketch-bg);
   border: 1px solid var(--sketch-border);
   color: var(--sketch-text);
@@ -431,6 +434,7 @@
 }
 
 .queueBtn {
+  composes: surface from global;
   background-color: var(--sketch-bg);
   border: 1px solid var(--sketch-border);
   color: var(--sketch-text);

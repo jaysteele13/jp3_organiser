@@ -8,7 +8,7 @@
   justify-content: space-between;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid color-mix(in srgb, var(--sketch-border) 10%, transparent);
 }
 
 .titleGroup {
@@ -20,14 +20,14 @@
 .title {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #000;
+  color: var(--sketch-text);
   margin: 0;
 }
 
 .count {
   font-size: 0.85rem;
   font-weight: 400;
-  color: #888;
+  color: color-mix(in srgb, var(--sketch-text) 50%, transparent);
 }
 
 .seeAllBtn {
@@ -35,15 +35,15 @@
   font-size: 0.75rem;
   font-weight: 500;
   background-color: transparent;
-  border: 1px solid #999;
-  color: #555;
+  border: 1px solid color-mix(in srgb, var(--sketch-border) 40%, transparent);
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .seeAllBtn:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-  border-color: #666;
-  color: #000;
+  background-color: color-mix(in srgb, var(--sketch-text) 5%, transparent);
+  border-color: color-mix(in srgb, var(--sketch-border) 60%, transparent);
+  color: var(--sketch-text);
 }

@@ -113,7 +113,7 @@
 .cardTitle {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #000;
+  color: var(--sketch-text);
   padding-left: 1rem;
   padding-right: 1rem;
 }
@@ -121,12 +121,12 @@
 .cardSubtitle {
   padding: .5rem;
   font-size: 0.75rem;
-  color: #333;
+  color: color-mix(in srgb, var(--sketch-text) 85%, transparent);
 }
 
 .cardMeta {
   font-size: 0.7rem;
-  color: #555;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
   margin-top: auto;
 }
 
@@ -154,11 +154,11 @@
 
 .albumCard {
   background-color: transparent;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
 }
 
 .albumCard:hover {
-  background-color: var(--primary-hover);
+  background-color: var(--sketch-text);
   color: var(--sketch-bg);
 }
 
@@ -177,14 +177,14 @@
 .albumCard .cardBtn.queue,
 .albumCard .cardBtn {
   background-color: transparent;
-  border: 1px solid var(--primary);
-  color: var(--primary);
+  border: 1px solid var(--sketch-border);
+  color: var(--sketch-text);
 }
 
 .albumCard .cardBtn.queue:hover,
 .albumCard .cardBtn:hover{
   background-color: var(--sketch-bg);
-  color: var(--primary);
+  color: var(--sketch-text);
 }
 
 
@@ -236,7 +236,7 @@
 
 .playlistCard {
   background-color: transparent;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
   border-left: 4px groove var(--incomplete-status);
 }
 
@@ -253,7 +253,7 @@
 }
 
 .playlistCard:hover {
-  background-color: var(--primary);
+  background-color: var(--sketch-text);
 }
 
 
@@ -272,20 +272,20 @@
 .playlistCard .cardBtn.queue,
 .playlistCard .cardBtn {
   background-color: transparent;
-  border: 1px solid var(--primary);
-  color: var(--primary);
+  border: 1px solid var(--sketch-border);
+  color: var(--sketch-text);
 }
 
 .playlistCard .cardBtn.queue:hover,
 .playlistCard .cardBtn:hover{
   background-color: var(--sketch-bg);
-  color: var(--primary);
+  color: var(--sketch-text);
 }
 
 .playlistCard .cardTitle,
 .playlistCard .cardSubtitle,
 .playlistCard .cardMeta {
-  color: var(--primary);
+  color: var(--sketch-text);
 }
 
 /* ========================================
@@ -296,7 +296,7 @@
   width: 100%;
   margin-top: 1rem;
   padding: 1rem;
-  background-color: rgba(0, 0, 0, 0.03);
+  background-color: color-mix(in srgb, var(--sketch-text) 3%, transparent);
   border-left: 3px solid var(--tertiary);
 }
 
@@ -306,26 +306,26 @@
   justify-content: space-between;
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid color-mix(in srgb, var(--sketch-border) 10%, transparent);
 }
 
 .expandedTitle {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #000;
+  color: var(--sketch-text);
 }
 
 .closeBtn {
   padding: 0.25rem 0.5rem;
   font-size: 0.7rem;
   background-color: transparent;
-  border: 1px solid rgba(0, 0, 0, 0.3);
-  color: #000;
+  border: 1px solid color-mix(in srgb, var(--sketch-border) 30%, transparent);
+  color: var(--sketch-text);
   cursor: pointer;
 }
 
 .closeBtn:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: color-mix(in srgb, var(--sketch-text) 5%, transparent);
 }
 
 .expandedSongs {
@@ -349,7 +349,7 @@
   font-size: 0.7rem;
   background-color: var(--secondary);
   border: none;
-  color: #000;
+  color: var(--sketch-text);
   cursor: pointer;
   transition: background-color 0.15s ease;
   box-shadow: none;
@@ -361,20 +361,20 @@
 
 .actionBtn.queue {
   background-color: transparent;
-  border: 1px solid var(--primary);
-  color: var(--primary);
+  border: 1px solid var(--sketch-border);
+  color: var(--sketch-text);
 }
 
 .actionBtn.queue:hover {
-  background-color: var(--primary);
-  color: #fff;
+  background-color: var(--sketch-text);
+  color: var(--sketch-bg);
 }
 
 /* Empty state */
 .empty {
   text-align: center;
   padding: 2rem;
-  color: #888;
+  color: color-mix(in srgb, var(--sketch-text) 50%, transparent);
   font-style: italic;
 }
 
