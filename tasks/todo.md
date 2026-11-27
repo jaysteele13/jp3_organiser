@@ -246,3 +246,10 @@ Open question from the same request ("have the playlists auto show like songs, a
   - Acceptance: on the Library with a filter active, `/` shows `library ` and the filter is untouched until you type; Shift+Tab still swaps to `player `; on Upload the bar opens empty.
   - Verify: `npm test`, `npm run build`; by hand.
   - Files: `components/CommandBar/CommandBar.jsx`, `hooks/useCommandBar.js`, `utils/commandParser.test.js`.
+
+- [x] **Task 25: `/` restores the active search** (built; not yet checked by hand)
+  - Does: when the page already has a search (`?q=` in the URL), `/` opens the bar holding the whole command, e.g. `library pool`, including its `| show=` line. With no search it still opens with just `library ` / `player `.
+  - Acceptance: type `library pool`, click away, press `/`: the bar shows `library pool` with the cursor at the end; after "Clear filter", `/` shows `library `.
+  - Known limit: the search reaches the URL about 150ms after you stop typing, so clicking away faster than that loses the last keystrokes. On the Library, a tab changed by clicking is not reflected (the bar restores the tab from the last command).
+  - Verify: `npm run build`; by hand.
+  - Files: `components/CommandBar/CommandBar.jsx`.

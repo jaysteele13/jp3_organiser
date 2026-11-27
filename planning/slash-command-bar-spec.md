@@ -358,7 +358,7 @@ Every filter bar's button now reads **"Clear filter"**. Earlier sections that sa
 
 ## Slice 11: pre-fill the command for the current page (built 2026-11-27, not yet checked by hand)
 
-Pressing `/` on the Library opens the bar holding `library `; on the Player (including its detail pages) it holds `player `; elsewhere it opens empty. The bar waits for you to type before navigating, so opening it does not disturb the current filter or tab. This replaces the earlier rule that the bar always opens empty.
+Pressing `/` on the Library opens the bar holding `library `; on the Player (including its detail pages) it holds `player `; elsewhere it opens empty. If the page already has a search, the bar opens holding the whole command (`library pool`, with its `| show=` line), so clicking away and pressing `/` again picks up where you left off. The bar waits for you to type before navigating, so opening it does not disturb the current filter or tab. This replaces the earlier rule that the bar always opens empty.
 
 ### Mini ticket (copy and paste)
 
@@ -368,6 +368,7 @@ Pressing `/` on the Library opens the bar holding `library `; on the Player (inc
 
 **Acceptance criteria**
 - `/` on the Library opens the bar with `library `; on the Player and its detail pages with `player `; on other pages empty.
+- If the page already has a search, `/` opens the bar holding that whole command.
 - Opening the bar does not change the page's filter or tab until I type.
 - Shift+Tab still switches the command.
 

@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { useKeyboardShortcut } from '../../hooks/useKeyboardShortcut';
 import { useCommandBar } from '../../hooks/useCommandBar';
 import { EDIT_COMMAND_EVENT, formatCommand } from '../../utils/commandParser';
@@ -18,12 +18,17 @@ import styles from './CommandBar.module.css';
 
 export default function CommandBar() {
   const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
   const [initialInput, setInitialInput] = useState(null); // null = closed
 
-  // "/" opens the bar holding the current page's command: "library " on the Library, "player " on
-  // the Player and its detail pages, empty elsewhere. Clicking a filter's text opens it holding that command.
+  // "/" opens the bar holding the current page's command, with its active search if there is one:
+  // "library pool" on the Library, "player " on the Player and its detail pages, empty elsewhere.
+  // Clicking a filter's text opens it the same way.
   const page = `/${pathname.split('/')[1]}`;
-  useKeyboardShortcut('/', () => setInitialInput(formatCommand(page, '', TABS.SONGS)), { ignoreInInputs: true });
+  const query = searchParams.get('q') ?? '';
+  // The tab ("| show=") is only carried over with a search, so a bare "library " leaves the cursor ready to type
+  const tab = (query && searchParams.get('tab')) || TABS.SONGS;
+  useKeyboardShortcut('/', () => setInitialInput(formatCommand(page, query, tab)), { ignoreInInputs: true });
   useEffect(() => {
     const openWithCommand = (e) => setInitialInput(e.detail);
     window.addEventListener(EDIT_COMMAND_EVENT, openWithCommand);
