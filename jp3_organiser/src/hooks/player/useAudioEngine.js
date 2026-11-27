@@ -22,13 +22,31 @@ export function useAudioEngine({ onEnded, volume = 1 }) {
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState(null);
 
+  // Read volume from a ref so contexts created later get the current volume,
+  // not the one captured when the callbacks below were first created.
+  const volumeRef = useRef(volume);
+
+  const closeAudioContext = () => {
+    const old = ctxRef.current;
+    ctxRef.current = null;
+    gainRef.current = null;
+    if (old && old.state !== "closed") {
+      old.close().catch((err) => {
+        console.warn("Failed to close AudioContext", err);
+      });
+    }
+  };
+
+  // Replaces any existing context. A long-lived context can stay "running"
+  // while detached from the speakers (sleep, device change, long idle), so
+  // loadAndPlay and resume start from a fresh one.
   const createAudioContext = () => {
+    closeAudioContext();
     const ctx = new AudioContext();
     const gain = ctx.createGain();
     gain.connect(ctx.destination);
-    // Initialize gain value to the current volume when creating the context
     try {
-      gain.gain.value = volume;
+      gain.gain.value = volumeRef.current;
     } catch (err) {
       console.warn("Failed to set initial gain value", err);
     }
@@ -61,20 +79,16 @@ export function useAudioEngine({ onEnded, volume = 1 }) {
 
   useEffect(() => {
     mountedRef.current = true;
-    const ctx = createAudioContext();
 
     return () => {
       mountedRef.current = false;
       resetAudio();
-      if (ctx) {
-        ctx.close().catch((err) => {
-          console.warn("Failed to close AudioContext", err);
-        });
-      }
+      closeAudioContext();
     };
   }, [resetAudio]);
 
   useEffect(() => {
+    volumeRef.current = volume;
     if (gainRef.current) {
       gainRef.current.gain.value = volume;
     }
@@ -265,6 +279,7 @@ export function useAudioEngine({ onEnded, volume = 1 }) {
   const resume = useCallback(
     async () => {
       if (!bufferRef.current || isPlaying) return;
+      createAudioContext();
       await playFromOffset(pauseOffsetRef.current);
     },
     [isPlaying, playFromOffset]
@@ -303,8 +318,7 @@ export function useAudioEngine({ onEnded, volume = 1 }) {
         const bytes = await readFile(filePath);
         if (version !== loadVersionRef.current) return;
 
-        const ctx = await ensureAudioContext();
-        if (!ctx) return;
+        const ctx = createAudioContext();
 
         const buffer = await ctx.decodeAudioData(bytes.buffer.slice(0));
         if (version !== loadVersionRef.current) return;
@@ -325,6 +339,8 @@ export function useAudioEngine({ onEnded, volume = 1 }) {
           setIsLoading(false);
         }
       } catch (err) {
+        // A newer load closed this load's context; its failure is not an error.
+        if (version !== loadVersionRef.current) return;
         console.error("loadAndPlay error:", err);
         if (mountedRef.current) {
           setError(err.message || "Failed to load audio");
@@ -332,7 +348,7 @@ export function useAudioEngine({ onEnded, volume = 1 }) {
         }
       }
     },
-    [ensureAudioContext, playFromOffset, stop]
+    [playFromOffset, stop]
   );
 
   return {
