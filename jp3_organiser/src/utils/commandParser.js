@@ -86,10 +86,36 @@ function suggestFrom(names, input) {
 }
 
 /** Suggest a command, e.g. "l" -> "library". */
-export const suggestCommand = (input) => suggestFrom(Object.keys(COMMANDS), input);
+export const suggestCommand = (input) => suggestFrom([...Object.keys(COMMANDS), PLAYLIST_COMMAND], input);
 
-/** Suggest a filter key, e.g. "ar" -> "artist". */
-export const suggestKey = (word) => suggestFrom(Object.keys(FILTER_KEYS), word);
+// "playlist <name>" opens that playlist's edit page. It is not in COMMANDS because it is not a page of filtered songs.
+export const PLAYLIST_COMMAND = 'playlist';
+
+/**
+ * The name typed after "playlist ", lowercased.
+ * @returns {string | null} null when the input is not the playlist command
+ */
+export function playlistQuery(input) {
+  const [command, ...rest] = input.split(' ');
+  return command.toLowerCase() === PLAYLIST_COMMAND && rest.length ? rest.join(' ').trim().toLowerCase() : null;
+}
+
+/**
+ * Playlists whose name contains the text: an exact match first, then names that start with it.
+ * @param {Array} playlists - [{ id, name }]
+ * @param {string} text - lowercased, from playlistQuery
+ * @returns {Array} at most `max` playlists
+ */
+export function matchPlaylists(playlists, text, max = 6) {
+  const rank = ({ name }) => (name.toLowerCase() === text ? 2 : name.toLowerCase().startsWith(text) ? 1 : 0);
+  return playlists
+    .filter(({ name }) => name.toLowerCase().includes(text))
+    .sort((a, b) => rank(b) - rank(a))
+    .slice(0, max);
+}
+
+/** Suggest a filter key, e.g. "ar" -> "artist". Pass `keys` to offer only some of them. */
+export const suggestKey = (word, keys = Object.keys(FILTER_KEYS)) => suggestFrom(keys, word);
 
 /** Suggest a key for a line after "|", e.g. "sh" -> "show". */
 export const suggestPipeKey = (word) => suggestFrom(['show'], word);
@@ -101,6 +127,19 @@ export const suggestPipeKey = (word) => suggestFrom(['show'], word);
 export function lastTerm(input) {
   const term = splitTerms(input).at(-1) ?? '';
   return input.endsWith(term) ? term : '';
+}
+
+/**
+ * Swap the value being typed at the end of the input for a picked name, quoted if it has a space.
+ * @param {string} input - e.g. 'artist=qu'
+ * @param {string} name - e.g. 'Queen'
+ * @returns {string} e.g. 'artist=Queen ' (the trailing space finishes the term)
+ */
+export function pickValue(input, name) {
+  const term = lastTerm(input);
+  const prefix = term.slice(0, term.indexOf('=') + 1); // "artist=", or '' for a value after "and"
+  const value = name.replaceAll('"', '');
+  return `${input.slice(0, input.length - term.length)}${prefix}${value.includes(' ') ? `"${value}"` : value} `;
 }
 
 /**

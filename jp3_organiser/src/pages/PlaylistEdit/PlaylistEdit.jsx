@@ -14,8 +14,9 @@ import { useLibraryConfig } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
 import { invalidateLibraryCache } from '../../hooks/libraryCache';
 import { deletePlaylistByName, listPlaylists } from '../../services/libraryService';
-import { LoadingState, ErrorState, EmptyState, ConfirmModal } from '../../components';
+import { LoadingState, ErrorState, EmptyState, ConfirmModal, SongQueryInput } from '../../components';
 import { TABS, UPLOAD_MODE } from '../../utils/enums';
+import { filterSongsByText } from '../../utils/songFilter';
 import usePlaylistEdit from './usePlaylistEdit';
 import styles from './PlaylistEdit.module.css';
 
@@ -121,24 +122,24 @@ export default function PlaylistEdit() {
   const songLookup = useMemo(() => buildSongLookup(library), [library]);
   const allSongs = library?.songs || [];
 
-  // Filter songs for picker based on debounced search query
-  const filteredSongs = useMemo(() => {
-    if (!debouncedSearchQuery.trim()) {
-      return allSongs;
-    }
-    const query = debouncedSearchQuery.toLowerCase();
-    return allSongs.filter(song => 
-      song.title.toLowerCase().includes(query) ||
-      song.artistName.toLowerCase().includes(query) ||
-      song.albumName.toLowerCase().includes(query)
-    );
-  }, [allSongs, debouncedSearchQuery]);
+  // Filter songs for the picker with the same query rules as the "/" command bar
+  const filteredSongs = useMemo(
+    () => filterSongsByText(allSongs, debouncedSearchQuery),
+    [allSongs, debouncedSearchQuery]
+  );
 
   // Get current playlist songs with details
   const currentSongs = useMemo(() => {
     if (!playlist?.songIds) return [];
     return playlist.songIds.map(id => songLookup.get(id)).filter(Boolean);
   }, [playlist?.songIds, songLookup]);
+
+  // Narrow the playlist's own songs, to find the ones to remove
+  const [playlistQuery, setPlaylistQuery] = useState('');
+  const shownSongs = useMemo(
+    () => filterSongsByText(currentSongs, playlistQuery),
+    [currentSongs, playlistQuery]
+  );
 
   const handleBack = () => {
     navigate('/view', { state: { tab: TABS.PLAYLISTS } });
@@ -362,11 +363,27 @@ export default function PlaylistEdit() {
         {/* Left column - Current songs */}
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Playlist Songs</h2>
-          
-          {currentSongs.length === 0 ? (
+
+          {currentSongs.length > 0 && (
+            <SongQueryInput
+              className={styles.searchInput}
+              songs={currentSongs}
+              placeholder="Filter to find songs to remove: artist=queen"
+              value={playlistQuery}
+              onChange={setPlaylistQuery}
+            />
+          )}
+
+          {shownSongs.length === 0 ? (
             <div className={styles.emptySection}>
-              <p>This playlist is empty.</p>
-              <p>Add songs from the library on the right.</p>
+              {currentSongs.length > 0 ? (
+                <p>No songs match your search.</p>
+              ) : (
+                <>
+                  <p>This playlist is empty.</p>
+                  <p>Add songs from the library on the right.</p>
+                </>
+              )}
             </div>
           ) : (
             <div className={styles.tableContainer}>
@@ -380,7 +397,7 @@ export default function PlaylistEdit() {
                   </tr>
                 </thead>
                 <tbody>
-                  {currentSongs.map((song, index) => (
+                  {shownSongs.map((song, index) => (
                     <CurrentSongRow
                       key={song.id}
                       song={song}
@@ -421,13 +438,13 @@ export default function PlaylistEdit() {
             )}
           </div>
 
-          {/* Search input */}
-          <input
-            type="text"
+          {/* Search input - same filters as the "/" command bar */}
+          <SongQueryInput
             className={styles.searchInput}
-            placeholder="Search by title, artist, or album..."
+            songs={allSongs}
+            placeholder="Search, or filter: artist=queen album=jazz"
             value={searchQuery}
-            onChange={(e) => updateSearchQuery(e.target.value)}
+            onChange={updateSearchQuery}
           />
 
           {/* Song picker table */}

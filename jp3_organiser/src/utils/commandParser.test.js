@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  formatCommand, lastTerm, parseCommand, suggestCommand, suggestKey, suggestShow, suggestValues, switchCommand,
+  formatCommand, lastTerm, matchPlaylists, parseCommand, pickValue, playlistQuery, suggestCommand, suggestKey, suggestShow,
+  suggestValues, switchCommand,
 } from './commandParser';
 
 const songs = [
@@ -56,6 +57,22 @@ describe('commandParser', () => {
     expect(suggestCommand('x')).toBeNull();
   });
 
+  it('reads the name after "playlist", and offers the command once "player" no longer fits', () => {
+    expect(suggestCommand('playl')).toBe('playlist');
+    expect(playlistQuery('playlist Chill Mix')).toBe('chill mix');
+    expect(playlistQuery('Playlist ')).toBe('');
+    expect(playlistQuery('playlist')).toBeNull();
+    expect(playlistQuery('library chill')).toBeNull();
+    expect(parseCommand('playlist chill')).toBeNull();
+  });
+
+  it('finds playlists by name: exact match first, then names that start with the text', () => {
+    const playlists = [{ id: 1, name: 'My Gym' }, { id: 2, name: 'Gym 2' }, { id: 3, name: 'Gym' }, { id: 4, name: 'Chill' }];
+    expect(matchPlaylists(playlists, 'gym').map((p) => p.id)).toEqual([3, 2, 1]);
+    expect(matchPlaylists(playlists, '').length).toBe(4);
+    expect(matchPlaylists(playlists, 'zzz')).toEqual([]);
+  });
+
   it('switches to the other command, keeping the rest of the query', () => {
     expect(switchCommand('library artist=queen')).toBe('player artist=queen');
     expect(switchCommand('player artist=queen')).toBe('library artist=queen');
@@ -68,6 +85,19 @@ describe('commandParser', () => {
     expect(suggestKey('y')).toBe('year');
     expect(suggestKey('')).toBeNull();
     expect(suggestKey('artist=')).toBeNull();
+  });
+
+  it('only suggests the keys it is given', () => {
+    expect(suggestKey('p', ['title', 'artist'])).toBeNull();
+    expect(suggestKey('t', ['title', 'artist'])).toBe('title');
+  });
+
+  it('swaps the value being typed for a picked name, quoted if it has a space', () => {
+    expect(pickValue('artist=qu', 'Queen')).toBe('artist=Queen ');
+    expect(pickValue('year=2021 artist=ol', 'Olivia Rodrigo')).toBe('year=2021 artist="Olivia Rodrigo" ');
+    expect(pickValue('artist="olivia ro', 'Olivia Rodrigo')).toBe('artist="Olivia Rodrigo" ');
+    expect(pickValue('artist=queen and co', 'Coldplay')).toBe('artist=queen and Coldplay ');
+    expect(pickValue('artist=queen and ', 'Coldplay')).toBe('artist=queen and Coldplay ');
   });
 
   it('finds the term being typed, keeping an open quote together', () => {

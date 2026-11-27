@@ -1,0 +1,10 @@
+/* Make room only while the dropdown list is open, so the closed popup stays compact */
+.picker:has(ul) {
+  min-height: 250px;
+}
+
+.message {
+  margin: 0;
+  color: var(--primary);
+  font-size: 0.9rem;
+}
