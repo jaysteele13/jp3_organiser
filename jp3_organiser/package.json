@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "vitest run",
     "tauri": "tauri",
     "tauri-clean": "rm -rf src-tauri/target"
   },
@@ -24,6 +25,7 @@
   "devDependencies": {
     "@tauri-apps/cli": "^2",
     "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.0.3"
+    "vite": "^6.0.3",
+    "vitest": "^5.1.2"
   }
 }
