@@ -7,7 +7,7 @@
  * - Pagination with configurable page size
  * - Memoized paginated results
  * 
- * Note: Search is handled externally via LibrarySearch component.
+ * Note: Search is handled externally via the "/" command bar.
  * 
  * @param {Object} options - Hook options
  * @param {Array} options.songs - Array of song objects to display

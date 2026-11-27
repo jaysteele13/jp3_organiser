@@ -6,19 +6,23 @@
  * Clicking an artist reveals an overlay with album/song count and action menu.
  * "Go to Artist" action navigates to the Player artist detail page.
  * 
- * Supports filtering via filter prop (from LibrarySearch).
+ * Supports filtering via filter prop (one artist, from Player links) and the "/" command bar query.
  * When filtered, shows only the selected artist.
  */
 
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArtistGrid, FilterBar } from '../../../../../components';
+import { ArtistGrid, FilterBar, QueryFilterBar } from '../../../../../components';
+import { useTextFilter } from '../../../../../hooks';
+import { TABS } from '../../../../../utils/enums';
+import { filterByQuery } from '../../../../../utils/songFilter';
 import { getCachedViewData } from '../../../utils/viewDataCache';
 import styles from './ArtistView.module.css';
 
 
 export default function ArtistView({ library, libraryPath, onDeleteArtist, onEditArtist, filter, onClearFilter }) {
   const navigate = useNavigate();
+  const [textFilter] = useTextFilter();
 
   // Pre-compute song and album counts for each artist
   const artistCounts = useMemo(() => {
@@ -40,14 +44,12 @@ export default function ArtistView({ library, libraryPath, onDeleteArtist, onEdi
   }, [library.artists, library.songs, library.albums]);
 
   const displayArtists = useMemo(() => {
-    const cacheKey = filter?.id ?? 'all';
+    const cacheKey = `${filter?.id ?? 'all'}::${textFilter}`;
     return getCachedViewData(library.artists, cacheKey, () => {
-      if (!filter) {
-        return library.artists;
-      }
-      return library.artists.filter(artist => artist.id === filter.id);
+      const artists = filter ? library.artists.filter(artist => artist.id === filter.id) : library.artists;
+      return filterByQuery(artists, library.songs, textFilter, 'artistId');
     });
-  }, [library.artists, filter]);
+  }, [library.artists, library.songs, filter, textFilter]);
 
   const getActions = useCallback((artist) => [
     { label: 'Go to Artist', onClick: () => navigate(`/player/artist/${artist.id}`) },
@@ -61,9 +63,9 @@ export default function ArtistView({ library, libraryPath, onDeleteArtist, onEdi
         <FilterBar
           label={filter.name}
           onClear={onClearFilter}
-          clearText="Show all artists"
         />
       )}
+      <QueryFilterBar tab={TABS.ARTISTS} />
       <ArtistGrid
         artists={displayArtists}
         libraryPath={libraryPath}

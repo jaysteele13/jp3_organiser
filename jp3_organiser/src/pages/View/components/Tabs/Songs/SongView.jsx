@@ -6,7 +6,7 @@
  * Title, artist, and album names are clickable links that navigate to Player.
  * Clicking a song title navigates to Player and begins playback.
  * 
- * Supports external filtering via songFilter prop (from LibrarySearch).
+ * Supports external filtering via songFilter prop (one song, from Player links) and the "/" command bar query.
  * When a filter is active, shows only the filtered song with a clear button.
  * 
  * Supports multiselect mode for bulk deletion via checkbox column.
@@ -15,9 +15,10 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SongTable, ActionMenu, FilterBar } from '../../../../../components';
-import { useMultiSelect } from '../../../../../hooks';
+import { SongTable, ActionMenu, FilterBar, QueryFilterBar } from '../../../../../components';
+import { useMultiSelect, useTextFilter } from '../../../../../hooks';
 import { TABS } from '../../../../../utils/enums';
+import { filterSongsByText } from '../../../../../utils/songFilter';
 import { load } from '@tauri-apps/plugin-store';
 import { getCachedViewData } from '../../../utils/viewDataCache';
 import styles from './SongView.module.css';
@@ -94,6 +95,7 @@ async function setStoredPage(page) {
 
 export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditSong, songFilter, onClearFilter }) {
   const navigate = useNavigate();
+  const [textFilter] = useTextFilter();
 
   // Select mode toggle state
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -127,11 +129,12 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
   const displaySongs = useMemo(() => {
     if (!library.songs?.length) return [];
 
-    const cacheKey = `${songFilter?.id ?? 'all'}::${currentSort.field}::${currentSort.direction}`;
+    const cacheKey = `${songFilter?.id ?? 'all'}::${textFilter}::${currentSort.field}::${currentSort.direction}`;
     return getCachedViewData(library.songs, cacheKey, () => {
-      let songs = songFilter
-        ? library.songs.filter(song => song.id === songFilter.id)
-        : library.songs;
+      const songs = filterSongsByText(
+        songFilter ? library.songs.filter(song => song.id === songFilter.id) : library.songs,
+        textFilter
+      );
 
       const { field, direction } = currentSort;
       return [...songs].sort((a, b) => {
@@ -146,7 +149,7 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
         return direction === 'desc' ? -comparison : comparison;
       });
     });
-  }, [library.songs, songFilter, currentSort]);
+  }, [library.songs, songFilter, textFilter, currentSort]);
 
   // Handle page size change and persist
   const handlePageSizeChange = useCallback((newSize) => {
@@ -178,7 +181,7 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
   // Clear selection when filter changes or select mode is disabled
   useEffect(() => {
     deselectAll();
-  }, [songFilter, deselectAll]);
+  }, [songFilter, textFilter, deselectAll]);
 
   // Exit select mode handler - clears selection and disables mode
   const handleExitSelectMode = useCallback(() => {
@@ -255,9 +258,9 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
           label={songFilter.title}
           sublabel={`by ${songFilter.artistName}`}
           onClear={onClearFilter}
-          clearText="Show all songs"
         />
       )}
+      <QueryFilterBar tab={TABS.SONGS} />
 
       {/* Toolbar row - Select mode toggle and selection actions */}
       <div className={styles.toolbar}>

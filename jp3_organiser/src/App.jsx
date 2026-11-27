@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import styles from './App.module.css';
-import { Navbar, PlayerBar } from './components';
+import { Navbar, PlayerBar, CommandBar } from './components';
 import SplashScreen from './components/SplashScreen';
 import About from './pages/About';
 import Upload from './pages/Upload';
@@ -23,6 +23,7 @@ function AppLayout({ children, isNavCollapsed }) {
         {children}
       </main>
       <PlayerBar />
+      <CommandBar />
     </div>
   );
 }

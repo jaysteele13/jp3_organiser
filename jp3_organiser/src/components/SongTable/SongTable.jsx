@@ -4,7 +4,7 @@
  * Reusable song list component with pagination.
  * Supports two display variants: 'table' (traditional rows) and 'card' (Spotify-style).
  * 
- * Note: Search is handled externally via LibrarySearch component.
+ * Note: Search is handled externally via the "/" command bar.
 **/
 
 import React, { useCallback } from 'react';

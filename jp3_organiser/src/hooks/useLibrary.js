@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { loadLibrary, listPlaylists, loadPlaylist } from '../services';
 import { getCachedLibrary, loadLibraryFromCache, invalidateLibraryCache, setCachedLibrary } from './libraryCache';
+import { withPlaylistNames } from '../utils/songFilter';
 
 export function useLibrary(libraryPath) {
   const [library, setLibrary] = useState(() => getCachedLibrary(libraryPath));
@@ -11,7 +12,8 @@ export function useLibrary(libraryPath) {
     if (!libraryPath) return;
     if (!force) {
       const cached = getCachedLibrary(libraryPath);
-      if (cached) {
+      // Only reuse a complete library: the cache briefly holds one whose playlists are still loading
+      if (cached?.playlists) {
         setLibrary(cached);
         return cached;
       }
@@ -37,7 +39,12 @@ export function useLibrary(libraryPath) {
         );
       }
 
-      const nextLibrary = { ...libraryData, playlists: fullPlaylists };
+      // Songs carry their playlists' names so the command bar's "playlist=" can filter on them
+      const nextLibrary = {
+        ...libraryData,
+        songs: withPlaylistNames(libraryData.songs || [], fullPlaylists),
+        playlists: fullPlaylists,
+      };
       setLibrary(nextLibrary);
       setCachedLibrary(libraryPath, nextLibrary);
       return nextLibrary;

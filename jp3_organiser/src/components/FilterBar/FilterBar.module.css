@@ -22,6 +22,18 @@
   font-weight: 600;
 }
 
+/* Label that opens the command bar: looks like the bold label, with a hint it can be edited */
+.editButton {
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  background: none;
+  border: none;
+  border-bottom: 1px dashed currentColor;
+  cursor: text;
+}
+
 .sublabel {
   opacity: 0.9;
 }

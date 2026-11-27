@@ -42,10 +42,6 @@
   padding-bottom: .5rem;;
 }
 
-.searchWrapper {
-  flex-shrink: 0;
-}
-
 @keyframes pageFadeIn {
   
   0% { opacity: 0;}

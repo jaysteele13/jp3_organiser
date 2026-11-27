@@ -12,6 +12,7 @@ import { useMemo, useState, useCallback, useEffect, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLibraryConfig } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
+import { invalidateLibraryCache } from '../../hooks/libraryCache';
 import { deletePlaylistByName, listPlaylists } from '../../services/libraryService';
 import { LoadingState, ErrorState, EmptyState, ConfirmModal } from '../../components';
 import { TABS, UPLOAD_MODE } from '../../utils/enums';
@@ -252,6 +253,7 @@ export default function PlaylistEdit() {
     setIsDeleting(true);
     try {
       await deletePlaylistByName(libraryPath, playlist.name);
+      invalidateLibraryCache(libraryPath);
       navigate('/view', { state: { tab: TABS.PLAYLISTS } });
     } catch (err) {
       console.error('Failed to delete playlist:', err);

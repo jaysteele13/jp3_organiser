@@ -17,23 +17,10 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
+import { isInputElement } from '../../utils/dom';
 
 const SEEK_STEP = 5; // seconds
 const VOLUME_STEP = 0.1; // 10%
-
-/**
- * Check if the event target is an input element.
- */
-function isInputElement(target) {
-  if (!target) return false;
-  const tagName = target.tagName?.toLowerCase();
-  return (
-    tagName === 'input' ||
-    tagName === 'textarea' ||
-    tagName === 'select' ||
-    target.isContentEditable
-  );
-}
 
 export function usePlayerKeyboardShortcuts({
   isPlaying,
