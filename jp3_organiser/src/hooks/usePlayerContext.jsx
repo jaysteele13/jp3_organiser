@@ -70,6 +70,11 @@ export function PlayerProvider({ children }) {
     cycleRepeatMode,
   } = queueManager;
 
+  // Last track the auto-play effect loaded, used to avoid duplicate loads
+  const lastPlayedRef = useRef({ id: null, path: null });
+  // Bumped when a track ends so the next one loads even if it is the same song
+  const [replayTick, setReplayTick] = useState(0);
+
   // Handle track ended - advance to next track
   const handleTrackEnded = useCallback(() => {
     if (repeatMode === REPEAT_MODE.ONE) {
@@ -77,7 +82,10 @@ export function PlayerProvider({ children }) {
       return;
     }
     // Move to next track (user queue items are consumed, context advances)
-    nextTrack();
+    if (nextTrack()) {
+      lastPlayedRef.current = { id: null, path: null };
+      setReplayTick(tick => tick + 1);
+    }
   }, [repeatMode, nextTrack]);
 
   // Audio engine management
@@ -99,9 +107,7 @@ export function PlayerProvider({ children }) {
   } = audioElement;
 
   // Auto-play when current track changes
-  // Uses a ref to track the last successfully triggered play to avoid duplicates
-  const lastPlayedRef = useRef({ id: null, path: null });
-  
+  // Uses lastPlayedRef to track the last successfully triggered play to avoid duplicates
   useEffect(() => {
     // Need both a track and library path to play
     if (!currentTrack?.path || !libraryPath) {
@@ -128,7 +134,7 @@ export function PlayerProvider({ children }) {
         });
       }
     }
-  }, [currentTrack?.id, currentTrack?.path, libraryPath, loadAndPlay]);
+  }, [currentTrack?.id, currentTrack?.path, libraryPath, loadAndPlay, replayTick]);
 
   // Handle repeat one - seek to start when track ends
   useEffect(() => {
