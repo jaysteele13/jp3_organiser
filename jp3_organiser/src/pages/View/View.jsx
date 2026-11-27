@@ -15,7 +15,7 @@ import { useSongActions } from '../../hooks/useSongActions';
 import { useAlbumActions } from '../../hooks/useAlbumActions';
 import { useArtistActions } from '../../hooks/useArtistActions';
 import { useLibrary } from '../../hooks/useLibrary';
-import { LoadingState, ErrorState, EmptyState, Toast, ConfirmModal, LibrarySearch } from '../../components';
+import { LoadingState, ErrorState, EmptyState, Toast, ConfirmModal } from '../../components';
 import styles from './View.module.css';
 
 import { TABS, VIEW_TABS } from '../../utils/enums';
@@ -55,12 +55,12 @@ export default function View() {
     return () => window.removeEventListener('coverart-proxy-error', handleProxyError);
   }, [toast]);
 
-  // Sync activeTab when navigation state changes (e.g., returning from PlaylistEdit)
+  // Sync activeTab on each navigation that names a tab (e.g., returning from PlaylistEdit, command bar)
   useEffect(() => {
     if (location.state?.tab) {
       setActiveTab(location.state.tab);
     }
-  }, [location.state?.tab]);
+  }, [location.state]);
 
   // Handle navigation from Player with pre-set filters (state tracked here, effect below after clearAllFilters)
   const [showBackToPlayer, setShowBackToPlayer] = useState(false);
@@ -119,11 +119,6 @@ export default function View() {
     setFilter(null);
   }, []);
 
-  const selectAndSwitchTab = useCallback((type, value, tab) => {
-    setFilter({ type, value });
-    setActiveTab(tab);
-  }, []);
-
   // Handle navigation from Player with pre-set filters
   useEffect(() => {
     const state = location.state;
@@ -176,23 +171,6 @@ export default function View() {
   const getArtistAlbumCount = (artistId) => {
     return library?.albums?.filter(a => a.artistId === artistId).length ?? 0;
   };
-
-  // ============ SEARCH HANDLERS ============
-  const handleSelectPlaylist = useCallback((playlist) => {
-    selectAndSwitchTab('playlist', playlist, TABS.PLAYLISTS);
-  }, [selectAndSwitchTab]);
-
-  const handleSelectArtist = useCallback((artist) => {
-    selectAndSwitchTab('artist', artist, TABS.ARTISTS);
-  }, [selectAndSwitchTab]);
-
-  const handleSelectAlbum = useCallback((album) => {
-    selectAndSwitchTab('album', album, TABS.ALBUMS);
-  }, [selectAndSwitchTab]);
-
-  const handleSelectSong = useCallback((song) => {
-    selectAndSwitchTab('song', song, TABS.SONGS);
-  }, [selectAndSwitchTab]);
 
 
   // Handle tab change - clear all filters when switching tabs
@@ -256,19 +234,6 @@ export default function View() {
               activeTab={activeTab}
               tabs={VIEW_TABS}
             />
-            <div className={styles.searchWrapper}>
-              <LibrarySearch
-                library={library}
-                libraryPath={libraryPath}
-                onSelectPlaylist={handleSelectPlaylist}
-                onSelectArtist={handleSelectArtist}
-                onSelectAlbum={handleSelectAlbum}
-                onSelectSong={handleSelectSong}
-                placeholder="Search playlists, artists, albums, songs..."
-              />
-            
-            </div>
-            
           </div>
           <div className={styles.content}>
             <TabContent 

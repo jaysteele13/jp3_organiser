@@ -7,7 +7,7 @@
  * Playlist names are clickable links that navigate to the Player playlist detail page.
  * "Manage" button navigates to the PlaylistEdit page.
  * 
- * Supports filtering via filter prop (from LibrarySearch).
+ * Supports filtering via filter prop (one playlist, from Player links) and the "/" command bar query.
  * When filtered, shows only the selected playlist.
  * 
  * @param {Object} props
@@ -20,7 +20,10 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loadPlaylist } from '../../../../../services/libraryService';
-import { FilterBar } from '../../../../../components';
+import { FilterBar, QueryFilterBar } from '../../../../../components';
+import { useTextFilter } from '../../../../../hooks';
+import { TABS } from '../../../../../utils/enums';
+import { filterPlaylistsByQuery } from '../../../../../utils/songFilter';
 import styles from './PlaylistView.module.css';
 
 /**
@@ -161,14 +164,13 @@ export default function PlaylistView({ library, libraryPath, filter, onClearFilt
   const navigate = useNavigate();
   const playlists = library?.playlists || [];
   const songLookup = useMemo(() => buildSongLookup(library), [library]);
+  const [textFilter] = useTextFilter();
 
-  // Filter playlists if a filter is active
+  // Filter playlists by the single picked playlist, then by the command bar query
   const displayPlaylists = useMemo(() => {
-    if (!filter) {
-      return playlists;
-    }
-    return playlists.filter(p => p.id === filter.id);
-  }, [playlists, filter]);
+    const picked = filter ? playlists.filter(p => p.id === filter.id) : playlists;
+    return filterPlaylistsByQuery(picked, library?.songs || [], textFilter);
+  }, [playlists, library?.songs, filter, textFilter]);
 
   const handleManage = useCallback((playlistId) => {
     navigate(`/playlist/${playlistId}`);
@@ -196,6 +198,7 @@ export default function PlaylistView({ library, libraryPath, filter, onClearFilt
           clearText="Show all playlists"
         />
       )}
+      <QueryFilterBar tab={TABS.PLAYLISTS} clearText="Show all playlists" />
       {displayPlaylists.map(playlist => (
         <PlaylistCard 
           key={playlist.id} 

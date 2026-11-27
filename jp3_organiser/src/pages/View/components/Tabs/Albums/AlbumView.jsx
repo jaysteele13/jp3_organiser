@@ -5,18 +5,22 @@
  * Album names are clickable links that navigate to the Player album detail page.
  * Artist names are also clickable links that navigate to the Player artist detail page.
  * 
- * Supports filtering via filter prop (from LibrarySearch).
+ * Supports filtering via filter prop (one album, from Player links) and the "/" command bar query.
  * When filtered, shows only the selected album.
  */
 
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CardList, CoverArt, FilterBar } from '../../../../../components';
+import { CardList, CoverArt, FilterBar, QueryFilterBar } from '../../../../../components';
+import { useTextFilter } from '../../../../../hooks';
+import { TABS } from '../../../../../utils/enums';
+import { filterByQuery } from '../../../../../utils/songFilter';
 import { getCachedViewData } from '../../../utils/viewDataCache';
 import styles from './AlbumView.module.css';
 
 export default function AlbumView({ library, libraryPath, onDeleteAlbum, onEditAlbum, filter, onClearFilter }) {
   const navigate = useNavigate();
+  const [textFilter] = useTextFilter();
 
   // Pre-compute song counts for each album
   const albumSongCounts = useMemo(() => {
@@ -28,14 +32,12 @@ export default function AlbumView({ library, libraryPath, onDeleteAlbum, onEditA
   }, [library.songs]);
 
   const displayAlbums = useMemo(() => {
-    const cacheKey = filter?.id ?? 'all';
+    const cacheKey = `${filter?.id ?? 'all'}::${textFilter}`;
     return getCachedViewData(library.albums, cacheKey, () => {
-      if (!filter) {
-        return library.albums;
-      }
-      return library.albums.filter(album => album.id === filter.id);
+      const albums = filter ? library.albums.filter(album => album.id === filter.id) : library.albums;
+      return filterByQuery(albums, library.songs, textFilter, 'albumId');
     });
-  }, [library.albums, filter]);
+  }, [library.albums, library.songs, filter, textFilter]);
 
   const handleTitleClick = useCallback((album) => {
     navigate(`/player/album/${album.id}`);
@@ -81,6 +83,7 @@ export default function AlbumView({ library, libraryPath, onDeleteAlbum, onEditA
           clearText="Show all albums"
         />
       )}
+      <QueryFilterBar tab={TABS.ALBUMS} clearText="Show all albums" />
       <CardList
         items={displayAlbums}
         getTitle={getTitle}

@@ -11,11 +11,11 @@
  * - state.playContext: Array of songs for next/prev navigation
  */
 
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
+import React, { useMemo, useEffect, useRef } from 'react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { useLibraryConfig, usePlayer } from '../../hooks';
 import { useLibrary } from '../../hooks/useLibrary';
-import { LoadingState, ErrorState, EmptyState, LibrarySearch } from '../../components';
+import { LoadingState, ErrorState, EmptyState } from '../../components';
 import StatsBar from '../View/components/StatsBar'
 import styles from './Player.module.css';
 
@@ -30,26 +30,17 @@ const VALID_TABS = Object.values(PLAYER_TABS);
 export default function Player() {
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
-  const navigate = useNavigate();
   const { libraryPath, isLoading: configLoading } = useLibraryConfig();
   const { setLibraryPath, playTrack } = usePlayer();
   const hasTriggeredPlayback = useRef(false);
   
-  // Read tab from URL, default to HOME if invalid or missing
+  // The active tab comes straight from the URL, default HOME if invalid or missing
   const tabParam = searchParams.get('tab');
-  const initialTab = VALID_TABS.includes(tabParam) ? tabParam : PLAYER_TABS.HOME;
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const activeTab = VALID_TABS.includes(tabParam) ? tabParam : PLAYER_TABS.HOME;
 
-  // Sync tab state with URL parameter
+  // Changing tab replaces the URL params (HOME keeps a clean URL)
   const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    if (tab === PLAYER_TABS.HOME) {
-      // Remove tab param for home (clean URL)
-      searchParams.delete('tab');
-      setSearchParams(searchParams, { replace: true });
-    } else {
-      setSearchParams({ tab }, { replace: true });
-    }
+    setSearchParams(tab === PLAYER_TABS.HOME ? {} : { tab }, { replace: true });
   };
   
   const { library, isLoading, error, handleRefresh } = useLibrary(libraryPath);
@@ -85,24 +76,6 @@ export default function Player() {
     };
   }, [library]);
 
-  // ============ SEARCH HANDLERS ============
-  const handleSelectSong = useCallback((song) => {
-    // Start playback with all songs as context for next/prev
-    playTrack(song, library?.songs || [song]);
-  }, [playTrack, library?.songs]);
-
-  const handleSelectAlbum = useCallback((album) => {
-    navigate(`/player/album/${album.id}`);
-  }, [navigate]);
-
-  const handleSelectArtist = useCallback((artist) => {
-    navigate(`/player/artist/${artist.id}`);
-  }, [navigate]);
-
-  const handleSelectPlaylist = useCallback((playlist) => {
-    navigate(`/player/playlist/${playlist.id}`);
-  }, [navigate]);
-
   if (configLoading) {
     return <LoadingState message="Loading configuration..." />;
   }
@@ -136,17 +109,6 @@ export default function Player() {
               setActiveTab={handleTabChange}
               tabs={PLAYER_TABS}
             />
-            <div className={styles.searchWrapper}>
-              <LibrarySearch
-                library={library}
-                libraryPath={libraryPath}
-                onSelectSong={handleSelectSong}
-                onSelectAlbum={handleSelectAlbum}
-                onSelectArtist={handleSelectArtist}
-                onSelectPlaylist={handleSelectPlaylist}
-                placeholder="Search library..."
-              />
-            </div>
           </div>
 
           <div className={styles.content}>

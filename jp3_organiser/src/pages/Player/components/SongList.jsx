@@ -6,15 +6,19 @@
  * player experience (clickable artist/album links with built-in navigation).
  */
 
-import React, { useCallback } from 'react';
-import { usePlayer } from '../../../hooks';
+import React, { useCallback, useMemo } from 'react';
+import { usePlayer, useTextFilter } from '../../../hooks';
 import { shuffleArray } from '../../../hooks/player/playerUtils';
-import { SongTable } from '../../../components';
+import { filterSongsByText } from '../../../utils/songFilter';
+import { SongTable, QueryFilterBar } from '../../../components';
+import { TABS } from '../../../utils/enums';
 import PlayerSongCard from './PlayerSongCard';
 import styles from './SongList.module.css';
 
-export default function SongList({ songs }) {
+export default function SongList({ songs: allSongs }) {
   const { playTrack, addToQueue, isCurrentTrack } = usePlayer();
+  const [textFilter] = useTextFilter();
+  const songs = useMemo(() => filterSongsByText(allSongs, textFilter), [allSongs, textFilter]);
 
   const handlePlayAll = useCallback(() => {
     if (songs.length > 0) {
@@ -52,6 +56,7 @@ export default function SongList({ songs }) {
 
   return (
     <div className={styles.container}>
+      <QueryFilterBar tab={TABS.SONGS} clearText="Show all songs" />
       <div className={styles.actions}>
         <button
           className={`${styles.actionBtn} ${styles.primary}`}
@@ -73,7 +78,7 @@ export default function SongList({ songs }) {
         variant="card"
         highlightId={currentTrackId}
         renderCard={renderCard}
-        emptyMessage="No songs in library"
+        emptyMessage={textFilter ? 'No songs match your search' : 'No songs in library'}
         noResultsMessage="No songs match your search"
         searchPlaceholder="Search songs..."
       />

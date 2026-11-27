@@ -4,8 +4,10 @@ export { default as ArtistCard } from './ArtistCard';
 export { default as ContextMenu } from './ContextMenu';
 export { default as ArtistGrid } from './ArtistGrid';
 export { default as CardList } from './CardList';
+export { default as CommandBar } from './CommandBar';
 export { default as CoverArt, clearCoverArtCache } from './CoverArt';
 export { default as FilterBar } from './FilterBar';
+export { default as QueryFilterBar } from './FilterBar/QueryFilterBar';
 export { default as LoadingState } from './LoadingState';
 export { default as ErrorState } from './ErrorState';
 export { default as EmptyState } from './EmptyState';
@@ -15,7 +17,6 @@ export { default as PlaylistComboBox } from './PlaylistComboBox';
 export { default as QueueDrawer } from './QueueDrawer';
 export { default as ScrollingText } from './ScrollingText';
 export { default as SongTable } from './SongTable';
-export { default as LibrarySearch, SEARCH_CATEGORY } from './LibrarySearch';
 
 // Layout Components
 export { default as Header } from './Header';
