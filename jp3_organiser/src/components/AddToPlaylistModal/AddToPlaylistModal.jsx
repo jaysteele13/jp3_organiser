@@ -11,11 +11,24 @@
 
 import { useEffect, useState } from 'react';
 import { useLibraryConfig } from '../../hooks/useLibraryConfig';
-import { invalidateLibraryCache } from '../../hooks/libraryCache';
+import { getCachedLibrary, invalidateLibraryCache, setCachedLibrary } from '../../hooks/libraryCache';
 import { addSongsToPlaylist, listPlaylists } from '../../services/libraryService';
+import { withPlaylistNames } from '../../utils/songFilter';
 import ConfirmModal from '../ConfirmModal';
 import PlaylistComboBox from '../PlaylistComboBox';
 import styles from './AddToPlaylistModal.module.css';
+
+// The cached library holds each playlist's songs. Add the song there too, so the next page
+// that reads the cache sees it and the "/" bar keeps its name suggestions.
+function addToCachedPlaylist(libraryPath, playlistId, songId) {
+  const cached = getCachedLibrary(libraryPath);
+  if (!cached?.playlists) return invalidateLibraryCache(libraryPath);
+
+  const playlists = cached.playlists.map((playlist) => (playlist.id === playlistId
+    ? { ...playlist, songIds: [...(playlist.songIds ?? []), songId], songCount: (playlist.songCount ?? 0) + 1 }
+    : playlist));
+  setCachedLibrary(libraryPath, { ...cached, playlists, songs: withPlaylistNames(cached.songs, playlists) });
+}
 
 export default function AddToPlaylistModal({ song, onClose }) {
   const { libraryPath } = useLibraryConfig();
@@ -46,8 +59,7 @@ export default function AddToPlaylistModal({ song, onClose }) {
     try {
       // The backend skips songs the playlist already has, so 0 added means it was there
       const { songsAdded } = await addSongsToPlaylist(libraryPath, selected.id, [song.id]);
-      // The cached library holds each playlist's songs; drop it so pages reload the change
-      if (songsAdded) invalidateLibraryCache(libraryPath);
+      if (songsAdded) addToCachedPlaylist(libraryPath, selected.id, song.id);
       setMessage(`${songsAdded ? 'Added to' : 'Already in'} "${selected.name}"`);
       setIsDone(true);
     } catch (err) {
@@ -69,7 +81,7 @@ export default function AddToPlaylistModal({ song, onClose }) {
       isLoading={isSaving}
     >
       {!isDone && (
-        // Tall enough for the open dropdown, so the popup does not have to scroll
+        // Grows while the dropdown is open, so the popup does not have to scroll
         <div className={styles.picker}>
           <PlaylistComboBox
             playlists={playlists ?? []}

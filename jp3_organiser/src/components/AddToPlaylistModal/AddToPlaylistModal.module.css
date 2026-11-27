@@ -1,4 +1,5 @@
-.picker {
+/* Make room only while the dropdown list is open, so the closed popup stays compact */
+.picker:has(ul) {
   min-height: 250px;
 }
 

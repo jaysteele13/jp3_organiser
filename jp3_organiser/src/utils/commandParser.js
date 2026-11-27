@@ -86,7 +86,33 @@ function suggestFrom(names, input) {
 }
 
 /** Suggest a command, e.g. "l" -> "library". */
-export const suggestCommand = (input) => suggestFrom(Object.keys(COMMANDS), input);
+export const suggestCommand = (input) => suggestFrom([...Object.keys(COMMANDS), PLAYLIST_COMMAND], input);
+
+// "playlist <name>" opens that playlist's edit page. It is not in COMMANDS because it is not a page of filtered songs.
+export const PLAYLIST_COMMAND = 'playlist';
+
+/**
+ * The name typed after "playlist ", lowercased.
+ * @returns {string | null} null when the input is not the playlist command
+ */
+export function playlistQuery(input) {
+  const [command, ...rest] = input.split(' ');
+  return command.toLowerCase() === PLAYLIST_COMMAND && rest.length ? rest.join(' ').trim().toLowerCase() : null;
+}
+
+/**
+ * Playlists whose name contains the text: an exact match first, then names that start with it.
+ * @param {Array} playlists - [{ id, name }]
+ * @param {string} text - lowercased, from playlistQuery
+ * @returns {Array} at most `max` playlists
+ */
+export function matchPlaylists(playlists, text, max = 6) {
+  const rank = ({ name }) => (name.toLowerCase() === text ? 2 : name.toLowerCase().startsWith(text) ? 1 : 0);
+  return playlists
+    .filter(({ name }) => name.toLowerCase().includes(text))
+    .sort((a, b) => rank(b) - rank(a))
+    .slice(0, max);
+}
 
 /** Suggest a filter key, e.g. "ar" -> "artist". Pass `keys` to offer only some of them. */
 export const suggestKey = (word, keys = Object.keys(FILTER_KEYS)) => suggestFrom(keys, word);
