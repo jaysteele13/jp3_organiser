@@ -19,13 +19,13 @@
 .welcomeTitle {
   font-size: 2rem;
   font-weight: 700;
-  color: #000;
+  color: var(--sketch-text);
   margin: 0 0 0.25rem 0;
 }
 
 .welcomeSubtitle {
   font-size: 0.9rem;
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
   margin: 0;
 }
 

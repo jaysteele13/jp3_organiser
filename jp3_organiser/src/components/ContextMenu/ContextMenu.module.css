@@ -1,5 +1,6 @@
 /* Context Menu styles */
 .contextMenu {
+  composes: surface from global;
   position: fixed;
   background-color: var(--sketch-bg);
   border: 1px dashed var(--primary);

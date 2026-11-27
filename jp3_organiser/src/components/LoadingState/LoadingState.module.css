@@ -7,5 +7,5 @@
 
 .loading {
   font-size: 1.1rem;
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
 }

@@ -16,6 +16,7 @@
    ======================================== */
 
 .inputWrapper {
+  composes: surface from global;
   position: relative;
  
 }
@@ -25,20 +26,20 @@
   padding: 0.5rem 2.25rem 0.5rem 0.75rem;
   font-size: 0.875rem;
   font-family: inherit;
-  background-color: transparent;
-  border: 1px solid var(--primary);
-  color: #000;
+  background-color: var(--sketch-bg);
+  border: 1px solid var(--sketch-border);
+  color: var(--sketch-text);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .searchInput:focus {
   outline: none;
-  border-color: var(--primary);
+  border-color: var(--sketch-border);
   box-shadow: 0 0 0 2px rgba(182, 73, 99, 0.15);
 }
 
 .searchInput::placeholder {
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
 }
 
 .clearBtn {
@@ -51,7 +52,7 @@
   padding: 0;
   font-size: 1rem;
   font-weight: 500;
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
   background: transparent;
   
   border: none;
@@ -63,9 +64,9 @@
 }
 
 .clearBtn:hover {
-  color: #000;
-  border: 1px solid var(--primary);
-  background-color: rgba(0, 0, 0, 0.08);
+  color: var(--sketch-text);
+  border: 1px solid var(--sketch-border);
+  background-color: color-mix(in srgb, var(--sketch-text) 8%, transparent);
 }
 
 /* ========================================
@@ -73,6 +74,7 @@
    ======================================== */
 
 .dropdown {
+  composes: surface from global;
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
@@ -89,7 +91,7 @@
 .noResults {
   padding: 1rem;
   text-align: center;
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
   font-size: 0.875rem;
 }
 
@@ -102,7 +104,7 @@
 }
 
 .categorySection:not(:last-child) {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid color-mix(in srgb, var(--sketch-border) 10%, transparent);
 }
 
 .categoryHeader {
@@ -111,7 +113,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #555;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
   text-align: start;
 }
 
@@ -135,12 +137,12 @@
 
 .resultCard:hover,
 .resultCard.highlighted {
-  background-color: rgba(0, 0, 0, 0.08);
+  background-color: color-mix(in srgb, var(--sketch-text) 8%, transparent);
 }
 
 .resultCard:focus {
   outline: none;
-  background-color: rgba(0, 0, 0, 0.08);
+  background-color: color-mix(in srgb, var(--sketch-text) 8%, transparent);
 }
 
 .thumbnail {
@@ -178,7 +180,7 @@
 .resultTitle {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #000;
+  color: var(--sketch-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -186,7 +188,7 @@
 
 .resultSubtitle {
   font-size: 0.75rem;
-  color: #555;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

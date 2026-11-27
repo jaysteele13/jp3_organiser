@@ -35,7 +35,7 @@
 }
 
 .circleContainer:focus {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--sketch-border);
   outline-offset: 2px;
 }
 /* Hover overlay - shows counts only */
@@ -79,6 +79,7 @@
 }
 
 .actionList {
+  composes: surface from global;
   display: block;
   width: fit-content;
   flex-direction: column;
@@ -86,15 +87,15 @@
   gap: 0.35rem;
   background: var(--sketch-bg);
   
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
 
 }
 
 .actionButton {
   background: transparent;
   border: none;
-  color: var(--primary);
-  border-bottom: 1px dashed var(--primary);
+  color: var(--sketch-text);
+  border-bottom: 1px dashed var(--sketch-border);
   font-size: 0.85rem;
   font-family: inherit;
   
@@ -107,18 +108,18 @@
 }
 
 .actionButton:hover {
-  background-color: var(--primary);
+  background-color: var(--sketch-text);
   color: var(--sketch-bg);
 }
 
 .dangerButton {
-  color: var(--primary);
+  color: var(--sketch-text);
   border-bottom: none;
 }
 
 .dangerButton:hover {
-  background-color: var(--primary);
-  color: #fff;
+  background-color: var(--sketch-text);
+  color: var(--sketch-bg);
 }
 
 /* Artist name container - sizing constraint for ScrollingText */
@@ -143,6 +144,6 @@
 }
 
 .artistName:focus {
-  outline: 2px solid var(--primary, #007bff);
+  outline: 2px solid var(--sketch-border);
   outline-offset: 1px;
 }

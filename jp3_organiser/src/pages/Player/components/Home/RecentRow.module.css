@@ -16,7 +16,7 @@
   overflow-x: auto;
   padding-bottom: 0.5rem;
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  scrollbar-color: color-mix(in srgb, var(--sketch-border) 20%, transparent) transparent;
 }
 
 .scrollContainer::-webkit-scrollbar {
@@ -28,7 +28,7 @@
 }
 
 .scrollContainer::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: color-mix(in srgb, var(--sketch-text) 20%, transparent);
   border-radius: 3px;
 }
 
@@ -75,7 +75,8 @@
 }
 
 .cardPlaylist {
-  background-color: #fff;
+  composes: surface from global;
+  background-color: var(--sketch-bg);
  
 }
 
@@ -139,17 +140,17 @@
 /* Text colors for light backgrounds (song, playlist) */
 .cardSong .title,
 .cardPlaylist .title {
-  color: #000;
+  color: var(--sketch-text);
 }
 
 .cardSong .subtitle,
 .cardPlaylist .subtitle {
-  color: #333;
+  color: color-mix(in srgb, var(--sketch-text) 85%, transparent);
 }
 
 .cardSong .typeLabel,
 .cardPlaylist .typeLabel {
-  color: #555;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
 }
 
 /* Play button */

@@ -10,10 +10,10 @@
   padding: 0.5rem 1rem;
   background-color: transparent;
   border: none;
-  color: #000;
+  color: var(--sketch-text);
   font-size: 0.9rem;
   cursor: pointer;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
   transition: all 0.15s ease;
 }
 
@@ -22,6 +22,7 @@
 }
 
 .tabActive {
+  composes: surface from global;
   background-color: var(--sketch-bg);
   color: #fff;
 }

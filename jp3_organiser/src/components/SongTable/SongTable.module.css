@@ -39,9 +39,9 @@
   font-size: 0.9rem;
   font-family: inherit;
   background-color: var(--tertiary);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid color-mix(in srgb, var(--sketch-border) 10%, transparent);
 
-  color: #000;
+  color: var(--sketch-text);
 
 }
 
@@ -52,7 +52,7 @@
 }
 
 .searchInput::placeholder {
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
 }
 
 .clearBtn {
@@ -65,7 +65,7 @@
   padding: 0;
   font-size: 1.1rem;
   font-weight: 500;
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
   background: transparent;
   border: none;
   
@@ -76,8 +76,8 @@
 }
 
 .clearBtn:hover {
-  color: #000;
-  background-color: rgba(0, 0, 0, 0.08);
+  color: var(--sketch-text);
+  background-color: color-mix(in srgb, var(--sketch-text) 8%, transparent);
 }
 
 .controlsRight {
@@ -88,7 +88,7 @@
 
 .resultsCount {
   font-size: 0.85rem;
-  color: #555;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
   white-space: nowrap;
 }
 
@@ -97,9 +97,10 @@
    ======================================== */
 
 .emptyState {
+  composes: surface from global;
   padding: 3rem 2rem;
   text-align: center;
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
   font-size: 0.95rem;
   border: 1px solid var(--primary);
   background-color: var(--sketch-bg);
@@ -134,7 +135,7 @@
   text-align: left;
   padding: 0.75rem 1rem;
   font-weight: 600;
-  color: #000;
+  color: var(--sketch-text);
   border-bottom: 1px solid var(--primary);
   white-space: nowrap;
 
@@ -142,8 +143,8 @@
 
 .table td {
   padding: 0.65rem 1rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  color: #000;
+  border-bottom: 1px solid color-mix(in srgb, var(--sketch-border) 5%, transparent);
+  color: var(--sketch-text);
   background-color: var(--sketch-bg);
 }
 
@@ -154,7 +155,7 @@
 }
 
 .tableRow:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: color-mix(in srgb, var(--sketch-text) 5%, transparent);
 }
 
 .tableRow.clickable {
@@ -163,7 +164,7 @@
 
 .tableRow.clickable:focus {
   outline: none;
-  background-color: rgba(0, 0, 0, 0.08);
+  background-color: color-mix(in srgb, var(--sketch-text) 8%, transparent);
 }
 
 .tableRow.highlighted {
@@ -240,7 +241,7 @@
 
 .cellIndex {
   text-align: center;
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
 }
 
 .thTitle {
@@ -298,7 +299,7 @@
 
 .cellDuration {
   text-align: right;
-  color: #555;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
   font-variant-numeric: tabular-nums;
 }
 
@@ -308,7 +309,7 @@
 
 .cellPath {
   font-size: 0.8rem;
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -377,7 +378,7 @@
 .cardTitle {
   font-size: 0.9rem;
   font-weight: 500;
-  color: #000;
+  color: var(--sketch-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -385,7 +386,7 @@
 
 .cardSubtitle {
   font-size: 0.75rem;
-  color: #444;
+  color: color-mix(in srgb, var(--sketch-text) 85%, transparent);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -400,7 +401,7 @@
   margin: 0;
   font: inherit;
   font-size: 0.75rem;
-  color: #444;
+  color: color-mix(in srgb, var(--sketch-text) 85%, transparent);
   cursor: pointer;
   text-decoration: none;
 }
@@ -417,7 +418,7 @@
 }
 
 .subtitleSeparator {
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
   flex-shrink: 0;
 }
 
@@ -460,7 +461,7 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.85rem;
-  color: #555;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
 }
 
 .pageSizeSelect {
@@ -468,9 +469,15 @@
   font-size: 0.85rem;
   font-family: inherit;
   background-color: var(--tertiary);
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  color: #000;
+  border: 1px solid color-mix(in srgb, var(--sketch-border) 15%, transparent);
+  color: var(--jp3-text);
   cursor: pointer;
+}
+
+/* Custom themes: pick light or dark text automatically for the accent */
+:global([data-theme='custom']) .pageSizeSelect,
+:global([data-theme='custom']) .pageBtn {
+  color: var(--on-tertiary);
 }
 
 .pageSizeSelect:focus {
@@ -484,9 +491,9 @@
   padding: 0;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #000;
+  color: var(--jp3-text);
   background-color: var(--tertiary);
-  border: 1px solid rgba(0, 0, 0, 0.15);
+  border: 1px solid color-mix(in srgb, var(--sketch-border) 15%, transparent);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -495,7 +502,7 @@
 
 .pageBtn:hover:not(:disabled) {
   background-color: var(--tertiary-hover);
-  border-color: rgba(0, 0, 0, 0.25);
+  border-color: color-mix(in srgb, var(--sketch-border) 25%, transparent);
 }
 
 .pageBtn:disabled {
@@ -505,7 +512,7 @@
 
 .pageInfo {
   font-size: 0.85rem;
-  color: #333;
+  color: color-mix(in srgb, var(--sketch-text) 85%, transparent);
   min-width: 100px;
   text-align: center;
   font-variant-numeric: tabular-nums;
@@ -513,7 +520,7 @@
 
 .pageNumber {
   font-size: 0.85rem;
-  color: #555;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
   white-space: nowrap;
 }
 

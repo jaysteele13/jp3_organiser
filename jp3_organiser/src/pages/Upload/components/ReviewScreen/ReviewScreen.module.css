@@ -9,6 +9,7 @@
 
 /* Playlist banner */
 .playlistBanner {
+  composes: surface from global;
   display: flex;
   
   align-items: center;
@@ -83,7 +84,7 @@
   padding: 0.5rem 1.25rem;
   background-color: var(--secondary);
   border: 1px solid var(--primary);
-  color: #fff;
+  color: var(--on-secondary);
   font-size: 0.875rem;
   font-weight: 600;
 }
@@ -152,6 +153,7 @@
 
 /* Song Card */
 .songCard {
+  composes: surface from global;
   border: 1px solid var(--primary);
   background-color: var(--sketch-bg);
   padding: 1.5rem;
@@ -298,22 +300,22 @@
 
 .statuscomplete {
   background-color: var(--secondary);
-  color: #fff;
+  color: var(--on-secondary);
 }
 
 .statusconfirmed {
   background-color: var(--secondary);
-  color: #fff;
+  color: var(--on-secondary);
 }
 
 .statusautomated {
   background-color: var(--tertiary);
-  color: #fff;
+  color: var(--on-tertiary);
 }
 
 .statusincomplete {
   background-color: #f0ad4e;
-  color: #000;
+  color: var(--sketch-text);
 }
 
 /* Audio Player */
@@ -359,7 +361,7 @@
 .stopButton {
   padding: 0.5rem 1rem;
   background-color: var(--tertiary);
-  color: white;
+  color: var(--on-tertiary);
   border: 1px solid var(--primary);
   cursor: pointer;
   font-size: 0.9rem;
@@ -479,7 +481,7 @@
 .confirmedBadge {
   padding: 0.2rem 0.6rem;
   background-color: var(--secondary);
-  color: #fff;
+  color: var(--on-secondary);
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -552,7 +554,7 @@
   flex: 1;
   padding: 0.85rem 1rem;
   background-color: transparent;
-  color: #000;
+  color: var(--sketch-text);
   font-size: 0.9rem;
 }
 
@@ -597,6 +599,7 @@
 
 /* Edit container */
 .editContainer {
+  composes: surface from global;
   background-color:var(--sketch-bg);
   border: 1px solid var(--primary);
   border-left-color: var(--incomplete-status);

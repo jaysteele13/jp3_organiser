@@ -28,16 +28,16 @@
   font-size: 0.8rem;
   font-family: inherit;
   font-weight: 500;
-  color: var(--sketch-bg);
+  color: var(--jp3-text);
   background-color: var(--tertiary);
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
   cursor: pointer;
   
 }
 
 .sortBtn:hover {
   background-color: var(--tertiary-hover);
-  border-color: rgba(0, 0, 0, 0.25);
+  border-color: color-mix(in srgb, var(--sketch-border) 25%, transparent);
 }
 
 .selectModeBtn {
@@ -45,20 +45,29 @@
   font-size: 0.8rem;
   font-family: inherit;
   font-weight: 500;
-  color: #000;
+  color: var(--jp3-text);
   background-color: var(--secondary);
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
   cursor: pointer;
-  color: var(--sketch-bg);
+}
+
+/* Custom themes: pick light or dark text automatically for the accent */
+:global([data-theme='custom']) .sortBtn {
+  color: var(--on-tertiary);
+}
+
+:global([data-theme='custom']) .selectModeBtn {
+  color: var(--on-secondary);
 }
 
 .selectModeBtn:hover {
   background-color: var(--secondary-hover);
-  border-color: rgba(0, 0, 0, 0.25);
+  border-color: color-mix(in srgb, var(--sketch-border) 25%, transparent);
 }
 
 .selectModeBtn.selectModeActive {
   background-color: var(--primary);
+  color: var(--jp3-bg);
   border-color: var(--sketch-border);
 }
 
@@ -75,7 +84,7 @@
 .selectionCount {
   font-size: 0.85rem;
   font-weight: 500;
-  color: #333;
+  color: color-mix(in srgb, var(--sketch-text) 85%, transparent);
 }
 
 .deleteSelectedBtn {
@@ -83,14 +92,14 @@
   font-size: 0.8rem;
   font-family: inherit;
   font-weight: 500;
-  color: var(--primary);
+  color: var(--sketch-text);
   background-color: transparent;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
   cursor: pointer;
 }
 
 .deleteSelectedBtn:hover {
-  background-color: var(--primary);
+  background-color: var(--sketch-text);
   color: var(--sketch-bg);
 }
 

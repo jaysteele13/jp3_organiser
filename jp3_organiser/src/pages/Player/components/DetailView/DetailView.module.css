@@ -20,8 +20,8 @@
   margin-bottom: 1rem;
   font-size: 0.85rem;
   background-color: transparent;
-  color: var(--primary);
-  border: 1px solid #666;
+  color: var(--sketch-text);
+  border: 1px solid color-mix(in srgb, var(--sketch-border) 60%, transparent);
 
   cursor: pointer;
   transition: all 0.15s ease;
@@ -35,7 +35,7 @@
 .header {
   display: flex;
   margin-bottom: 2rem;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
   background-color: transparent;
 }
 
@@ -59,7 +59,7 @@
 /* Cover Art Placeholder */
 .coverArt {
 max-width: 250px;
-  border-right: 1px solid var(--primary);
+  border-right: 1px solid var(--sketch-border);
 
     display: flex;
   align-items: center;
@@ -96,16 +96,16 @@ max-width: 250px;
 
 /* Playlist uses dark text on lime bg */
 .header.playlist .typeLabel {
-  color: rgba(0, 0, 0, 0.6);
+  color: color-mix(in srgb, var(--sketch-text) 60%, transparent);
 }
 
 .header.playlist .title {
-  color: #000;
+  color: var(--sketch-text);
 }
 
 .header.playlist .subtitle,
 .header.playlist .meta {
-  color: rgba(0, 0, 0, 0.8);
+  color: color-mix(in srgb, var(--sketch-text) 80%, transparent);
 }
 
 .title {
@@ -138,11 +138,11 @@ max-width: 250px;
   padding: 0.6rem 1.5rem;
   font-size: 0.85rem;
   font-weight: 600;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
   background-color: transparent;
   cursor: pointer;
   transition: all 0.15s ease;
-  color: var(--primary);
+  color: var(--sketch-text);
 }
 
 .actionBtn:disabled {
@@ -169,7 +169,7 @@ max-width: 250px;
 .songsHeader {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #000;
+  color: var(--sketch-text);
   margin: 0 0 1rem 0;
   display: flex;
   align-items: baseline;
@@ -179,7 +179,7 @@ max-width: 250px;
 .songCount {
   font-size: 0.9rem;
   font-weight: 400;
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
 }
 
 .songsList {
@@ -189,7 +189,7 @@ max-width: 250px;
 }
 
 .empty {
-  color: #888;
+  color: color-mix(in srgb, var(--sketch-text) 50%, transparent);
   font-style: italic;
   text-align: center;
   padding: 2rem;

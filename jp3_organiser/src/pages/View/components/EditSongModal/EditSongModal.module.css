@@ -16,6 +16,7 @@
 
 /* Modal card */
 .modal {
+  composes: surface from global;
   background-color: var(--sketch-bg);
   padding: 1.5rem;
   min-width: 400px;
@@ -37,7 +38,7 @@
 /* Info message */
 .info {
   margin: 0 0 1rem 0;
-  color: #aaa;
+  color: color-mix(in srgb, var(--sketch-text) 50%, transparent);
   font-size: 0.9rem;
   line-height: 1.4;
 }

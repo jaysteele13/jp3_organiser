@@ -16,6 +16,7 @@
 
 /* Modal card */
 .modal {
+  composes: surface from global;
   background-color: var(--sketch-bg);
   padding: 1.5rem;
   min-width: 400px;
@@ -61,10 +62,11 @@
 }
 
 .input {
+  composes: surface from global;
   padding: 0.75rem;
   border: 1px solid var(--primary);
 
-  background-color: #fff;
+  background-color: var(--sketch-bg);
   color: var(--primary);
   font-size: 1rem;
   font-family: inherit;
@@ -109,7 +111,7 @@
 
 .saveButton {
   background-color: var(--secondary);
-  color: #fff;
+  color: var(--on-secondary);
 }
 
 .saveButton:hover:not(:disabled) {

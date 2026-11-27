@@ -40,7 +40,7 @@
 .title {
   font-size: 0.9rem;
   font-weight: 500;
-  color: #000;
+  color: var(--sketch-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -48,7 +48,7 @@
 
 .subtitle {
   font-size: 0.75rem;
-  color: #444;
+  color: color-mix(in srgb, var(--sketch-text) 85%, transparent);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -64,7 +64,7 @@
 }
 
 .subtitleSeparator {
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
 }
 
 /* Track number column */
@@ -72,7 +72,7 @@
   width: 2rem;
   text-align: center;
   font-size: 0.8rem;
-  color: #666;
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
   margin-right: 0.75rem;
   flex-shrink: 0;
 }
@@ -92,7 +92,7 @@
   font-size: 0.7rem;
   background-color: var(--secondary);
   border: none;
-  color: #000;
+  color: var(--sketch-text);
   cursor: pointer;
   /*transition: background-color 0.15s ease;*/
   box-shadow: none;

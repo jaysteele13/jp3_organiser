@@ -8,8 +8,8 @@
   margin-bottom: 1rem;
   padding: 0.75rem 1rem;
   background-color: transparent;
-  color: var(--primary);
-  border: 1px solid var(--primary);
+  color: var(--sketch-text);
+  border: 1px solid var(--sketch-border);
 }
 
 .statsLeft {
@@ -33,17 +33,18 @@
 .warningText {
   color: var(--secondary);
   font-weight: 800;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
   display: inline-block;
   border-right: none;
 }
 
 .compactBtn {
+  composes: surface from global;
 
 
   background-color: var(--sketch-bg);
-  color: var(--primary);
-  border: 1px solid var(--primary);
+  color: var(--sketch-text);
+  border: 1px solid var(--sketch-border);
   cursor: pointer;
 
   transition: background-color 0.2s;
@@ -61,7 +62,7 @@
 
 .warningText,
 .compactBtn {
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
   padding: 1rem 0.5rem;
   line-height: 1;
 }
@@ -74,7 +75,7 @@
   border-radius: 6px;
   margin-bottom: 1rem;
   font-size: 0.9rem;
-  color: var(--primary);
+  color: var(--sketch-text);
 }
 
 .infoBox ul {
@@ -93,7 +94,7 @@
   border-radius: 6px;
   margin-bottom: 1rem;
   font-size: 0.9rem;
-  color: var(--primary);
+  color: var(--sketch-text);
 }
 
 .resultBox p {
@@ -111,7 +112,7 @@
 
 /* Text variants */
 .warning {
-  color: var(--primary);
+  color: var(--sketch-text);
   font-weight: 500;
   margin: 0;
 }
@@ -123,6 +124,6 @@
 }
 
 .error {
-  color: var(--primary);
+  color: var(--sketch-text);
   margin: 0;
 }

@@ -98,7 +98,7 @@
 /* File list container */
 .fileListContainer {
   margin-top: 1.25rem;
-  background-color: rgba(0, 0, 0, 0.15);
+  background-color: color-mix(in srgb, var(--sketch-text) 15%, transparent);
   padding: 1rem;
 }
 
@@ -138,7 +138,7 @@
   margin-bottom: 1rem;
   font-size: 0.9rem;
   background-color: #f0ad4e;
-  color: #000;
+  color: var(--sketch-text);
 }
 
 .reviewButton:hover {
@@ -198,7 +198,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.65rem 0.85rem;
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: color-mix(in srgb, var(--sketch-text) 10%, transparent);
   margin-bottom: 0.5rem;
   gap: 1rem;
   transition: background-color 0.15s ease;
@@ -209,7 +209,7 @@
 }
 
 .fileItemActive {
-  background-color: rgba(0, 0, 0, 0.25);
+  background-color: color-mix(in srgb, var(--sketch-text) 25%, transparent);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -250,7 +250,7 @@
   padding: 0.2rem 0.5rem;
   font-size: 0.7rem;
   background-color: #f0ad4e;
-  color: #000;
+  color: var(--sketch-text);
 }
 
 .editButton:hover {
@@ -278,17 +278,17 @@
 
 .statusConfirmed {
   background-color: var(--secondary);
-  color: #fff;
+  color: var(--on-secondary);
 }
 
 .statusAutomated {
   background-color: var(--tertiary);
-  color: #fff;
+  color: var(--on-tertiary);
 }
 
 .statusIncomplete {
   background-color: var(--incomplete-status);
-  color: #000;
+  color: var(--sketch-text);
 }
 
 .statusError {
@@ -314,7 +314,7 @@
   font-size: 1rem;
   font-weight: 600;
   background-color: var(--secondary);
-  color: #fff;
+  color: var(--on-secondary);
 }
 
 .addToLibraryButton:hover {
@@ -420,7 +420,7 @@
 }
 
 .confirmedList {
-  background-color: rgba(0, 0, 0, 0.15);
+  background-color: color-mix(in srgb, var(--sketch-text) 15%, transparent);
   border-radius: 6px;
   padding: 1rem;
 }

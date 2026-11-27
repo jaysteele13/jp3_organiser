@@ -7,7 +7,7 @@
 .menuButton {
   background-color: transparent;
  
-  color: #000;
+  color: var(--sketch-text);
   width: 32px;
   height: 28px;
   padding: 0;
@@ -21,7 +21,7 @@
 }
 
 .menuButton:hover {
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: color-mix(in srgb, var(--sketch-text) 10%, transparent);
 
 }
 
@@ -35,23 +35,24 @@
 }
 
 .menuItem {
+  composes: surface from global;
   display: block;
   width: 100%;
   padding: 0.65rem 1rem;
   background: var(--sketch-bg);
   border: none;
-  border: 1px dashed var(--primary);
+  border: 1px dashed var(--sketch-border);
   
   text-align: left;
   cursor: pointer;
   font-size: 0.85rem;
   font-family: inherit;
-  color: var(--primary);
+  color: var(--sketch-text);
   transition: background-color 0.15s ease;
 }
 
 .menuItem:hover {
-  background-color: var(--primary);
+  background-color: var(--sketch-text);
   color: var(--sketch-bg);
 }
 
@@ -59,10 +60,10 @@
 
 
 .dangerItem {
-  color: var(--primary);
+  color: var(--sketch-text);
 }
 
 .dangerItem:hover {
-  background-color: var(--primary);
-  color: #fff;
+  background-color: var(--sketch-text);
+  color: var(--sketch-bg);
 }

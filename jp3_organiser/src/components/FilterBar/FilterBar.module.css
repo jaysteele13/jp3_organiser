@@ -30,7 +30,7 @@
   padding: 0.4rem 0.75rem;
   background-color: transparent;
   color: inherit;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--sketch-border);
   font-size: 0.85rem;
   cursor: pointer;
   transition: background-color 0.15s ease;
@@ -38,6 +38,6 @@
 }
 
 .clearButton:hover {
-  background-color: var(--primary);
+  background-color: var(--sketch-text);
   color: var(--sketch-bg);
 }
