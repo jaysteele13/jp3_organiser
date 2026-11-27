@@ -258,10 +258,9 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
           label={songFilter.title}
           sublabel={`by ${songFilter.artistName}`}
           onClear={onClearFilter}
-          clearText="Show all songs"
         />
       )}
-      <QueryFilterBar tab={TABS.SONGS} clearText="Show all songs" />
+      <QueryFilterBar tab={TABS.SONGS} />
 
       {/* Toolbar row - Select mode toggle and selection actions */}
       <div className={styles.toolbar}>

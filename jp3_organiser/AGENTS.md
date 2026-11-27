@@ -599,10 +599,10 @@ Models are in `src-tauri/src/models/`:
 | Hook | Purpose |
 |------|---------|
 | `useLibraryConfig()` | Manage library path (get/set from Rust backend), auto-initialize JP3 structure |
-| `useLibrary(libraryPath)` | Fetch library data + playlists with loading/error states. Returns `library` object containing songs, albums, artists, and playlists. |
+| `useLibrary(libraryPath)` | Fetch library data + playlists with loading/error states. Returns `library` object containing songs, albums, artists, and playlists. Each song also carries `playlistNames` (the playlists it is in), used by the command bar's `playlist=` filter. |
 | `useLibraryContext()` | Context hook to access library data without prop drilling (used in MetadataForm for autosuggest) |
 | `useKeyboardShortcut(key, callback, options)` | Register keyboard shortcuts with modifier support. `ignoreInInputs: true` skips the shortcut while typing in a text box |
-| `useCommandBar(onClose)` | State and keys for the open `/` command bar: live filtering as you type, Tab completion, a name list that follows the rest of the query, history. Commands and suggestions live in `utils/commandParser.js`; filter keys (`title=`, `artist=`, `album=`, `year=`) and the query grammar (`key=a and b`, quotes) live in `utils/songFilter.js`. Lines after `\|` are instructions (`show=artist\|album\|song\|playlist` picks the tab) |
+| `useCommandBar(onClose)` | State and keys for the open `/` command bar: live filtering as you type, Tab completion, a name list that follows the rest of the query, history. Commands and suggestions live in `utils/commandParser.js`; filter keys (`title=`, `artist=`, `album=`, `year=`, `playlist=`) and the query grammar (`key=a and b`, quotes) live in `utils/songFilter.js`. Lines after `\|` are instructions (`show=artist\|album\|song\|playlist` picks the tab) |
 | `useCommandHistory()` | Past command bar searches, saved with the store plugin (`commandbar.json`). Returns `{ save, step }` |
 | `useTextFilter()` | Reads the command bar's filter text from the URL (`?q=`). Returns `[text, clear]`; song lists pass the text to `filterSongsByText`, artist and album lists to `filterByQuery`, playlists to `filterPlaylistsByQuery`. Show it with `<QueryFilterBar tab={...} />`, whose label reopens the command bar to edit the query |
 | `useUploadCache()` | Context hook for persistent upload state across navigation |

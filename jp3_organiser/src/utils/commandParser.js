@@ -120,7 +120,8 @@ export function suggestValues(songs, text, max = 6) {
 
   const chosen = current.values.slice(0, -1);
   const names = [...new Set(
-    songs.filter((song) => matchesQuery(song, groups)).map((song) => String(song[current.field] || ''))
+    // flatMap also unpacks list fields (a song's playlist names) into separate entries
+    songs.filter((song) => matchesQuery(song, groups)).flatMap((song) => song[current.field] || []).map(String)
   )].filter((name) => name && name.toLowerCase().includes(typed) && !chosen.includes(name.toLowerCase()));
 
   const startsWithTyped = (name) => name.toLowerCase().startsWith(typed);

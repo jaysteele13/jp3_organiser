@@ -323,6 +323,39 @@ Requested: where the page says `Showing: "query"`, it should be editable as if i
 - Clicking it opens the command bar holding that command, cursor at the end.
 - Editing updates the results live; "Show all" still clears the filter.
 
+## Slice 9: `playlist=` (built 2026-11-27, not yet checked by hand)
+
+Requested: `playlist=` should work for both `/library` and `/player`.
+
+| Typed after the command | Result |
+|-------------------------|--------|
+| `playlist=chill` | Songs that are in a playlist whose name contains "chill" |
+| `playlist=chill and gym` | Songs in either playlist |
+| `playlist=chill artist=queen` | Queen songs that are in a "chill" playlist |
+| `playlist=` | Dropdown of playlist names (only those that fit the rest of the query) |
+
+Decisions:
+
+- **Songs are tagged with their playlists' names when the library loads** (`withPlaylistNames`, called once in `useLibrary`). After that `playlist=` is one more entry in `FILTER_KEYS`, so both pages, the dropdown, "and" and quotes all work with no page changes.
+- **A plain word does not search playlist names.** `/library chill` still means title, artist, album or year; otherwise naming a playlist "Rock" would pull all its songs into every search for "rock".
+- **Known quirk:** `playlist=chill | show=playlist` lists every playlist that shares a song with a "chill" playlist, not only the "chill" ones, because the Playlists tab shows playlists containing any matching song.
+
+### Mini ticket (copy and paste)
+
+**Title:** Command bar: `playlist=` filter
+
+**As** a keyboard user, **I want** to type `playlist=<name>`, **so that** I can see or play the songs from a playlist and combine that with other filters.
+
+**Acceptance criteria**
+- `playlist=<text>` keeps songs in any playlist whose name contains the text, on Library and Player.
+- It combines with other keys, "and" and quotes like the existing keys.
+- `p` Tab-completes to `playlist=` and the dropdown lists playlist names.
+- Plain text does not match playlist names.
+
+## Slice 10: button wording (built 2026-11-27)
+
+Every filter bar's button now reads **"Clear filter"**. Earlier sections that say "Show all" / "Show all songs" describe the old wording.
+
 ## Success criteria
 
 1. Every row of the Behaviour table works in the running app.

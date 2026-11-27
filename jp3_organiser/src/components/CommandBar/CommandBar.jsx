@@ -3,7 +3,7 @@
  *
  * Keyboard command bar opened with "/". Type "library <text>" or "player <text>"
  * to open that page with its songs filtered as you type.
- * Text can include key=value filters: title=, artist=, album=, year=.
+ * Text can include key=value filters: title=, artist=, album=, year=, playlist=.
  * "|" starts a new line; "| show=artist" or "| show=album" opens that tab instead of Songs.
  * See useCommandBar for the keys (Tab, arrows, Enter, Esc).
  */

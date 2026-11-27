@@ -4,7 +4,22 @@ export const FILTER_KEYS = {
   artist: 'artistName',
   album: 'albumName',
   year: 'year',
+  playlist: 'playlistNames',
 };
+
+// A plain word checks every field except playlists, so a playlist's name does not pull in its songs
+const TEXT_FIELDS = Object.values(FILTER_KEYS).filter((field) => field !== FILTER_KEYS.playlist);
+
+/**
+ * Tag each song with the names of the playlists it is in, so "playlist=" can filter on it.
+ * @returns {Array} new song objects with a playlistNames array
+ */
+export function withPlaylistNames(songs, playlists) {
+  return songs.map((song) => ({
+    ...song,
+    playlistNames: playlists.filter((playlist) => playlist.songIds?.includes(song.id)).map((playlist) => playlist.name),
+  }));
+}
 
 const contains = (value, text) => String(value ?? '').toLowerCase().includes(text);
 
@@ -47,7 +62,7 @@ export function parseQuery(text) {
 
 // A group matches when any of its values is found; an empty group (e.g. "artist=") matches everything
 function matchesGroup(song, { field, values }) {
-  const fields = field ? [field] : Object.values(FILTER_KEYS);
+  const fields = field ? [field] : TEXT_FIELDS;
   const wanted = values.filter(Boolean);
   return !wanted.length || wanted.some((value) => fields.some((name) => contains(song[name], value)));
 }

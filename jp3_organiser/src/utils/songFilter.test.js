@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { filterByQuery, filterPlaylistsByQuery, filterSongsByText } from './songFilter';
+import { filterByQuery, filterPlaylistsByQuery, filterSongsByText, withPlaylistNames } from './songFilter';
 
 const songs = [
   { id: 1, title: 'drivers license', artistName: 'Olivia Rodrigo', albumName: 'SOUR', year: 2021 },
@@ -60,5 +60,16 @@ describe('filterSongsByText', () => {
     const playlists = [{ id: 1, songIds: [1, 3] }, { id: 2, songIds: [2] }, { id: 3 }];
     expect(filterPlaylistsByQuery(playlists, songs, 'artist=coldplay').map((p) => p.id)).toEqual([1]);
     expect(filterPlaylistsByQuery(playlists, songs, '')).toBe(playlists);
+  });
+
+  it('filters by playlist= once songs are tagged with their playlists', () => {
+    const playlists = [{ name: 'Chill Mix', songIds: [1, 3] }, { name: 'Gym', songIds: [3, 99] }];
+    const tagged = withPlaylistNames(songs, playlists);
+    expect(tagged.map((song) => song.playlistNames)).toEqual([['Chill Mix'], [], ['Chill Mix', 'Gym']]);
+
+    const taggedIds = (text) => filterSongsByText(tagged, text).map((song) => song.id);
+    expect(taggedIds('playlist=chill')).toEqual([1, 3]);
+    expect(taggedIds('playlist=gym and chill artist=olivia')).toEqual([1]);
+    expect(taggedIds('chill')).toEqual([]);
   });
 });

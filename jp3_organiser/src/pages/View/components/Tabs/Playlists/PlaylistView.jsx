@@ -195,10 +195,9 @@ export default function PlaylistView({ library, libraryPath, filter, onClearFilt
         <FilterBar
           label={filter.name}
           onClear={onClearFilter}
-          clearText="Show all playlists"
         />
       )}
-      <QueryFilterBar tab={TABS.PLAYLISTS} clearText="Show all playlists" />
+      <QueryFilterBar tab={TABS.PLAYLISTS} />
       {displayPlaylists.map(playlist => (
         <PlaylistCard 
           key={playlist.id} 

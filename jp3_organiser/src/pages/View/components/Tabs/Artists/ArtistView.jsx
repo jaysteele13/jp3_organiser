@@ -63,10 +63,9 @@ export default function ArtistView({ library, libraryPath, onDeleteArtist, onEdi
         <FilterBar
           label={filter.name}
           onClear={onClearFilter}
-          clearText="Show all artists"
         />
       )}
-      <QueryFilterBar tab={TABS.ARTISTS} clearText="Show all artists" />
+      <QueryFilterBar tab={TABS.ARTISTS} />
       <ArtistGrid
         artists={displayArtists}
         libraryPath={libraryPath}

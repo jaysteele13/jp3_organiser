@@ -36,7 +36,7 @@ export default function TabContent({ activeTab, library, libraryPath }) {
     () => filterPlaylistsByQuery(library.playlists || [], songs, textFilter),
     [library.playlists, songs, textFilter]
   );
-  const filterBar = <QueryFilterBar tab={activeTab} clearText="Show all" />;
+  const filterBar = <QueryFilterBar tab={activeTab} />;
 
   switch (activeTab) {
     case TABS.HOME:

@@ -80,10 +80,9 @@ export default function AlbumView({ library, libraryPath, onDeleteAlbum, onEditA
           label={filter.name}
           sublabel={`by ${filter.artistName}`}
           onClear={onClearFilter}
-          clearText="Show all albums"
         />
       )}
-      <QueryFilterBar tab={TABS.ALBUMS} clearText="Show all albums" />
+      <QueryFilterBar tab={TABS.ALBUMS} />
       <CardList
         items={displayAlbums}
         getTitle={getTitle}

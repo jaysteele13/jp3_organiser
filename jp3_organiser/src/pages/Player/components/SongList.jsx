@@ -56,7 +56,7 @@ export default function SongList({ songs: allSongs }) {
 
   return (
     <div className={styles.container}>
-      <QueryFilterBar tab={TABS.SONGS} clearText="Show all songs" />
+      <QueryFilterBar tab={TABS.SONGS} />
       <div className={styles.actions}>
         <button
           className={`${styles.actionBtn} ${styles.primary}`}

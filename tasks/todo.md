@@ -210,3 +210,20 @@ Note: `hooks/useCommandBar.js` is now 111 lines with 3 `useState`. Still within 
   - Verify: `npm test` (1 new test, written first); `npm run build`; by hand on each tab of both pages.
   - Files: `utils/commandParser.js`, `utils/commandParser.test.js`, `components/FilterBar/` (3 files), `components/index.js`, `components/CommandBar/CommandBar.jsx`, `hooks/useCommandBar.js`, plus a one-line swap in the six tab components.
   - Note: there is no linter in this repo, so `npm run build` does not catch a missing import. One was caught by reading the code (`TABS` in `PlaylistView.jsx`); the Playlists tab is the one to check first.
+
+## Slice 9: `playlist=`
+
+- [x] **Task 21: `playlist=` filter** (built; not yet checked by hand)
+  - Does: `withPlaylistNames` tags each song with its playlists' names when `useLibrary` loads; `playlist` joins `FILTER_KEYS`; plain words skip playlist names; the dropdown unpacks the name lists.
+  - Acceptance: see "Slice 9" in the spec.
+  - Verify: `npm test` (2 new tests, written first; 25 total); `npm run build`; by hand on both pages, plus a quick check that play, edit and delete still work now that songs carry an extra field.
+  - Files: `utils/songFilter.js`, `utils/songFilter.test.js`, `utils/commandParser.js`, `utils/commandParser.test.js`, `hooks/useLibrary.js`.
+
+## Slice 10: button wording
+
+- [x] **Task 22: "Clear filter" button** (built; not yet checked by hand)
+  - Does: every filter bar's button now reads "Clear filter" (it was "Show all songs / albums / artists / playlists"). "Clear filter" is the `FilterBar` default, so the per-tab text props are removed.
+  - Verify: `npm run build`; by hand on each tab.
+  - Files: `components/FilterBar/FilterBar.jsx`, `components/FilterBar/QueryFilterBar.jsx`, and one-line removals in the six tab components.
+
+Open question from the same request ("have the playlists auto show like songs, albums and artists"): read as "typing `playlist=` shows the dropdown of playlist names", which Task 21 already does. If it does not appear, restart the app: a library cached before Task 21 has songs without playlist tags. If the request meant "switch to the Playlists tab automatically when `playlist=` is used", that is not built.

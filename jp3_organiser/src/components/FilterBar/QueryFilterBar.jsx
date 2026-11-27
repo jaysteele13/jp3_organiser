@@ -7,7 +7,6 @@
  *
  * @param {Object} props
  * @param {string} props.tab - The tab this bar sits on (from TABS), so the command includes "| show="
- * @param {string} props.clearText - Text for the clear button
  */
 
 import { useLocation } from 'react-router-dom';
@@ -15,7 +14,7 @@ import { useTextFilter } from '../../hooks/useTextFilter';
 import { EDIT_COMMAND_EVENT, formatCommand } from '../../utils/commandParser';
 import FilterBar from './FilterBar';
 
-export default function QueryFilterBar({ tab, clearText }) {
+export default function QueryFilterBar({ tab }) {
   const { pathname } = useLocation();
   const [textFilter, clearTextFilter] = useTextFilter();
 
@@ -24,12 +23,5 @@ export default function QueryFilterBar({ tab, clearText }) {
   const command = formatCommand(pathname, textFilter, tab);
   const edit = () => window.dispatchEvent(new CustomEvent(EDIT_COMMAND_EVENT, { detail: command }));
 
-  return (
-    <FilterBar
-      label={`/${command.replace('\n', ' ')}`}
-      onEdit={edit}
-      onClear={clearTextFilter}
-      clearText={clearText}
-    />
-  );
+  return <FilterBar label={`/${command.replace('\n', ' ')}`} onEdit={edit} onClear={clearTextFilter} />;
 }

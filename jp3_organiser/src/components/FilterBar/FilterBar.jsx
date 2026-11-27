@@ -9,12 +9,12 @@
  * @param {string} props.sublabel - Optional secondary text (e.g., "by Artist Name")
  * @param {Function} props.onClear - Callback when clear button is clicked
  * @param {Function} props.onEdit - Optional; makes the label a button that calls this when clicked
- * @param {string} props.clearText - Text for clear button (default: "Show all")
+ * @param {string} props.clearText - Text for clear button (default: "Clear filter")
  */
 
 import styles from './FilterBar.module.css';
 
-export default function FilterBar({ label, sublabel, onClear, onEdit, clearText = 'Show all' }) {
+export default function FilterBar({ label, sublabel, onClear, onEdit, clearText = 'Clear filter' }) {
   return (
     <div className={styles.filterBar}>
       <span className={styles.filterText}>

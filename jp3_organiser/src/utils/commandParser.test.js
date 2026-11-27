@@ -93,4 +93,15 @@ describe('commandParser', () => {
     expect(suggestValues(songs, 'artist=queen and ')).toEqual(['Olivia Rodrigo', 'Coldplay']);
     expect(suggestValues(songs, 'artist=queen AND co')).toEqual(['Coldplay']);
   });
+
+  it('suggests playlist names, one entry per playlist', () => {
+    const tagged = [
+      { title: 'a', artistName: 'Queen', playlistNames: ['Chill Mix', 'Gym'] },
+      { title: 'b', artistName: 'Coldplay', playlistNames: ['Gym'] },
+      { title: 'c', artistName: 'Queen', playlistNames: [] },
+    ];
+    expect(suggestValues(tagged, 'playlist=')).toEqual(['Chill Mix', 'Gym']);
+    expect(suggestValues(tagged, 'artist=coldplay playlist=')).toEqual(['Gym']);
+    expect(suggestKey('p')).toBe('playlist');
+  });
 });
