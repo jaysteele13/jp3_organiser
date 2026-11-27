@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  formatCommand, lastTerm, parseCommand, suggestCommand, suggestKey, suggestShow, suggestValues, switchCommand,
+  formatCommand, lastTerm, parseCommand, pickValue, suggestCommand, suggestKey, suggestShow, suggestValues, switchCommand,
 } from './commandParser';
 
 const songs = [
@@ -68,6 +68,19 @@ describe('commandParser', () => {
     expect(suggestKey('y')).toBe('year');
     expect(suggestKey('')).toBeNull();
     expect(suggestKey('artist=')).toBeNull();
+  });
+
+  it('only suggests the keys it is given', () => {
+    expect(suggestKey('p', ['title', 'artist'])).toBeNull();
+    expect(suggestKey('t', ['title', 'artist'])).toBe('title');
+  });
+
+  it('swaps the value being typed for a picked name, quoted if it has a space', () => {
+    expect(pickValue('artist=qu', 'Queen')).toBe('artist=Queen ');
+    expect(pickValue('year=2021 artist=ol', 'Olivia Rodrigo')).toBe('year=2021 artist="Olivia Rodrigo" ');
+    expect(pickValue('artist="olivia ro', 'Olivia Rodrigo')).toBe('artist="Olivia Rodrigo" ');
+    expect(pickValue('artist=queen and co', 'Coldplay')).toBe('artist=queen and Coldplay ');
+    expect(pickValue('artist=queen and ', 'Coldplay')).toBe('artist=queen and Coldplay ');
   });
 
   it('finds the term being typed, keeping an open quote together', () => {

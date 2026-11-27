@@ -88,8 +88,8 @@ function suggestFrom(names, input) {
 /** Suggest a command, e.g. "l" -> "library". */
 export const suggestCommand = (input) => suggestFrom(Object.keys(COMMANDS), input);
 
-/** Suggest a filter key, e.g. "ar" -> "artist". */
-export const suggestKey = (word) => suggestFrom(Object.keys(FILTER_KEYS), word);
+/** Suggest a filter key, e.g. "ar" -> "artist". Pass `keys` to offer only some of them. */
+export const suggestKey = (word, keys = Object.keys(FILTER_KEYS)) => suggestFrom(keys, word);
 
 /** Suggest a key for a line after "|", e.g. "sh" -> "show". */
 export const suggestPipeKey = (word) => suggestFrom(['show'], word);
@@ -101,6 +101,19 @@ export const suggestPipeKey = (word) => suggestFrom(['show'], word);
 export function lastTerm(input) {
   const term = splitTerms(input).at(-1) ?? '';
   return input.endsWith(term) ? term : '';
+}
+
+/**
+ * Swap the value being typed at the end of the input for a picked name, quoted if it has a space.
+ * @param {string} input - e.g. 'artist=qu'
+ * @param {string} name - e.g. 'Queen'
+ * @returns {string} e.g. 'artist=Queen ' (the trailing space finishes the term)
+ */
+export function pickValue(input, name) {
+  const term = lastTerm(input);
+  const prefix = term.slice(0, term.indexOf('=') + 1); // "artist=", or '' for a value after "and"
+  const value = name.replaceAll('"', '');
+  return `${input.slice(0, input.length - term.length)}${prefix}${value.includes(' ') ? `"${value}"` : value} `;
 }
 
 /**

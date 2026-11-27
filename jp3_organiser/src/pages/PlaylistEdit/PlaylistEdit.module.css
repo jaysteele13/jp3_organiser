@@ -223,13 +223,8 @@
   flex-shrink: 0;
 }
 
-.searchInput:focus {
-  outline: none;
+.searchInput:focus-within {
   border-color: var(--secondary);
-}
-
-.searchInput::placeholder {
-  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
 }
 
 /* Table container */

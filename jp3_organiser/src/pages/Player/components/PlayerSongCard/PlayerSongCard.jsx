@@ -4,7 +4,7 @@
  * Reusable song row for Player lists (SongList, AlbumList, ArtistList, PlaylistList).
  * Click the row to play, use Queue button to add to queue.
  * Artist and album names are clickable links that navigate to their detail pages.
- * Right-click shows context menu with "View in Library" option.
+ * Right-click shows context menu with "View in Library" and "Add to playlist" options.
  * 
  * Props:
  * - song: Song object with title, artistName, albumName, artistId, albumId, trackNumber
@@ -19,7 +19,7 @@
 
 import React, { memo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ContextMenu } from '../../../../components';
+import { AddToPlaylistModal, ContextMenu } from '../../../../components';
 import { TABS } from '../../../../utils/enums';
 import styles from './PlayerSongCard.module.css';
 
@@ -34,6 +34,7 @@ function PlayerSongCard({
 }) {
   const navigate = useNavigate();
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 });
+  const [isAddingToPlaylist, setIsAddingToPlaylist] = useState(false);
 
   const handleContextMenu = useCallback((e) => {
     e.preventDefault();
@@ -159,10 +160,16 @@ function PlayerSongCard({
         visible={contextMenu.visible}
         position={{ x: contextMenu.x, y: contextMenu.y }}
         items={[
-          { label: 'View in Library', onClick: handleViewInLibrary }
+          { label: 'View in Library', onClick: handleViewInLibrary },
+          { label: 'Add to playlist', onClick: () => setIsAddingToPlaylist(true) },
         ]}
         onClose={closeContextMenu}
       />
+
+      {/* Outside the row, so clicks in the popup do not play the song */}
+      {isAddingToPlaylist && (
+        <AddToPlaylistModal song={song} onClose={() => setIsAddingToPlaylist(false)} />
+      )}
     </div>
   );
 }

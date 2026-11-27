@@ -1,5 +1,6 @@
 // Reusable UI Components
 export { default as ActionMenu } from './ActionMenu';
+export { default as AddToPlaylistModal } from './AddToPlaylistModal';
 export { default as ArtistCard } from './ArtistCard';
 export { default as ContextMenu } from './ContextMenu';
 export { default as ArtistGrid } from './ArtistGrid';
@@ -17,6 +18,7 @@ export { default as PlaylistComboBox } from './PlaylistComboBox';
 export { default as QueueDrawer } from './QueueDrawer';
 export { default as ScrollingText } from './ScrollingText';
 export { default as SongTable } from './SongTable';
+export { default as SongQueryInput } from './SongQueryInput';
 
 // Layout Components
 export { default as Header } from './Header';

@@ -5,7 +5,7 @@ import { useLibraryConfig } from './useLibraryConfig';
 import { useCommandHistory } from './useCommandHistory';
 import { getCachedLibrary } from './libraryCache';
 import {
-  lastTerm, parseCommand, suggestCommand, suggestKey, suggestPipeKey, suggestShow, suggestValues, switchCommand,
+  lastTerm, parseCommand, pickValue, suggestCommand, suggestKey, suggestPipeKey, suggestShow, suggestValues, switchCommand,
 } from '../utils/commandParser';
 
 /**
@@ -65,12 +65,7 @@ export function useCommandBar(onClose, initialInput = '') {
     if (liveInput !== initialInput && liveInput.includes(' ')) show(liveInput);
   }, [liveInput]);
 
-  // Swap the value being typed for the chosen name, quoted if it has a space
-  const pick = (name) => {
-    const prefix = term.slice(0, term.indexOf('=') + 1); // "artist=", or '' for a value after "and"
-    const value = name.replaceAll('"', '');
-    update(`${input.slice(0, input.length - term.length)}${prefix}${value.includes(' ') ? `"${value}"` : value} `);
-  };
+  const pick = (name) => update(pickValue(input, name));
 
   const run = () => {
     if (!show(input)) return setError('Unknown command');

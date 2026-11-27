@@ -15,7 +15,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SongTable, ActionMenu, FilterBar, QueryFilterBar } from '../../../../../components';
+import { SongTable, ActionMenu, AddToPlaylistModal, FilterBar, QueryFilterBar } from '../../../../../components';
 import { useMultiSelect, useTextFilter } from '../../../../../hooks';
 import { TABS } from '../../../../../utils/enums';
 import { filterSongsByText } from '../../../../../utils/songFilter';
@@ -99,6 +99,9 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
 
   // Select mode toggle state
   const [isSelectMode, setIsSelectMode] = useState(false);
+
+  // The song whose "Add to playlist" popup is open (null = closed)
+  const [playlistSong, setPlaylistSong] = useState(null);
 
   // Sort and pagination state - load from persistent storage
   const [sortIndex, setSortIndex] = useState(cachedPreferences.sortIndex);
@@ -243,6 +246,7 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
     <ActionMenu
       items={[
         { label: 'Edit', onClick: () => onEditSong?.(song) },
+        { label: 'Add to playlist', onClick: () => setPlaylistSong(song) },
         { label: 'Delete', onClick: () => onDeleteSong?.(song), variant: 'danger' },
       ]}
     />
@@ -326,6 +330,10 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
         someSelected={someSelected}
         onSelectAllToggle={handleSelectAllToggle}
       />
+
+      {playlistSong && (
+        <AddToPlaylistModal song={playlistSong} onClose={() => setPlaylistSong(null)} />
+      )}
     </div>
   );
 }

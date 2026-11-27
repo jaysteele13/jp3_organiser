@@ -1,0 +1,12 @@
+/* The input and name list reuse the command bar's styles; this only places the list */
+.box {
+  position: relative;
+}
+
+.box input::placeholder {
+  color: color-mix(in srgb, var(--sketch-text) 70%, transparent);
+}
+
+.list {
+  z-index: 10; /* Above the song table below */
+}
