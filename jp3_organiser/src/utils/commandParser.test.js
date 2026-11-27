@@ -32,6 +32,7 @@ describe('commandParser', () => {
     expect(formatCommand('/view', 'artist=queen', 'songs')).toBe('library artist=queen');
     expect(formatCommand('/player', 'artist=queen and acdc', 'albums')).toBe('player artist=queen and acdc\n| show=album');
     expect(formatCommand('/upload', 'x', 'songs')).toBe('');
+    expect(formatCommand('/player', '', 'songs')).toBe('player ');
     const command = formatCommand('/view', 'queen', 'playlists');
     expect(parseCommand(command)).toEqual({ route: '/view', text: 'queen', tab: 'playlists' });
   });

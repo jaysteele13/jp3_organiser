@@ -356,6 +356,21 @@ Decisions:
 
 Every filter bar's button now reads **"Clear filter"**. Earlier sections that say "Show all" / "Show all songs" describe the old wording.
 
+## Slice 11: pre-fill the command for the current page (built 2026-11-27, not yet checked by hand)
+
+Pressing `/` on the Library opens the bar holding `library `; on the Player (including its detail pages) it holds `player `; elsewhere it opens empty. The bar waits for you to type before navigating, so opening it does not disturb the current filter or tab. This replaces the earlier rule that the bar always opens empty.
+
+### Mini ticket (copy and paste)
+
+**Title:** Command bar: pre-fill the current page's command
+
+**As** a keyboard user, **I want** `/` to start with `library ` or `player ` when I am already on that page, **so that** I can go straight to typing the search.
+
+**Acceptance criteria**
+- `/` on the Library opens the bar with `library `; on the Player and its detail pages with `player `; on other pages empty.
+- Opening the bar does not change the page's filter or tab until I type.
+- Shift+Tab still switches the command.
+
 ## Success criteria
 
 1. Every row of the Behaviour table works in the running app.

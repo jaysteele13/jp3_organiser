@@ -9,16 +9,21 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useKeyboardShortcut } from '../../hooks/useKeyboardShortcut';
 import { useCommandBar } from '../../hooks/useCommandBar';
-import { EDIT_COMMAND_EVENT } from '../../utils/commandParser';
+import { EDIT_COMMAND_EVENT, formatCommand } from '../../utils/commandParser';
+import { TABS } from '../../utils/enums';
 import styles from './CommandBar.module.css';
 
 export default function CommandBar() {
+  const { pathname } = useLocation();
   const [initialInput, setInitialInput] = useState(null); // null = closed
 
-  // "/" opens the bar empty; clicking a filter's text opens it holding that command
-  useKeyboardShortcut('/', () => setInitialInput(''), { ignoreInInputs: true });
+  // "/" opens the bar holding the current page's command: "library " on the Library, "player " on
+  // the Player and its detail pages, empty elsewhere. Clicking a filter's text opens it holding that command.
+  const page = `/${pathname.split('/')[1]}`;
+  useKeyboardShortcut('/', () => setInitialInput(formatCommand(page, '', TABS.SONGS)), { ignoreInInputs: true });
   useEffect(() => {
     const openWithCommand = (e) => setInitialInput(e.detail);
     window.addEventListener(EDIT_COMMAND_EVENT, openWithCommand);

@@ -226,4 +226,23 @@ Note: `hooks/useCommandBar.js` is now 111 lines with 3 `useState`. Still within 
   - Verify: `npm run build`; by hand on each tab.
   - Files: `components/FilterBar/FilterBar.jsx`, `components/FilterBar/QueryFilterBar.jsx`, and one-line removals in the six tab components.
 
-Open question from the same request ("have the playlists auto show like songs, albums and artists"): read as "typing `playlist=` shows the dropdown of playlist names", which Task 21 already does. If it does not appear, restart the app: a library cached before Task 21 has songs without playlist tags. If the request meant "switch to the Playlists tab automatically when `playlist=` is used", that is not built.
+Open question from the same request ("have the playlists auto show like songs, albums and artists"): read as "typing `playlist=` shows the dropdown of playlist names", which Task 21 already does. If the request meant "switch to the Playlists tab automatically when `playlist=` is used", that is not built.
+
+## Bug fix: `playlist=` found nothing after editing a playlist
+
+- [x] **Task 23: Keep playlist tags fresh** (built; not yet checked by hand)
+  - Reported: `/library playlist=hi` showed no songs, and `| show=playlist` showed no playlist.
+  - Cause (confirmed from the playlist file's modified time vs the app's start time): the playlist was edited in the running app, and the playlist editor saved changes without refreshing the cached library. Song tags are computed when the library loads, so they did not know about the edit. The earlier "restart the app" guess was wrong.
+  - Fix: adding, removing, renaming or deleting in the playlist editor now drops the cached library, so the next page reloads it with fresh tags (the same pattern `useSongActions` uses). Also, `useLibrary` no longer reuses a cached library that has not had its playlists attached yet.
+  - Side effect: returning to the Library or Player after a playlist edit reloads the library (a brief loading state).
+  - Verify: by hand: edit a playlist, go back, run `/library playlist=<name>` and `| show=playlist`.
+  - Files: `pages/PlaylistEdit/usePlaylistEdit.js`, `pages/PlaylistEdit/PlaylistEdit.jsx`, `hooks/useLibrary.js`.
+
+## Slice 11: pre-fill the command for the current page
+
+- [x] **Task 24: `/` pre-fills `library ` or `player `** (built; not yet checked by hand)
+  - Does: pressing `/` on the Library opens the bar holding `library `; on the Player (and its album, artist and playlist detail pages) it holds `player `; on other pages it opens empty. Reuses `formatCommand`.
+  - Also: the bar no longer navigates until the text differs from what it opened with, so pressing `/` does not clear the page's current filter or switch its tab.
+  - Acceptance: on the Library with a filter active, `/` shows `library ` and the filter is untouched until you type; Shift+Tab still swaps to `player `; on Upload the bar opens empty.
+  - Verify: `npm test`, `npm run build`; by hand.
+  - Files: `components/CommandBar/CommandBar.jsx`, `hooks/useCommandBar.js`, `utils/commandParser.test.js`.

@@ -57,10 +57,12 @@ export function useCommandBar(onClose, initialInput = '') {
     return true;
   };
 
-  // Live results: once the command word is finished, follow the typing after a short pause
+  // Live results: once the command word is finished, follow the typing after a short pause.
+  // Nothing happens until the text differs from what the bar opened with, so opening it
+  // pre-filled does not disturb the page's current filter or tab.
   const liveInput = useDebounce(input);
   useEffect(() => {
-    if (liveInput.includes(' ')) show(liveInput);
+    if (liveInput !== initialInput && liveInput.includes(' ')) show(liveInput);
   }, [liveInput]);
 
   // Swap the value being typed for the chosen name, quoted if it has a space

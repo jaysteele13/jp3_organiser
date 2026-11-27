@@ -12,7 +12,8 @@ export function useLibrary(libraryPath) {
     if (!libraryPath) return;
     if (!force) {
       const cached = getCachedLibrary(libraryPath);
-      if (cached) {
+      // Only reuse a complete library: the cache briefly holds one whose playlists are still loading
+      if (cached?.playlists) {
         setLibrary(cached);
         return cached;
       }

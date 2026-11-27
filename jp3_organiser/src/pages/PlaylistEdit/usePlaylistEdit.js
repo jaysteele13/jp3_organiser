@@ -16,6 +16,7 @@ import {
   renamePlaylist,
 } from '../../services/libraryService';
 import { useDebounce } from '../../hooks';
+import { invalidateLibraryCache } from '../../hooks/libraryCache';
 
 export default function usePlaylistEdit(libraryPath, playlistId) {
   const [playlist, setPlaylist] = useState(null);
@@ -66,6 +67,8 @@ export default function usePlaylistEdit(libraryPath, playlistId) {
 
     try {
       await removeSongsFromPlaylist(libraryPath, playlist.id, [songId]);
+      // The cached library holds each playlist's songs; drop it so other pages reload the change
+      invalidateLibraryCache(libraryPath);
       
       // Update local state
       setPlaylist(prev => ({
@@ -94,6 +97,7 @@ export default function usePlaylistEdit(libraryPath, playlistId) {
 
     try {
       await addSongsToPlaylist(libraryPath, playlist.id, songIdsToAdd);
+      invalidateLibraryCache(libraryPath);
       
       // Update local state
       setPlaylist(prev => ({
@@ -154,6 +158,7 @@ export default function usePlaylistEdit(libraryPath, playlistId) {
 
     try {
       const result = await renamePlaylist(libraryPath, playlist.id, newName);
+      invalidateLibraryCache(libraryPath);
       
       // Update local state with new name
       setPlaylist(prev => ({
