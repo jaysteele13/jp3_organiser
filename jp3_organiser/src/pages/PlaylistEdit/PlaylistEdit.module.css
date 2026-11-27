@@ -124,7 +124,8 @@
 /* Main content - two columns */
 .content {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, ...) stops a column growing to fit long song names */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1.5rem;
   flex: 1;
   min-height: 0;
@@ -237,6 +238,8 @@
 /* Table */
 .table {
   width: 100%;
+  /* Column widths come from the header, not from the text in the rows */
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.9rem;
   border: 1px solid var(--sketch-border);
@@ -346,6 +349,15 @@
   color: color-mix(in srgb, var(--sketch-text) 50%, transparent);
 }
 
+/* Long names are cut off with "..." instead of widening the column */
+.cellTitle,
+.cellArtist,
+.cellAlbum {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Song row hover */
 .songRow:hover {
   background-color: color-mix(in srgb, var(--sketch-text) 3%, transparent);
@@ -426,7 +438,7 @@
 /* Responsive - stack columns on smaller screens */
 @media (max-width: 1024px) {
   .content {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .section {
