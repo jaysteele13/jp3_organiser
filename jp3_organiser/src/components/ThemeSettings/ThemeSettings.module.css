@@ -1,0 +1,150 @@
+/* Sketch themed settings cog + popup */
+
+/* Flex column so the cog stretches full width like the nav links */
+.wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Cog reuses the nav link look (box, hover, active, icon, label) */
+.cogBtn {
+    composes: navLink from '../Navbar/navbar.module.css';
+}
+
+.cogOpen {
+    composes: active from '../Navbar/navbar.module.css';
+}
+
+.icon {
+    composes: icon from '../Navbar/navbar.module.css';
+}
+
+/* The ⚙ glyph renders smaller than the other nav icons */
+.cogBtn .icon {
+    font-size: 1.35rem;
+}
+
+.label {
+    composes: label from '../Navbar/navbar.module.css';
+}
+
+.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 0.25rem 0.5rem;
+    background-color: transparent;
+    border: 1px solid var(--sketch-border);
+    color: var(--sketch-text);
+    border-radius: 0;
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn:hover:not(:disabled) {
+    background-color: var(--secondary);
+    color: var(--sketch-bg);
+}
+
+.btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.btn.active {
+    background-color: var(--primary);
+    color: var(--sketch-bg);
+}
+
+.popup {
+  composes: surface from global;
+    position: absolute;
+    left: calc(100% + 0.75rem);
+    bottom: 0;
+    width: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background-color: var(--sketch-bg);
+    border: 1px solid var(--sketch-border);
+    box-shadow: 2px 2px 0 var(--primary-fade);
+    color: var(--sketch-text);
+}
+
+.themeList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    max-height: 180px;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.themeRow {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.themeBtn {
+    flex: 1;
+    min-width: 0;
+    justify-content: flex-start;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.deleteBtn {
+    width: 32px;
+    flex-shrink: 0;
+}
+
+.nameInput {
+    flex: 1;
+    min-width: 0;
+    padding: 0.25rem 0.5rem;
+    background-color: transparent;
+    border: 1px solid var(--sketch-border);
+    border-radius: 0;
+    color: var(--sketch-text);
+    font: inherit;
+    font-size: 0.85rem;
+}
+
+.colorRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.85rem;
+}
+
+.colorRow.disabled {
+    opacity: 0.4;
+}
+
+.colorRow input {
+    width: 36px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--sketch-border);
+    border-radius: 0;
+    background: none;
+    cursor: pointer;
+}
+
+.colorRow input:disabled {
+    cursor: default;
+}
+
+.hint {
+    margin: 0;
+    font-size: 0.75rem;
+    opacity: 0.7;
+}

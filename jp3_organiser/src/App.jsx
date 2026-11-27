@@ -11,10 +11,10 @@ import { AlbumDetail, ArtistDetail, PlaylistDetail } from './pages/Player/compon
 import PlaylistEdit from './pages/PlaylistEdit';
 import { useKeyboardShortcut, UploadCacheProvider, PlayerProvider } from './hooks';
 
-function AppLayout({ children, isNavCollapsed, onToggle }) {
+function AppLayout({ children, isNavCollapsed }) {
   return (
     <div className={`${styles.appLayout} ${styles.app}`}>
-      <Navbar isCollapsed={isNavCollapsed} onToggle={onToggle} />
+      <Navbar isCollapsed={isNavCollapsed} />
       <main className={`
         ${styles.content} 
         ${isNavCollapsed ? styles.contentCollapsed : ''}
@@ -27,7 +27,7 @@ function AppLayout({ children, isNavCollapsed, onToggle }) {
   );
 }
 
-function AppContent({ isNavCollapsed, onToggle }) {
+function AppContent({ isNavCollapsed }) {
   return (
     <Routes>
       {/* Splash route - no layout */}
@@ -37,7 +37,7 @@ function AppContent({ isNavCollapsed, onToggle }) {
       <Route
         path="/*"
         element={
-          <AppLayout isNavCollapsed={isNavCollapsed} onToggle={onToggle}>
+          <AppLayout isNavCollapsed={isNavCollapsed}>
             <Routes>
               <Route path="/" element={<Navigate to="/upload" replace />} />
               <Route path="/upload" element={<Upload />} />
@@ -68,7 +68,7 @@ function App() {
   return (
     <UploadCacheProvider>
       <PlayerProvider>
-        <AppContent isNavCollapsed={isNavCollapsed} onToggle={toggleNav} />
+        <AppContent isNavCollapsed={isNavCollapsed} />
       </PlayerProvider>
     </UploadCacheProvider>
   );

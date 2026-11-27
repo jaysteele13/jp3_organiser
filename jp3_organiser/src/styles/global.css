@@ -41,12 +41,21 @@
   --primary-hover: #1a1a1a;
   --secondary: #9785c9; /* previous teal e8e489;*/
   --secondary-washed: color-mix(in srgb, var(--secondary) 35%, white);
-  --secondary-hover: #573d9e; /* #49B69Cdd; previous*/
+  /* Hover shades are derived so user-picked colours always get a matching hover */
+  --secondary-hover: color-mix(in srgb, var(--secondary) 75%, black);
   --tertiary: #548478; /* previous B64963*/
-  --tertiary-hover: #3f645b;
-  --sketch-bg: #F5F5F1;
-  --sketch-border: #000000;
-  --sketch-text: #242424;
+  --tertiary-hover: color-mix(in srgb, var(--tertiary) 75%, black);
+  /* Fixed JP3 colours; surfaces (tables, inputs, menus, modals) always use these */
+  --jp3-bg: #F5F5F1;
+  --jp3-border: #000000;
+  --jp3-text: #242424;
+  /* Page colours; custom themes override these */
+  --sketch-bg: var(--jp3-bg);
+  --sketch-border: var(--jp3-border);
+  --sketch-text: var(--jp3-text);
+  /* Text on accent backgrounds; custom themes pick light/dark automatically */
+  --on-secondary: #fff;
+  --on-tertiary: #fff;
 
   --primary-fade: rgba(0,0,0, 0.25);
   --sketch-bg-fade: rgba(255, 255, 255, 0.25);
@@ -54,6 +63,9 @@
   --automated-status: #548478;
   --incomplete-status: #FFEE8C;
   --incomplete-status-text: #a08800;
+
+  /* Layout */
+  --player-bar-height: 80px;
   
 
   /* Typography */
@@ -74,6 +86,7 @@
 body {
   margin: 0;
   background-color: var(--sketch-bg);
+  color: var(--sketch-text);
   min-height: 100vh;
 }
 
@@ -128,7 +141,7 @@ button,
   outline: none;
   background-color: var(--secondary);
   border-color: var(--primary);
-  color: var(--sketch-bg);
+  color: var(--on-secondary);
  
   transition: background-color 0.2s ease, border-color 0.25s;
 }
@@ -137,6 +150,7 @@ button:hover,
 .btn:hover {
   background-color: var(--primary);
   border-color: var(--primary);
+  color: var(--sketch-bg);
 }
 
 button:active,
@@ -154,6 +168,7 @@ button:active,
 
 .btn-tertiary {
   background-color: var(--tertiary);
+  color: var(--on-tertiary);
 }
 .btn-tertiary:hover {
   background-color: var(--tertiary-hover);
@@ -167,18 +182,19 @@ button:active,
    =================== */
 .card {
   background-color: var(--tertiary);
-  color: #fff;
+  color: var(--on-tertiary);
   border-radius: 8px;
   padding: 1.5rem;
 }
 
 .card-alt {
   background-color: var(--secondary);
+  color: var(--on-secondary);
 }
 
 .section {
   background-color: var(--secondary);
-  color: #fff;
+  color: var(--on-secondary);
   border-radius: 0;
   padding: 2rem;
   border: 1px solid var(--sketch-border);
@@ -186,6 +202,7 @@ button:active,
 
 .section-alt {
   background-color: var(--tertiary);
+  color: var(--on-tertiary);
   border: 1px solid var(--sketch-border);
 }
 
@@ -225,6 +242,15 @@ button:active,
   box-shadow: 
     1px 1px 0 rgba(0, 0, 0, 0.3),
     -1px -1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Surfaces reset the theme variables to JP3, so everything inside them keeps JP3 colours.
+   CSS modules opt in with `composes: surface from global;` */
+table, input, select, textarea, .surface {
+  --sketch-bg: var(--jp3-bg);
+  --sketch-text: var(--jp3-text);
+  --sketch-border: var(--jp3-border);
+  color: var(--sketch-text);
 }
 
 .sketch-bg {
