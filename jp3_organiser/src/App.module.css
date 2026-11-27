@@ -5,51 +5,20 @@
   min-height: 100vh;
 }
 
+/* Grain is painted as the page's own background so it scrolls with the content.
+   A fixed, blended overlay forced a full-window repaint on every scroll step
+   (major lag on Linux/WebKitGTK). The 70% wash keeps the grain at 30% strength. */
 .app {
   position: relative;
-  background: var(--sketch-bg); /* sketch background */
   min-height: 100vh;
-}
-
-.app::after {
-  content: "";
-  pointer-events: none;
-  position: fixed;
-  inset: 0;
-  background-image: 
-    url("/assets/textures/grain.png"),
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 1px,
-      rgba(0, 0, 0, 0.91) 1px,
-      rgba(0, 0, 0, 0.91) 2px
-    );
-  background-repeat: repeat;
-  opacity: 0.30;
-  mix-blend-mode: multiply;
-  z-index: 0;
-}
-
-/* Fallback for browsers without mix-blend-mode support */
-@supports not (mix-blend-mode: multiply) {
-  .app::after {
-    opacity: 0.05;
-  }
-}
-
-/* Fallback if grain image fails to load */
-@supports not (background-image: url("/assets/textures/grain.png")) {
-  .app::after {
-    background-image: repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 1px,
-      rgba(0, 0, 0, 0.02) 1px,
-      rgba(0, 0, 0, 0.02) 2px
-    );
-    opacity: 0.08;
-  }
+  background-color: var(--sketch-bg);
+  background-image:
+    linear-gradient(
+      color-mix(in srgb, var(--sketch-bg) 70%, transparent),
+      color-mix(in srgb, var(--sketch-bg) 70%, transparent)
+    ),
+    url("/assets/textures/grain.png");
+  background-blend-mode: normal, multiply;
 }
 
 .content {
