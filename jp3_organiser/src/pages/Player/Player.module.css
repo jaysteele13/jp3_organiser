@@ -12,6 +12,7 @@
   /* Use full width */
   max-width: none;
   width: 100%;
+  box-sizing: border-box;
   
   /* Fill available height and align to top */
   min-height: 100%;
