@@ -9,7 +9,7 @@
  * Supports external filtering via songFilter prop (one song, from Player links) and the "/" command bar query.
  * When a filter is active, shows only the filtered song with a clear button.
  * 
- * Supports multiselect mode for bulk deletion via checkbox column.
+ * Supports multiselect mode for bulk "Add to playlist" and deletion via checkbox column.
  * Select mode is toggled via a button above the table.
  */
 
@@ -100,8 +100,8 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
   // Select mode toggle state
   const [isSelectMode, setIsSelectMode] = useState(false);
 
-  // The song whose "Add to playlist" popup is open (null = closed)
-  const [playlistSong, setPlaylistSong] = useState(null);
+  // The songs whose "Add to playlist" popup is open (null = closed)
+  const [playlistSongs, setPlaylistSongs] = useState(null);
 
   // Sort and pagination state - load from persistent storage
   const [sortIndex, setSortIndex] = useState(cachedPreferences.sortIndex);
@@ -246,7 +246,7 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
     <ActionMenu
       items={[
         { label: 'Edit', onClick: () => onEditSong?.(song) },
-        { label: 'Add to playlist', onClick: () => setPlaylistSong(song) },
+        { label: 'Add to playlist', onClick: () => setPlaylistSongs([song]) },
         { label: 'Delete', onClick: () => onDeleteSong?.(song), variant: 'danger' },
       ]}
     />
@@ -299,7 +299,14 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
             </span>
             <button
               type="button"
-              className={styles.deleteSelectedBtn}
+              className={styles.selectionActionBtn}
+              onClick={() => setPlaylistSongs(selectedItems)}
+            >
+              Add to playlist
+            </button>
+            <button
+              type="button"
+              className={styles.selectionActionBtn}
               onClick={handleDeleteSelected}
             >
               Delete
@@ -331,8 +338,8 @@ export default function SongView({ library, onDeleteSong, onDeleteSongs, onEditS
         onSelectAllToggle={handleSelectAllToggle}
       />
 
-      {playlistSong && (
-        <AddToPlaylistModal song={playlistSong} onClose={() => setPlaylistSong(null)} />
+      {playlistSongs && (
+        <AddToPlaylistModal songs={playlistSongs} onClose={() => setPlaylistSongs(null)} />
       )}
     </div>
   );

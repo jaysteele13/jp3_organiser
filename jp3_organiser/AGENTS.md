@@ -339,6 +339,7 @@ jp3_organiser/
 19. **Upload to Existing Playlist** - Navigate from PlaylistEdit to Upload with pre-set playlist context
 20. **Duplicate Song Handling** - When uploading songs already in library, their IDs are reused for playlist inclusion
 21. **Playlist Rename** - Rename playlists with duplicate name validation
+    - **No duplicate albums** - One artist cannot have two albums with the same name (case and spacing ignored, year ignored). Uploads reuse the existing album; Edit Album rejects a clashing name
 22. **Desktop Music Player** - Full-featured audio playback with queue management
 23. **Queue Drawer** - Slide-out panel to view, reorder, and manage playback queue
 24. **Persistent PlayerBar** - Always-visible bottom bar with playback controls
@@ -712,7 +713,7 @@ The View page (`src/pages/View/`) displays the library content:
 |-----------|---------|
 | `TabSelector.jsx` | Tab button selector (Songs/Albums/Artists/Playlists) |
 | `TabContent.jsx` | Tab content switcher based on active tab |
-| `Songs/SongView.jsx` | Songs list view with duration and actions |
+| `Songs/SongView.jsx` | Songs list view with duration and actions. Select mode: bulk Add to playlist and Delete |
 | `Albums/AlbumView.jsx` | Albums list view grouped by artist. Row menu: Edit Album, Edit Cover Art, Delete Album |
 | `Artists/ArtistView.jsx` | Artists list view. Click menu: Go to Artist, Edit Artist, Edit Cover Art, Delete Artist |
 | `Playlists/PlaylistView.jsx` | Playlists view with expandable cards and Manage button (navigates to PlaylistEdit) |

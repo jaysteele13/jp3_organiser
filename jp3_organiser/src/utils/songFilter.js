@@ -21,6 +21,19 @@ export function withPlaylistNames(songs, playlists) {
   }));
 }
 
+/**
+ * Add songs to one playlist in a list of playlists, skipping songs it already has.
+ * @returns {Array} new playlists array (the input is not changed)
+ */
+export function addSongsToPlaylistList(playlists, playlistId, songIds) {
+  return playlists.map((playlist) => {
+    if (playlist.id !== playlistId) return playlist;
+    const existing = playlist.songIds ?? [];
+    const added = songIds.filter((id) => !existing.includes(id));
+    return { ...playlist, songIds: [...existing, ...added], songCount: (playlist.songCount ?? 0) + added.length };
+  });
+}
+
 const contains = (value, text) => String(value ?? '').toLowerCase().includes(text);
 
 // A term is a run without spaces; a quoted part may contain spaces: artist="olivia rodrigo"

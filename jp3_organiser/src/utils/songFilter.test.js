@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { filterByQuery, filterPlaylistsByQuery, filterSongsByText, withPlaylistNames } from './songFilter';
+import { addSongsToPlaylistList, filterByQuery, filterPlaylistsByQuery, filterSongsByText, withPlaylistNames } from './songFilter';
 
 const songs = [
   { id: 1, title: 'drivers license', artistName: 'Olivia Rodrigo', albumName: 'SOUR', year: 2021 },
@@ -71,5 +71,18 @@ describe('filterSongsByText', () => {
     expect(taggedIds('playlist=chill')).toEqual([1, 3]);
     expect(taggedIds('playlist=gym and chill artist=olivia')).toEqual([1]);
     expect(taggedIds('chill')).toEqual([]);
+  });
+});
+
+describe('addSongsToPlaylistList', () => {
+  it('adds only the songs the playlist does not already have', () => {
+    const playlists = [
+      { id: 1, name: 'Chill Mix', songIds: [1, 3], songCount: 2 },
+      { id: 2, name: 'Gym', songIds: [3], songCount: 1 },
+    ];
+
+    const [chill, gym] = addSongsToPlaylistList(playlists, 1, [1, 2, 4]);
+    expect(chill).toMatchObject({ songIds: [1, 3, 2, 4], songCount: 4 });
+    expect(gym).toBe(playlists[1]);
   });
 });

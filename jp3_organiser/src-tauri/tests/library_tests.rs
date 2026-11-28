@@ -8,9 +8,10 @@
 //! - Metadata editing
 //! - Library compaction
 //! - Edit with playlist remapping
+//! - No duplicate albums (same artist and name)
 
 use jp3_organiser_lib::commands::library::{
-    compact_library, delete_songs, edit_song_metadata, get_library_stats, initialize_library,
+    compact_library, delete_songs, edit_album, edit_song_metadata, get_library_stats, initialize_library,
     load_library, save_to_library, FileToSave,
 };
 use jp3_organiser_lib::commands::playlist::{create_playlist, load_playlist};
@@ -603,4 +604,55 @@ fn test_edit_then_compact_preserves_audio_file() {
     assert_eq!(library_after.songs.len(), 1);
     assert_eq!(library_after.songs[0].path, *song_path);
     assert_eq!(library_after.songs[0].album_name, "New Album");
+}
+
+// =============================================================================
+// Duplicate Album Tests
+// =============================================================================
+
+#[test]
+fn test_same_artist_and_album_name_is_one_album() {
+    let (temp_dir, base_path) = setup_test_library();
+
+    // Same album with different case, spacing and year
+    let files = vec![
+        create_file_to_save(create_dummy_audio_file(&temp_dir, "a.mp3"), "One", "Artist", "SOUR", 2021, 1),
+        create_file_to_save(create_dummy_audio_file(&temp_dir, "b.mp3"), "Two", "Artist", " sour ", 2022, 2),
+    ];
+    let result = save_to_library(base_path.clone(), files).unwrap();
+    assert_eq!(result.albums_added, 1);
+
+    // A later upload reuses it too
+    let later = vec![create_file_to_save(
+        create_dummy_audio_file(&temp_dir, "c.mp3"), "Three", "Artist", "Sour", 2021, 3,
+    )];
+    assert_eq!(save_to_library(base_path.clone(), later).unwrap().albums_added, 0);
+    assert_eq!(load_library(base_path).unwrap().albums.len(), 1);
+}
+
+#[test]
+fn test_edit_album_rejects_duplicate_name_for_same_artist() {
+    let (temp_dir, base_path) = setup_test_library();
+
+    let files = vec![
+        create_file_to_save(create_dummy_audio_file(&temp_dir, "a.mp3"), "One", "Artist", "First", 2020, 1),
+        create_file_to_save(create_dummy_audio_file(&temp_dir, "b.mp3"), "Two", "Artist", "Second", 2021, 1),
+        create_file_to_save(create_dummy_audio_file(&temp_dir, "c.mp3"), "Three", "Other", "Third", 2021, 1),
+    ];
+    save_to_library(base_path.clone(), files).unwrap();
+
+    // Renaming "Second" to "first" would give Artist two albums with the same name
+    let err = edit_album(base_path.clone(), 1, "first".into(), "Artist".into(), Some(1999)).unwrap_err();
+    assert!(err.contains("already has an album"), "{}", err);
+
+    // Moving "Third" to Artist under the taken name is rejected as well
+    assert!(edit_album(base_path.clone(), 2, "First".into(), "Artist".into(), None).is_err());
+
+    // Still allowed: the same name for another artist, and changing only case or year
+    assert!(edit_album(base_path.clone(), 1, "First".into(), "Other".into(), None).is_ok());
+    assert!(edit_album(base_path.clone(), 0, "FIRST".into(), "Artist".into(), Some(2001)).is_ok());
+
+    let library = load_library(base_path).unwrap();
+    let names: Vec<&str> = library.albums.iter().map(|album| album.name.as_str()).collect();
+    assert_eq!(names, ["FIRST", "First", "Third"]);
 }

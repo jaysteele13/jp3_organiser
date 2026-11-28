@@ -139,6 +139,12 @@ pub struct FileToSave {
 /// Maximum files per music bucket.
 const MAX_FILES_PER_BUCKET: usize = 256;
 
+/// Key that identifies an album: one artist cannot have two albums with the same name.
+/// Case and surrounding spaces are ignored ("SOUR" = " sour"); the year is not part of it.
+fn album_key(artist_id: u32, album_name: &str) -> String {
+    format!("{}:{}", artist_id, album_name.trim().to_lowercase())
+}
+
 /// Existing library data loaded from library.bin for incremental updates.
 struct ExistingLibraryData {
     string_table: StringTable,
@@ -221,7 +227,7 @@ fn load_existing_library_data(
             .get(raw.name_string_id as usize)
             .cloned()
             .unwrap_or_default();
-        let album_key = format!("{}:{}", raw.artist_id, album_name);
+        let album_key = album_key(raw.artist_id, &album_name);
         album_map.insert(album_key, id as u32);
         albums.push(AlbumEntry {
             name_string_id: raw.name_string_id,
@@ -371,7 +377,7 @@ pub fn save_to_library(
         };
 
         // Get or create album (scoped to artist)
-        let album_key = format!("{}:{}", artist_id, album_name);
+        let album_key = album_key(artist_id, album_name);
         let album_id = if let Some(&id) = album_map.get(&album_key) {
             id
         } else {
@@ -791,7 +797,7 @@ pub fn edit_song_metadata(
 
     // Get or create album
     let album_name = new_metadata.album.as_ref().ok_or("Missing album")?;
-    let album_key = format!("{}:{}", artist_id, album_name);
+    let album_key = album_key(artist_id, album_name);
     let album_id = if let Some(&id) = album_map.get(&album_key) {
         id
     } else {
@@ -1389,10 +1395,23 @@ pub fn edit_album(
     };
 
     // Remove old album key and add new one
-    let old_album_key = format!("{}:{}", old_artist_id, old_name);
+    let old_album_key = album_key(old_artist_id, &old_name);
     album_map.remove(&old_album_key);
 
-    let new_album_key = format!("{}:{}", new_artist_id, new_name);
+    // An artist cannot have two albums with the same name. An album left with no songs
+    // (waiting for compaction) does not count.
+    let new_album_key = album_key(new_artist_id, &new_name);
+    if let Some(&other_id) = album_map.get(&new_album_key) {
+        let other_has_songs = songs
+            .iter()
+            .any(|song| song.album_id == other_id && song.flags & song_flags::DELETED == 0);
+        if other_id != album_id && other_has_songs {
+            return Err(format!(
+                "{} already has an album called \"{}\"",
+                new_artist_name, new_name
+            ));
+        }
+    }
     album_map.insert(new_album_key, album_id);
 
     // Update the album entry

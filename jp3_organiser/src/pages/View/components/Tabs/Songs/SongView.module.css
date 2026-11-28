@@ -87,7 +87,7 @@
   color: color-mix(in srgb, var(--sketch-text) 85%, transparent);
 }
 
-.deleteSelectedBtn {
+.selectionActionBtn {
   padding: 0.4rem 0.75rem;
   font-size: 0.8rem;
   font-family: inherit;
@@ -98,7 +98,7 @@
   cursor: pointer;
 }
 
-.deleteSelectedBtn:hover {
+.selectionActionBtn:hover {
   background-color: var(--sketch-text);
   color: var(--sketch-bg);
 }

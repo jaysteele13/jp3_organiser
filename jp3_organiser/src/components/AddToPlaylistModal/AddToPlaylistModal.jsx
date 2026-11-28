@@ -1,11 +1,12 @@
 /**
  * AddToPlaylistModal
  *
- * Popup for adding one song to an existing playlist. Pick a playlist from the
- * searchable dropdown, then it reports "Added to X" or "Already in X".
+ * Popup for adding one or more songs to an existing playlist. Pick a playlist from the
+ * searchable dropdown, then it reports how many were added and how many were already there.
  *
  * @param {Object} props
- * @param {Object} props.song - The song to add: { id, title, artistName }
+ * @param {Object} [props.song] - A single song to add: { id, title, artistName }
+ * @param {Array} [props.songs] - Several songs to add (use instead of song)
  * @param {function} props.onClose - Called when the popup should close
  */
 
@@ -13,24 +14,31 @@ import { useEffect, useState } from 'react';
 import { useLibraryConfig } from '../../hooks/useLibraryConfig';
 import { getCachedLibrary, invalidateLibraryCache, setCachedLibrary } from '../../hooks/libraryCache';
 import { addSongsToPlaylist, listPlaylists } from '../../services/libraryService';
-import { withPlaylistNames } from '../../utils/songFilter';
+import { addSongsToPlaylistList, withPlaylistNames } from '../../utils/songFilter';
+import { pluralize } from '../../utils/pluralize';
 import ConfirmModal from '../ConfirmModal';
 import PlaylistComboBox from '../PlaylistComboBox';
 import styles from './AddToPlaylistModal.module.css';
 
-// The cached library holds each playlist's songs. Add the song there too, so the next page
-// that reads the cache sees it and the "/" bar keeps its name suggestions.
-function addToCachedPlaylist(libraryPath, playlistId, songId) {
+// The cached library holds each playlist's songs. Add the songs there too, so the next page
+// that reads the cache sees them and the "/" bar keeps its name suggestions.
+function addToCachedPlaylist(libraryPath, playlistId, songIds) {
   const cached = getCachedLibrary(libraryPath);
   if (!cached?.playlists) return invalidateLibraryCache(libraryPath);
 
-  const playlists = cached.playlists.map((playlist) => (playlist.id === playlistId
-    ? { ...playlist, songIds: [...(playlist.songIds ?? []), songId], songCount: (playlist.songCount ?? 0) + 1 }
-    : playlist));
+  const playlists = addSongsToPlaylistList(cached.playlists, playlistId, songIds);
   setCachedLibrary(libraryPath, { ...cached, playlists, songs: withPlaylistNames(cached.songs, playlists) });
 }
 
-export default function AddToPlaylistModal({ song, onClose }) {
+// The backend skips songs the playlist already has, so fewer added than sent means some were there
+function resultMessage(added, total, name) {
+  if (total === 1) return `${added ? 'Added to' : 'Already in'} "${name}"`;
+  if (added === total) return `Added ${pluralize(total, 'song')} to "${name}"`;
+  if (!added) return `All ${total} songs are already in "${name}"`;
+  return `Added ${added} of ${total} songs to "${name}" (${total - added} already there)`;
+}
+
+export default function AddToPlaylistModal({ song, songs = [song], onClose }) {
   const { libraryPath } = useLibraryConfig();
   const [playlists, setPlaylists] = useState(null); // null = still loading
   const [selected, setSelected] = useState(null);
@@ -57,14 +65,14 @@ export default function AddToPlaylistModal({ song, onClose }) {
 
     setIsSaving(true);
     try {
-      // The backend skips songs the playlist already has, so 0 added means it was there
-      const { songsAdded } = await addSongsToPlaylist(libraryPath, selected.id, [song.id]);
-      if (songsAdded) addToCachedPlaylist(libraryPath, selected.id, song.id);
-      setMessage(`${songsAdded ? 'Added to' : 'Already in'} "${selected.name}"`);
+      const songIds = songs.map((item) => item.id);
+      const { songsAdded } = await addSongsToPlaylist(libraryPath, selected.id, songIds);
+      if (songsAdded) addToCachedPlaylist(libraryPath, selected.id, songIds);
+      setMessage(resultMessage(songsAdded, songs.length, selected.name));
       setIsDone(true);
     } catch (err) {
-      console.error('Failed to add song to playlist:', err);
-      setMessage('Failed to add song to playlist');
+      console.error('Failed to add to playlist:', err);
+      setMessage('Failed to add to playlist');
     } finally {
       setIsSaving(false);
     }
@@ -73,7 +81,9 @@ export default function AddToPlaylistModal({ song, onClose }) {
   return (
     <ConfirmModal
       title="Add to Playlist"
-      message={`"${song.title}" by ${song.artistName || 'Unknown'}`}
+      message={songs.length === 1
+        ? `"${songs[0].title}" by ${songs[0].artistName || 'Unknown'}`
+        : pluralize(songs.length, 'song')}
       confirmLabel={isDone ? 'Done' : 'Add'}
       cancelLabel={isDone ? '' : 'Cancel'}
       onConfirm={isDone ? onClose : handleAdd}
