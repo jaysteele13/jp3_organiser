@@ -106,6 +106,15 @@ export const UPLOAD_MODE = {
   PLAYLIST: 'playlist',
 };
 
+/**
+ * Which kind of cover the "Edit Cover Art" picker is changing.
+ * Values match the `kind` argument of the Rust cover commands.
+ */
+export const COVER_KIND = {
+  ALBUM: 'album',
+  ARTIST: 'artist',
+};
+
 export const IMAGE_COVER_TYPE = {
   ALBUM: 'Album',
   ARTIST: 'Artist',

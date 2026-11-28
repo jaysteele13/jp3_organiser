@@ -191,6 +191,61 @@ function bytesToBlobUrl(bytes) {
 }
 
 /**
+ * Search online for cover images the user can pick from ("Edit Cover Art").
+ *
+ * @param {'album'|'artist'} kind - Which kind of cover to search for
+ * @param {string} artist - Artist name
+ * @param {string|null} [album=null] - Album name (albums only)
+ * @returns {Promise<Array<{url: string, thumbUrl: string, source: string}>>} Up to 8 images
+ */
+export async function searchCoverCandidates(kind, artist, album = null) {
+  return await invoke('search_cover_candidates', { kind, artist, album });
+}
+
+/**
+ * Save a picked image as the cover, replacing the current one.
+ * Rejects if the URL is not from one of the picker's image hosts or the download fails.
+ *
+ * @param {string} basePath - Library base path
+ * @param {'album'|'artist'} kind - Which kind of cover to set
+ * @param {string} artist - Artist name
+ * @param {string|null} album - Album name (albums only)
+ * @param {string} url - Image URL to download
+ * @returns {Promise<void>}
+ */
+export async function setCoverFromUrl(basePath, kind, artist, album, url) {
+  return await invoke('set_cover_from_url', { basePath, kind, artist, album, url });
+}
+
+/**
+ * Save image bytes as the cover, replacing the current one.
+ * Used for the placeholder images bundled with the app, which have no web address.
+ *
+ * @param {string} basePath - Library base path
+ * @param {'album'|'artist'} kind - Which kind of cover to set
+ * @param {string} artist - Artist name
+ * @param {string|null} album - Album name (albums only)
+ * @param {number[]} bytes - The image file's contents
+ * @returns {Promise<void>}
+ */
+export async function setCoverFromBytes(basePath, kind, artist, album, bytes) {
+  return await invoke('set_cover_from_bytes', { basePath, kind, artist, album, bytes });
+}
+
+/**
+ * Remove the cover so the generic placeholder shows again ("No cover").
+ *
+ * @param {string} basePath - Library base path
+ * @param {'album'|'artist'} kind - Which kind of cover to remove
+ * @param {string} artist - Artist name
+ * @param {string|null} album - Album name (albums only)
+ * @returns {Promise<void>}
+ */
+export async function removeCover(basePath, kind, artist, album) {
+  return await invoke('remove_cover', { basePath, kind, artist, album });
+}
+
+/**
  * Clear all cached cover art for albums and artists.
  * 
  * Removes all cached .jpg files from the jp3/assets/albums/ and jp3/assets/artists/ directories.

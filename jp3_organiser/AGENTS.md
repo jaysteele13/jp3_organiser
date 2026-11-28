@@ -239,6 +239,7 @@ jp3_organiser/
 │   ├── assets/               # Static assets (fonts, images, test files)
 │   ├── components/           # Shared/reusable components
 │   │   ├── ConfirmModal/     # Reusable confirmation dialog with variants and custom content via children prop
+│   │   ├── CoverArtPicker/   # "Edit Cover Art" modal: pick a cover image for an album or artist
 │   │   ├── EmptyState/       # Reusable empty state message
 │   │   ├── ErrorState/       # Reusable error display
 │   │   ├── Header/           # App header with title/description
@@ -344,6 +345,7 @@ jp3_organiser/
 25. **Home Tab** - Default Player tab with Recently Played and Recently Added sections
 26. **Recently Played Tracking** - Tracks songs, albums, artists, playlists via persistent store
 27. **Click-to-Play Song Rows** - Click anywhere on a song row to play (Queue button preserved)
+28. **Edit Cover Art** - In the Library, pick a cover for any album or artist from images found online (Deezer, iTunes, TheAudioDB), choose "No cover", or fall back to DiceBear avatars and bundled placeholders. Spec: `planning/find-cover-art-spec.md`
 
 ### Planned
 - SD Card export workflow
@@ -573,6 +575,9 @@ Models are in `src-tauri/src/models/`:
 ### TABS (`src/utils/enums.js`)
 - `HOME`, `SONGS`, `ALBUMS`, `ARTISTS`, `PLAYLISTS` - Player page tab identifiers (HOME is default)
 
+### COVER_KIND (`src/utils/enums.js`)
+- `ALBUM`, `ARTIST` - Which cover the "Edit Cover Art" picker changes. Values (`'album'`, `'artist'`) match the `kind` argument of the Rust cover commands
+
 ### RECENT_TYPE (`src/services/recentsService.js`)
 - `SONG`, `ALBUM`, `ARTIST`, `PLAYLIST` - Types for recently played items
 
@@ -605,6 +610,8 @@ Models are in `src-tauri/src/models/`:
 | `useCommandBar(onClose)` | State and keys for the open `/` command bar: live filtering as you type, Tab completion, a name list that follows the rest of the query, history. Commands and suggestions live in `utils/commandParser.js`; filter keys (`title=`, `artist=`, `album=`, `year=`, `playlist=`) and the query grammar (`key=a and b`, quotes) live in `utils/songFilter.js`. Lines after `\|` are instructions (`show=artist\|album\|song\|playlist` picks the tab) |
 | `useCommandHistory()` | Past command bar searches, saved with the store plugin (`commandbar.json`). Returns `{ save, step }` |
 | `useTextFilter()` | Reads the command bar's filter text from the URL (`?q=`). Returns `[text, clear]`; song lists pass the text to `filterSongsByText`, artist and album lists to `filterByQuery`, playlists to `filterPlaylistsByQuery`. Show it with `<QueryFilterBar tab={...} />`, whose label reopens the command bar to edit the query |
+| `useCoverCandidates(libraryPath, target)` | State for the "Edit Cover Art" picker: searches for images of one album or artist (`search_cover_candidates`), tracks the selection, and saves it (`set_cover_from_url`, `set_cover_from_bytes` or `remove_cover`). `showAvatars` adds DiceBear avatars from `utils/avatarCandidates.js` after the images found; `showPlaceholders` swaps those avatars for the bundled images |
+| `useCoverActions(libraryPath, toast)` | Opens the picker from the View page and, after a save, calls `refreshCover` so mounted `CoverArt` components reload that cover |
 | `useUploadCache()` | Context hook for persistent upload state across navigation |
 | `useWorkflowMachine()` | State machine for upload workflow stages (PROCESS -> REVIEW -> READY_TO_SAVE) |
 | `useDebounce(value, delay)` | Debounce a value for delayed updates (used in search inputs) |
@@ -706,8 +713,8 @@ The View page (`src/pages/View/`) displays the library content:
 | `TabSelector.jsx` | Tab button selector (Songs/Albums/Artists/Playlists) |
 | `TabContent.jsx` | Tab content switcher based on active tab |
 | `Songs/SongView.jsx` | Songs list view with duration and actions |
-| `Albums/AlbumView.jsx` | Albums list view grouped by artist |
-| `Artists/ArtistView.jsx` | Artists list view |
+| `Albums/AlbumView.jsx` | Albums list view grouped by artist. Row menu: Edit Album, Edit Cover Art, Delete Album |
+| `Artists/ArtistView.jsx` | Artists list view. Click menu: Go to Artist, Edit Artist, Edit Cover Art, Delete Artist |
 | `Playlists/PlaylistView.jsx` | Playlists view with expandable cards and Manage button (navigates to PlaylistEdit) |
 
 ## PlaylistEdit Page

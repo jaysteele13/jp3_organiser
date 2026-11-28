@@ -18,7 +18,7 @@ import { filterByQuery } from '../../../../../utils/songFilter';
 import { getCachedViewData } from '../../../utils/viewDataCache';
 import styles from './AlbumView.module.css';
 
-export default function AlbumView({ library, libraryPath, onDeleteAlbum, onEditAlbum, filter, onClearFilter }) {
+export default function AlbumView({ library, libraryPath, onDeleteAlbum, onEditAlbum, onEditCover, filter, onClearFilter }) {
   const navigate = useNavigate();
   const [textFilter] = useTextFilter();
 
@@ -61,8 +61,9 @@ export default function AlbumView({ library, libraryPath, onDeleteAlbum, onEditA
 
   const getActions = useCallback((album) => [
     { label: 'Edit Album', onClick: () => onEditAlbum?.(album) },
+    { label: 'Edit Cover Art', onClick: () => onEditCover?.(album) },
     { label: 'Delete Album', onClick: () => onDeleteAlbum?.(album), variant: 'danger' },
-  ], [onEditAlbum, onDeleteAlbum]);
+  ], [onEditAlbum, onEditCover, onDeleteAlbum]);
 
   const renderThumbnail = useCallback((album) => (
     <CoverArt

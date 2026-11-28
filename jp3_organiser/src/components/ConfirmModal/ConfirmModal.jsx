@@ -13,6 +13,7 @@
  * @param {function} props.onConfirm - Called when user confirms
  * @param {function} props.onCancel - Called when user cancels or clicks overlay
  * @param {boolean} props.isLoading - If true, buttons are disabled and confirm shows loading
+ * @param {boolean} props.confirmDisabled - If true, the confirm button is disabled (default: false)
  * @param {React.ReactNode} props.children - Optional content to render between message and buttons
  */
 
@@ -29,6 +30,7 @@ export default function ConfirmModal({
   onConfirm,
   onCancel,
   isLoading = false,
+  confirmDisabled = false,
   children,
 }) {
   // Track if mousedown started on the overlay (not inside modal)
@@ -98,7 +100,7 @@ export default function ConfirmModal({
           <button 
             className={`${styles.confirmBtn} ${confirmBtnClass}`}
             onClick={onConfirm}
-            disabled={isLoading}
+            disabled={isLoading || confirmDisabled}
           >
             {isLoading ? 'Loading...' : confirmLabel}
           </button>
