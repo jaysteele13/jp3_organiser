@@ -10,9 +10,9 @@
 //! - Artists: hash of "artist|||artist" (uses "artist" as second component)
 
 use serde::Serialize;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-use crate::services::cover_art_service;
+use crate::services::cover_art_service::{self, CoverCandidate, CoverKind};
 use crate::services::musicbrainz_service;
 
 /// Result of fetching cover art
@@ -506,6 +506,91 @@ pub struct ClearCoverCacheResult {
     pub artists_cleared: u32,
     /// Error message (if failed)
     pub error: Option<String>,
+}
+
+/// Search online for cover images the user can choose from.
+///
+/// # Arguments
+/// * `kind` - "album" or "artist"
+/// * `artist` - Artist name
+/// * `album` - Album name (ignored for artists)
+#[tauri::command]
+pub async fn search_cover_candidates(
+    kind: String,
+    artist: String,
+    album: Option<String>,
+) -> Result<Vec<CoverCandidate>, String> {
+    let kind = CoverKind::parse(&kind)?;
+    Ok(cover_art_service::search_cover_candidates(kind, &artist, album.as_deref().unwrap_or("")).await)
+}
+
+/// Where the cover for this album or artist is cached.
+fn cover_path(base_path: &str, kind: &str, artist: &str, album: Option<&str>) -> Result<PathBuf, String> {
+    Ok(CoverKind::parse(kind)?.cover_path(Path::new(base_path), artist, album.unwrap_or("")))
+}
+
+/// Save a picked image as the cover, replacing the current one.
+///
+/// Only `https` URLs from the image hosts the picker offers are accepted.
+///
+/// # Arguments
+/// * `base_path` - Library base path
+/// * `kind` - "album" or "artist"
+/// * `artist` - Artist name
+/// * `album` - Album name (ignored for artists)
+/// * `url` - Image URL from `search_cover_candidates` or DiceBear
+#[tauri::command]
+pub async fn set_cover_from_url(
+    base_path: String,
+    kind: String,
+    artist: String,
+    album: Option<String>,
+    url: String,
+) -> Result<(), String> {
+    let cover_path = cover_path(&base_path, &kind, &artist, album.as_deref())?;
+    cover_art_service::save_cover_from_url(&cover_path, &url)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Save image bytes as the cover, replacing the current one.
+///
+/// Used for the placeholder images bundled with the app, which have no web address.
+///
+/// # Arguments
+/// * `base_path` - Library base path
+/// * `kind` - "album" or "artist"
+/// * `artist` - Artist name
+/// * `album` - Album name (ignored for artists)
+/// * `bytes` - The image file's contents
+#[tauri::command]
+pub fn set_cover_from_bytes(
+    base_path: String,
+    kind: String,
+    artist: String,
+    album: Option<String>,
+    bytes: Vec<u8>,
+) -> Result<(), String> {
+    let cover_path = cover_path(&base_path, &kind, &artist, album.as_deref())?;
+    cover_art_service::write_cover(&cover_path, &bytes).map_err(|e| e.to_string())
+}
+
+/// Remove the cover so the generic placeholder shows again ("No cover").
+///
+/// # Arguments
+/// * `base_path` - Library base path
+/// * `kind` - "album" or "artist"
+/// * `artist` - Artist name
+/// * `album` - Album name (ignored for artists)
+#[tauri::command]
+pub fn remove_cover(
+    base_path: String,
+    kind: String,
+    artist: String,
+    album: Option<String>,
+) -> Result<(), String> {
+    let cover_path = cover_path(&base_path, &kind, &artist, album.as_deref())?;
+    cover_art_service::remove_cover(&cover_path).map_err(|e| e.to_string())
 }
 
 /// Clear all cached cover art for albums and artists.

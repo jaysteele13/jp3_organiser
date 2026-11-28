@@ -14,8 +14,9 @@ import { useLibraryConfig, useToast } from '../../hooks';
 import { useSongActions } from '../../hooks/useSongActions';
 import { useAlbumActions } from '../../hooks/useAlbumActions';
 import { useArtistActions } from '../../hooks/useArtistActions';
+import { useCoverActions } from '../../hooks/useCoverActions';
 import { useLibrary } from '../../hooks/useLibrary';
-import { LoadingState, ErrorState, EmptyState, Toast, ConfirmModal } from '../../components';
+import { LoadingState, ErrorState, EmptyState, Toast, ConfirmModal, CoverArtPicker } from '../../components';
 import styles from './View.module.css';
 
 import { TABS, VIEW_TABS } from '../../utils/enums';
@@ -111,6 +112,15 @@ export default function View() {
     handleConfirmEditArtist,
     handleCancelEditArtist,
   } = useArtistActions(libraryPath, handleRefresh, toast);
+
+  const {
+    coverTarget,
+    handleEditAlbumCoverRequest,
+    handleEditArtistCoverRequest,
+    handleCoverSaved,
+    handleCoverError,
+    handleCancelCoverEdit,
+  } = useCoverActions(libraryPath, toast);
 
   // Consolidated filter state used by the active tab content
   const [filter, setFilter] = useState(null); // { type: 'song'|'album'|'artist'|'playlist', value } | null
@@ -253,8 +263,10 @@ export default function View() {
               onEditSong={handleEditRequest}
               onDeleteAlbum={handleDeleteAlbumRequest}
               onEditAlbum={handleEditAlbumRequest}
+              onEditAlbumCover={handleEditAlbumCoverRequest}
               onDeleteArtist={handleDeleteArtistRequest}
               onEditArtist={handleEditArtistRequest}
+              onEditArtistCover={handleEditArtistCoverRequest}
             />
           </div>
         </>
@@ -339,6 +351,17 @@ export default function View() {
           onSave={handleConfirmEditArtist}
           onCancel={handleCancelEditArtist}
           isSaving={artistIsSaving}
+        />
+      )}
+
+      {/* Edit Cover Art Modal */}
+      {coverTarget && (
+        <CoverArtPicker
+          libraryPath={libraryPath}
+          target={coverTarget}
+          onSaved={handleCoverSaved}
+          onError={handleCoverError}
+          onCancel={handleCancelCoverEdit}
         />
       )}
 

@@ -18,10 +18,11 @@
 
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tokio::time::sleep;
 
 /// Delay between API calls to be polite to Cover Art Archive
@@ -612,3 +613,450 @@ pub async fn fetch_and_save_deezer_album_cover(
 }
 
 
+// ── Manual cover picker ("Edit Cover Art") ──
+
+/// Most images the picker offers at once.
+const MAX_CANDIDATES: usize = 8;
+
+/// Whether a cover belongs to an album or an artist.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum CoverKind {
+    Album,
+    Artist,
+}
+
+impl CoverKind {
+    pub fn parse(kind: &str) -> Result<Self, String> {
+        match kind {
+            "album" => Ok(Self::Album),
+            "artist" => Ok(Self::Artist),
+            other => Err(format!("Unknown cover kind: {other}")),
+        }
+    }
+
+    /// Where this cover is cached: `{library}/jp3/assets/{albums|artists}/{hash}.jpg`.
+    /// Artists are hashed against the literal "artist", like the automatic lookup.
+    pub fn cover_path(self, library: &Path, artist: &str, album: &str) -> PathBuf {
+        let (folder, key) = match self {
+            Self::Album => ("albums", album),
+            Self::Artist => ("artists", "artist"),
+        };
+        library
+            .join("jp3")
+            .join("assets")
+            .join(folder)
+            .join(format!("{}.jpg", cover_filename(artist, key)))
+    }
+}
+
+/// One image the user can pick in the cover picker.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CoverCandidate {
+    /// Full-size image that gets saved as the cover
+    pub url: String,
+    /// Smaller image shown in the picker grid
+    pub thumb_url: String,
+    /// Where the image came from, e.g. "Deezer"
+    pub source: &'static str,
+}
+
+/// Read the array stored under `key` in a JSON body. Empty if missing or malformed.
+fn json_array(body: &str, key: &str) -> Vec<Value> {
+    serde_json::from_str::<Value>(body)
+        .ok()
+        .and_then(|json| json.get(key)?.as_array().cloned())
+        .unwrap_or_default()
+}
+
+/// Deezer names its blank "no picture" image after the MD5 of nothing.
+const DEEZER_BLANK_IMAGE: &str = "d41d8cd98f00b204e9800998ecf8427e";
+
+/// Build a candidate from one Deezer search result, unless it has no real image.
+fn deezer_candidate(item: &Value, big_key: &str, medium_key: &str) -> Option<CoverCandidate> {
+    let url = item.get(big_key)?.as_str()?;
+    // A missing image shows up as the blank image or as an empty name ("cover//500x500")
+    let has_no_image = url.contains(DEEZER_BLANK_IMAGE) || url.trim_start_matches("https://").contains("//");
+    if has_no_image {
+        return None;
+    }
+    Some(CoverCandidate {
+        url: url.to_string(),
+        thumb_url: item.get(medium_key)?.as_str()?.to_string(),
+        source: "Deezer",
+    })
+}
+
+/// Candidates from `https://api.deezer.com/search/album`.
+fn parse_deezer_albums(body: &str) -> Vec<CoverCandidate> {
+    json_array(body, "data")
+        .iter()
+        .filter_map(|album| deezer_candidate(album, "cover_big", "cover_medium"))
+        .collect()
+}
+
+/// Candidates from `https://api.deezer.com/search/artist`.
+/// Deezer also returns related artists, so only exact name matches are kept.
+fn parse_deezer_artists(body: &str, artist: &str) -> Vec<CoverCandidate> {
+    let wanted = artist.trim().to_lowercase();
+    let is_wanted = |found: &&Value| found.get("name").and_then(Value::as_str).map(str::to_lowercase) == Some(wanted.clone());
+
+    json_array(body, "data")
+        .iter()
+        .filter(is_wanted)
+        .filter_map(|found| deezer_candidate(found, "picture_big", "picture_medium"))
+        .collect()
+}
+
+/// Image fields of a TheAudioDB artist that make a usable cover.
+const THEAUDIODB_IMAGE_FIELDS: [&str; 5] =
+    ["strArtistThumb", "strArtistFanart", "strArtistFanart2", "strArtistFanart3", "strArtistLogo"];
+
+/// Candidates from `https://www.theaudiodb.com/api/v1/json/123/search.php`.
+/// Adding `/small` to an image URL gives a smaller version for the grid.
+fn parse_theaudiodb_artist(body: &str) -> Vec<CoverCandidate> {
+    json_array(body, "artists")
+        .iter()
+        .flat_map(|artist| THEAUDIODB_IMAGE_FIELDS.iter().filter_map(|field| artist.get(*field)?.as_str()))
+        .map(|url| CoverCandidate {
+            url: url.to_string(),
+            thumb_url: format!("{url}/small"),
+            source: "TheAudioDB",
+        })
+        .collect()
+}
+
+/// Candidates from `https://itunes.apple.com/search?entity=album`.
+/// iTunes only lists a 100px image, but the same URL serves any size.
+fn parse_itunes_albums(body: &str) -> Vec<CoverCandidate> {
+    json_array(body, "results")
+        .iter()
+        .filter_map(|album| {
+            let artwork = album.get("artworkUrl100")?.as_str()?;
+            Some(CoverCandidate {
+                url: artwork.replace("100x100bb", "600x600bb"),
+                thumb_url: artwork.replace("100x100bb", "200x200bb"),
+                source: "iTunes",
+            })
+        })
+        .collect()
+}
+
+/// Combine each source's results by taking one from each in turn, so every
+/// source gets a share of the `MAX_CANDIDATES` slots. Duplicate URLs are dropped.
+fn merge_candidates(sources: Vec<Vec<CoverCandidate>>) -> Vec<CoverCandidate> {
+    let longest = sources.iter().map(Vec::len).max().unwrap_or(0);
+    let mut merged: Vec<CoverCandidate> = Vec::new();
+
+    for index in 0..longest {
+        for candidate in sources.iter().filter_map(|source| source.get(index)) {
+            let is_new = !merged.iter().any(|kept| kept.url == candidate.url);
+            if is_new && merged.len() < MAX_CANDIDATES {
+                merged.push(candidate.clone());
+            }
+        }
+    }
+    merged
+}
+
+/// GET a URL and return the response body as text.
+async fn fetch_text(url: &str) -> Result<String, CoverArtError> {
+    let request_error = |e: reqwest::Error| CoverArtError::RequestError(e.to_string());
+
+    let response = reqwest::Client::new()
+        .get(url)
+        .header("User-Agent", "JP3Organiser/1.0")
+        .timeout(Duration::from_secs(15))
+        .send()
+        .await
+        .map_err(request_error)?;
+
+    if !response.status().is_success() {
+        return Err(CoverArtError::RequestError(format!("HTTP {}", response.status())));
+    }
+    response.text().await.map_err(request_error)
+}
+
+/// Fetch one image source and parse it. A source that fails is logged and
+/// gives no candidates, so the other sources still show.
+async fn fetch_candidates(url: &str, parse: impl Fn(&str) -> Vec<CoverCandidate>) -> Vec<CoverCandidate> {
+    match fetch_text(url).await {
+        Ok(body) => parse(&body),
+        Err(e) => {
+            log::warn!("[CoverArt] Candidate search failed for {}: {}", url, e);
+            Vec::new()
+        }
+    }
+}
+
+/// Search the free image sources for covers the user can choose from.
+pub async fn search_cover_candidates(kind: CoverKind, artist: &str, album: &str) -> Vec<CoverCandidate> {
+    let found = match kind {
+        CoverKind::Album => {
+            let query = urlencoding::encode(&format!("{artist} {album}")).into_owned();
+            let deezer = format!("https://api.deezer.com/search/album?q={query}&limit={MAX_CANDIDATES}");
+            let itunes = format!("https://itunes.apple.com/search?term={query}&entity=album&limit={MAX_CANDIDATES}");
+            vec![
+                fetch_candidates(&deezer, parse_deezer_albums).await,
+                fetch_candidates(&itunes, parse_itunes_albums).await,
+            ]
+        }
+        CoverKind::Artist => {
+            let query = urlencoding::encode(artist);
+            let deezer = format!("https://api.deezer.com/search/artist?q={query}&limit={MAX_CANDIDATES}");
+            // "123" is TheAudioDB's public free key
+            let theaudiodb = format!("https://www.theaudiodb.com/api/v1/json/123/search.php?s={query}");
+            vec![
+                fetch_candidates(&deezer, |body| parse_deezer_artists(body, artist)).await,
+                fetch_candidates(&theaudiodb, parse_theaudiodb_artist).await,
+            ]
+        }
+    };
+    merge_candidates(found)
+}
+
+/// Image hosts a chosen cover may be downloaded from (subdomains included).
+const ALLOWED_IMAGE_HOSTS: [&str; 4] = ["dzcdn.net", "mzstatic.com", "theaudiodb.com", "api.dicebear.com"];
+
+/// True for `https` URLs on one of the image hosts the picker offers.
+///
+/// `set_cover_from_url` downloads whatever URL it is given, so this stops it
+/// being used to fetch arbitrary addresses.
+pub fn is_allowed_image_url(url: &str) -> bool {
+    let Ok(url) = reqwest::Url::parse(url) else {
+        return false;
+    };
+    let host = url.host_str().unwrap_or_default();
+
+    url.scheme() == "https"
+        && ALLOWED_IMAGE_HOSTS
+            .iter()
+            .any(|allowed| host == *allowed || host.ends_with(&format!(".{allowed}")))
+}
+
+/// Download a chosen image and save it as the cover, replacing any existing one.
+///
+/// Note: `download_image` follows redirects, so the allow-list only covers
+/// the first address requested.
+pub async fn save_cover_from_url(cover_path: &Path, url: &str) -> Result<(), CoverArtError> {
+    if !is_allowed_image_url(url) {
+        return Err(CoverArtError::RequestError(format!("Image host is not allowed: {url}")));
+    }
+    write_cover(cover_path, &download_image(url).await?)
+}
+
+/// Save image bytes as the cover, creating its folder if needed and replacing any existing cover.
+pub fn write_cover(cover_path: &Path, image: &[u8]) -> Result<(), CoverArtError> {
+    let io_error = |e: std::io::Error| CoverArtError::IoError(e.to_string());
+
+    if let Some(folder) = cover_path.parent() {
+        std::fs::create_dir_all(folder).map_err(io_error)?;
+    }
+    std::fs::write(cover_path, image).map_err(io_error)
+}
+
+/// Delete a cached cover so the placeholder shows again. Fine if it is already gone.
+pub fn remove_cover(cover_path: &Path) -> Result<(), CoverArtError> {
+    match std::fs::remove_file(cover_path) {
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(CoverArtError::IoError(e.to_string())),
+        _ => Ok(()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn candidate(url: &str, source: &'static str) -> CoverCandidate {
+        CoverCandidate { url: url.into(), thumb_url: url.into(), source }
+    }
+
+    #[test]
+    fn deezer_albums_use_big_cover_and_medium_thumb() {
+        let body = r#"{"data":[
+            {"title":"OK Computer","cover_medium":"https://cdn-images.dzcdn.net/a/250.jpg","cover_big":"https://cdn-images.dzcdn.net/a/500.jpg"},
+            {"title":"No art","cover_medium":null,"cover_big":null}
+        ]}"#;
+
+        assert_eq!(
+            parse_deezer_albums(body),
+            vec![CoverCandidate {
+                url: "https://cdn-images.dzcdn.net/a/500.jpg".into(),
+                thumb_url: "https://cdn-images.dzcdn.net/a/250.jpg".into(),
+                source: "Deezer",
+            }]
+        );
+    }
+
+    #[test]
+    fn itunes_albums_are_upscaled_from_the_100px_artwork() {
+        let body = r#"{"resultCount":1,"results":[
+            {"collectionName":"OK Computer","artworkUrl100":"https://is1-ssl.mzstatic.com/x/100x100bb.jpg"}
+        ]}"#;
+
+        assert_eq!(
+            parse_itunes_albums(body),
+            vec![CoverCandidate {
+                url: "https://is1-ssl.mzstatic.com/x/600x600bb.jpg".into(),
+                thumb_url: "https://is1-ssl.mzstatic.com/x/200x200bb.jpg".into(),
+                source: "iTunes",
+            }]
+        );
+    }
+
+    #[test]
+    fn deezer_artists_keep_only_the_artist_searched_for() {
+        // Deezer's artist search also returns related artists
+        let body = r#"{"data":[
+            {"name":"Radiohead","picture_medium":"https://cdn-images.dzcdn.net/r/250.jpg","picture_big":"https://cdn-images.dzcdn.net/r/500.jpg"},
+            {"name":"Blur","picture_medium":"https://cdn-images.dzcdn.net/b/250.jpg","picture_big":"https://cdn-images.dzcdn.net/b/500.jpg"}
+        ]}"#;
+
+        assert_eq!(
+            parse_deezer_artists(body, " radiohead "),
+            vec![CoverCandidate {
+                url: "https://cdn-images.dzcdn.net/r/500.jpg".into(),
+                thumb_url: "https://cdn-images.dzcdn.net/r/250.jpg".into(),
+                source: "Deezer",
+            }]
+        );
+    }
+
+    #[test]
+    fn deezer_entries_without_a_real_image_are_skipped() {
+        // Deezer serves a blank image, named after the MD5 of nothing, when it has no picture
+        let body = r#"{"data":[
+            {"name":"Radiohead","picture_medium":"https://cdn-images.dzcdn.net/images/artist/d41d8cd98f00b204e9800998ecf8427e/250x250.jpg","picture_big":"https://cdn-images.dzcdn.net/images/artist/d41d8cd98f00b204e9800998ecf8427e/500x500.jpg"},
+            {"name":"Radiohead","cover_medium":"https://cdn-images.dzcdn.net/images/cover//250x250.jpg","cover_big":"https://cdn-images.dzcdn.net/images/cover//500x500.jpg"}
+        ]}"#;
+
+        assert!(parse_deezer_artists(body, "Radiohead").is_empty());
+        assert!(parse_deezer_albums(body).is_empty());
+    }
+
+    #[test]
+    fn theaudiodb_artist_lists_each_image_it_has() {
+        let body = r#"{"artists":[{
+            "strArtist":"Radiohead",
+            "strArtistThumb":"https://r2.theaudiodb.com/thumb.jpg",
+            "strArtistFanart":"https://r2.theaudiodb.com/fanart.jpg",
+            "strArtistFanart2":null,
+            "strArtistLogo":"https://r2.theaudiodb.com/logo.png"
+        }]}"#;
+
+        let urls: Vec<String> = parse_theaudiodb_artist(body).into_iter().map(|c| c.url).collect();
+
+        assert_eq!(
+            urls,
+            ["https://r2.theaudiodb.com/thumb.jpg", "https://r2.theaudiodb.com/fanart.jpg", "https://r2.theaudiodb.com/logo.png"]
+        );
+    }
+
+    #[test]
+    fn theaudiodb_reports_no_artist_as_null() {
+        assert!(parse_theaudiodb_artist(r#"{"artists":null}"#).is_empty());
+    }
+
+    #[test]
+    fn cover_kind_is_album_or_artist_only() {
+        assert_eq!(CoverKind::parse("album"), Ok(CoverKind::Album));
+        assert_eq!(CoverKind::parse("artist"), Ok(CoverKind::Artist));
+        assert!(CoverKind::parse("song").is_err());
+    }
+
+    #[test]
+    fn malformed_or_empty_bodies_give_no_candidates() {
+        for body in ["", "not json", "{}", r#"{"data":"oops"}"#] {
+            assert!(parse_deezer_albums(body).is_empty(), "deezer: {body}");
+            assert!(parse_itunes_albums(body).is_empty(), "itunes: {body}");
+        }
+    }
+
+    #[test]
+    fn allows_https_images_from_the_known_hosts() {
+        for url in [
+            "https://cdn-images.dzcdn.net/images/cover/abc/500x500.jpg",
+            "https://is1-ssl.mzstatic.com/image/thumb/x/600x600bb.jpg",
+            "https://r2.theaudiodb.com/images/media/artist/thumb/x.jpg",
+            "https://api.dicebear.com/9.x/pixel-art/jpg?seed=radiohead",
+        ] {
+            assert!(is_allowed_image_url(url), "{url}");
+        }
+    }
+
+    #[test]
+    fn rejects_other_hosts_lookalikes_and_plain_http() {
+        for url in [
+            "http://cdn-images.dzcdn.net/images/cover/abc/500x500.jpg",
+            "https://example.com/cover.jpg",
+            "https://evil-dzcdn.net/cover.jpg",
+            "https://dzcdn.net.evil.com/cover.jpg",
+            "https://evil.com/?host=api.dicebear.com",
+            "file:///etc/passwd",
+            "not a url",
+        ] {
+            assert!(!is_allowed_image_url(url), "{url}");
+        }
+    }
+
+    #[test]
+    fn artist_covers_live_in_their_own_folder_under_the_artist_key() {
+        let library = Path::new("/music");
+
+        assert_eq!(
+            CoverKind::Album.cover_path(library, "Radiohead", "OK Computer"),
+            library.join("jp3/assets/albums").join(format!("{}.jpg", cover_filename("Radiohead", "OK Computer")))
+        );
+        assert_eq!(
+            CoverKind::Artist.cover_path(library, "Radiohead", "ignored"),
+            library.join("jp3/assets/artists").join(format!("{}.jpg", cover_filename("Radiohead", "artist")))
+        );
+    }
+
+    #[test]
+    fn writing_a_cover_creates_its_folder_and_replaces_the_old_image() {
+        let library = tempfile::tempdir().unwrap();
+        let cover = CoverKind::Artist.cover_path(library.path(), "Radiohead", "");
+
+        write_cover(&cover, b"first").unwrap();
+        write_cover(&cover, b"second").unwrap();
+
+        assert_eq!(std::fs::read(&cover).unwrap(), b"second");
+    }
+
+    #[test]
+    fn removing_a_cover_deletes_the_file_and_is_safe_to_repeat() {
+        let library = tempfile::tempdir().unwrap();
+        let cover = CoverKind::Album.cover_path(library.path(), "Radiohead", "OK Computer");
+        std::fs::create_dir_all(cover.parent().unwrap()).unwrap();
+        std::fs::write(&cover, b"jpg").unwrap();
+
+        remove_cover(&cover).unwrap();
+        assert!(!cover.exists());
+
+        remove_cover(&cover).expect("removing a cover that is already gone is not an error");
+    }
+
+    #[test]
+    fn merge_alternates_sources_and_drops_duplicate_urls() {
+        let merged = merge_candidates(vec![
+            vec![candidate("a", "Deezer"), candidate("b", "Deezer")],
+            vec![candidate("a", "iTunes"), candidate("c", "iTunes")],
+        ]);
+
+        let urls: Vec<&str> = merged.iter().map(|c| c.url.as_str()).collect();
+        assert_eq!(urls, ["a", "b", "c"]);
+    }
+
+    #[test]
+    fn merge_keeps_at_most_eight_and_gives_each_source_a_share() {
+        let many = |source: &'static str| -> Vec<CoverCandidate> {
+            (0..10).map(|i| candidate(&format!("{source}{i}"), source)).collect()
+        };
+
+        let merged = merge_candidates(vec![many("Deezer"), many("iTunes")]);
+
+        assert_eq!(merged.len(), MAX_CANDIDATES);
+        assert_eq!(merged.iter().filter(|c| c.source == "iTunes").count(), 4);
+    }
+}

@@ -1,0 +1,69 @@
+/* Message shown while searching, on error, or when nothing was found */
+.status {
+  margin: 0 0 0.75rem 0;
+  color: var(--primary);
+  font-size: 0.9rem;
+}
+
+/* "Show fun avatars", offered once the search has finished */
+.avatarsBtn {
+  margin-bottom: 0.75rem;
+  padding: 0.4em 0.9em;
+  background: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.avatarsBtn:hover {
+  background-color: var(--secondary);
+}
+
+/* Four images per row */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+/* One selectable image */
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: transparent;
+  border: 2px solid transparent;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.tile:hover {
+  border-color: var(--primary-fade);
+}
+
+/* Text-only tile that removes the cover */
+.noCover {
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border: 2px dashed var(--primary-fade);
+  font-size: 0.8rem;
+}
+
+.image {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+/* Where the image came from, e.g. "Deezer" */
+.source {
+  font-size: 0.7rem;
+}
+
+/* Last, so it also outlines the dashed "No cover" tile */
+.selected,
+.selected:hover {
+  border-color: var(--secondary);
+}

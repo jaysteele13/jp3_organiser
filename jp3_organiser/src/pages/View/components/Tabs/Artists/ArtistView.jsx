@@ -20,7 +20,7 @@ import { getCachedViewData } from '../../../utils/viewDataCache';
 import styles from './ArtistView.module.css';
 
 
-export default function ArtistView({ library, libraryPath, onDeleteArtist, onEditArtist, filter, onClearFilter }) {
+export default function ArtistView({ library, libraryPath, onDeleteArtist, onEditArtist, onEditCover, filter, onClearFilter }) {
   const navigate = useNavigate();
   const [textFilter] = useTextFilter();
 
@@ -54,8 +54,9 @@ export default function ArtistView({ library, libraryPath, onDeleteArtist, onEdi
   const getActions = useCallback((artist) => [
     { label: 'Go to Artist', onClick: () => navigate(`/player/artist/${artist.id}`) },
     { label: 'Edit Artist', onClick: () => onEditArtist?.(artist) },
+    { label: 'Edit Cover Art', onClick: () => onEditCover?.(artist) },
     { label: 'Delete Artist', onClick: () => onDeleteArtist?.(artist), variant: 'danger' },
-  ], [navigate, onEditArtist, onDeleteArtist]);
+  ], [navigate, onEditArtist, onEditCover, onDeleteArtist]);
 
   return (
     <div className={styles.container}>

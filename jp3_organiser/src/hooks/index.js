@@ -16,3 +16,4 @@ export { usePlayerKeyboardShortcuts } from './player/usePlayerKeyboardShortcuts'
 export { useMultiSelect } from './useMultiSelect';
 export { useCommandBar } from './useCommandBar';
 export { useTextFilter } from './useTextFilter';
+export { useCoverCandidates, SEARCH_STATUS, NO_COVER } from './useCoverCandidates';

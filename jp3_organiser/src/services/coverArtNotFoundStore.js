@@ -2,7 +2,8 @@
  * Cover Art Not Found Store Service
  * 
  * Tracks when cover art lookups failed (not found) to avoid unnecessary
- * repeated API calls. Entries expire after a configurable period.
+ * repeated API calls. An entry stays until a cover is set by hand
+ * ("Edit Cover Art"), a new song is uploaded for it, or the cover cache is cleared.
  * 
  * Storage format:
  * {
@@ -12,10 +13,7 @@
  *   }
  * }
  * 
- * Rationale:
- * - Artist images on Fanart.tv are rarely updated
- * - Album covers on Cover Art Archive are also relatively static
- * - Default expiration: 3 days (prevents constant re-checking)
+ * The timestamp records when the lookup failed; it is not used to expire entries.
  */
 
 import { load } from '@tauri-apps/plugin-store';
@@ -24,62 +22,17 @@ const STORE_NAME = 'cover_not_found.json';
 const NOT_FOUND_KEY = 'notFound';
 const KEY_SEPARATOR = '|||';
 
-// Expiration period: 3 days in milliseconds
-const EXPIRATION_MS = 3 * 24 * 60 * 60 * 1000;
-
 let storeInstance = null;
-let hasCleanedUp = false;
 
 /**
  * Get or create the store instance
- * Performs one-time cleanup of expired entries on first access per session
  * @returns {Promise<Store>}
  */
 async function getStore() {
   if (!storeInstance) {
     storeInstance = await load(STORE_NAME, { autoSave: true });
-    
-    // Run cleanup once per session on first store access
-    if (!hasCleanedUp) {
-      hasCleanedUp = true;
-      // Run async cleanup without blocking
-      cleanupExpiredEntriesInternal(storeInstance).catch(err => {
-        console.error('[coverArtNotFoundStore] Startup cleanup failed:', err);
-      });
-    }
   }
   return storeInstance;
-}
-
-/**
- * Internal cleanup function that takes store instance directly
- * @param {Store} store - Store instance
- * @returns {Promise<number>} Number of entries removed
- */
-async function cleanupExpiredEntriesInternal(store) {
-  try {
-    const notFound = await store.get(NOT_FOUND_KEY) || {};
-    
-    let removed = 0;
-    const now = Date.now();
-    
-    for (const [key, timestamp] of Object.entries(notFound)) {
-      if (now - timestamp > EXPIRATION_MS) {
-        delete notFound[key];
-        removed++;
-      }
-    }
-    
-    if (removed > 0) {
-      await store.set(NOT_FOUND_KEY, notFound);
-      console.log('[coverArtNotFoundStore] Cleaned up', removed, 'expired entries');
-    }
-    
-    return removed;
-  } catch (error) {
-    console.error('[coverArtNotFoundStore] Failed to cleanup expired entries:', error);
-    return 0;
-  }
 }
 
 /**
@@ -120,69 +73,28 @@ async function getAllNotFound() {
 }
 
 /**
- * Check if an entry is expired
- * @param {number} timestamp - Timestamp when marked as not found
- * @returns {boolean} True if expired and should retry
- */
-function isExpired(timestamp) {
-  return Date.now() - timestamp > EXPIRATION_MS;
-}
-
-/**
- * Check if album cover was previously not found (and not expired)
+ * Check if album cover was previously not found
  * @param {string} artist - Artist name
  * @param {string} album - Album name
  * @returns {Promise<boolean>} True if should skip API call
  */
 export async function isAlbumCoverNotFound(artist, album) {
   if (!artist || !album) return false;
-  
-  try {
-    const notFound = await getAllNotFound();
-    const key = makeAlbumKey(artist, album);
-    const timestamp = notFound[key];
-    
-    if (!timestamp) return false;
-    
-    // If expired, clean up and return false (allow retry)
-    if (isExpired(timestamp)) {
-      await removeAlbumNotFound(artist, album);
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('[coverArtNotFoundStore] Failed to check album:', artist, album, error);
-    return false;
-  }
+
+  const notFound = await getAllNotFound();
+  return Boolean(notFound[makeAlbumKey(artist, album)]);
 }
 
 /**
- * Check if artist cover was previously not found (and not expired)
+ * Check if artist cover was previously not found
  * @param {string} artist - Artist name
  * @returns {Promise<boolean>} True if should skip API call
  */
 export async function isArtistCoverNotFound(artist) {
   if (!artist) return false;
-  
-  try {
-    const notFound = await getAllNotFound();
-    const key = makeArtistKey(artist);
-    const timestamp = notFound[key];
-    
-    if (!timestamp) return false;
-    
-    // If expired, clean up and return false (allow retry)
-    if (isExpired(timestamp)) {
-      await removeArtistNotFound(artist);
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('[coverArtNotFoundStore] Failed to check artist:', artist, error);
-    return false;
-  }
+
+  const notFound = await getAllNotFound();
+  return Boolean(notFound[makeArtistKey(artist)]);
 }
 
 /**
@@ -263,17 +175,6 @@ export async function removeArtistNotFound(artist) {
   } catch (error) {
     console.error('[coverArtNotFoundStore] Failed to remove artist entry:', error);
   }
-}
-
-/**
- * Clean up all expired entries
- * Note: This is called automatically on first store access each session.
- * Exposed for manual triggering if needed.
- * @returns {Promise<number>} Number of entries removed
- */
-export async function cleanupExpiredEntries() {
-  const store = await getStore();
-  return cleanupExpiredEntriesInternal(store);
 }
 
 /**

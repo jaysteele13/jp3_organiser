@@ -153,6 +153,9 @@ function makeArtistCacheKey(libraryPath, artist) {
   return `artist:${libraryPath}:${normalizedArtist}`;
 }
 
+// Fired by refreshCover() so every mounted CoverArt showing that cover reloads it
+const COVER_UPDATED_EVENT = 'coverart-updated';
+
 const CoverArt = memo(function CoverArt({
   artist,
   album = null,
@@ -167,6 +170,7 @@ const CoverArt = memo(function CoverArt({
   const [imageUrl, setImageUrl] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [reloadCount, setReloadCount] = useState(0);
 
   const sizeValue = SIZES[size] || SIZES.medium;
   const isArtistCover = imageCoverType === IMAGE_COVER_TYPE.ARTIST;
@@ -176,6 +180,19 @@ const CoverArt = memo(function CoverArt({
   
   // Use artist-specific fallback placeholder for artist covers
   const artistPlaceholder = isArtistCover ? getArtistPlaceholderImage(artist) : null;
+
+  // Reload when this cover is changed by hand ("Edit Cover Art")
+  useEffect(() => {
+    const cacheKey = isArtistCover
+      ? makeArtistCacheKey(libraryPath, artist)
+      : makeAlbumCacheKey(libraryPath, artist, album);
+    const handleUpdated = (event) => {
+      if (event.detail === cacheKey) setReloadCount((count) => count + 1);
+    };
+
+    window.addEventListener(COVER_UPDATED_EVENT, handleUpdated);
+    return () => window.removeEventListener(COVER_UPDATED_EVENT, handleUpdated);
+  }, [artist, album, libraryPath, isArtistCover]);
 
   useEffect(() => {
     let isMounted = true;
@@ -418,7 +435,7 @@ const CoverArt = memo(function CoverArt({
     return () => {
       isMounted = false;
     };
-  }, [artist, album, libraryPath, isArtistCover]);
+  }, [artist, album, libraryPath, isArtistCover, reloadCount]);
 
   const containerStyle = {
     width: sizeValue,
@@ -488,6 +505,26 @@ const CoverArt = memo(function CoverArt({
 });
 
 export default CoverArt;
+
+/**
+ * Forget one cached cover and make every CoverArt showing it load it again.
+ * Call this after a cover file was replaced or removed on disk.
+ *
+ * @param {string} libraryPath - Base library path
+ * @param {string} artist - Artist name
+ * @param {string|null} [album=null] - Album name, or null for an artist cover
+ */
+export function refreshCover(libraryPath, artist, album = null) {
+  const cacheKey = album
+    ? makeAlbumCacheKey(libraryPath, artist, album)
+    : makeArtistCacheKey(libraryPath, artist);
+
+  const staleUrl = blobUrlCache.get(cacheKey);
+  if (staleUrl) URL.revokeObjectURL(staleUrl);
+  blobUrlCache.delete(cacheKey);
+
+  window.dispatchEvent(new CustomEvent(COVER_UPDATED_EVENT, { detail: cacheKey }));
+}
 
 /**
  * Clear the in-memory blob URL cache
