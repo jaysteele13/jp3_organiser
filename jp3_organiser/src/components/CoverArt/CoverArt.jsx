@@ -19,6 +19,7 @@
  * - fallbackIcon: string - Emoji to show when no cover available (ignored for artist covers)
  * - imageCoverType: IMAGE_COVER_TYPE - Whether to fetch album or artist cover
  * - circular: boolean - Whether to render as a circle (default: false, auto-true for artist covers)
+ * - fill: boolean - Fill the parent instead of using a fixed size (used for playlist cover tiles)
  * 
  * Note: Cover files are named using a hash for stability across library compaction.
  */
@@ -53,7 +54,7 @@ import albumPlaceholder from '../../assets/icon_placeholder/album_placeholder.pn
 
 
 // Size configurations
-const SIZES = {
+export const COVER_SIZES = {
   small: 60,
   medium: 90,
   large: 150,
@@ -166,13 +167,14 @@ const CoverArt = memo(function CoverArt({
   borderRadius = false,
   imageCoverType = IMAGE_COVER_TYPE.ALBUM,
   circular = null, // null = auto (circular for artists, square for albums)
+  fill = false,
 }) {
   const [imageUrl, setImageUrl] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [reloadCount, setReloadCount] = useState(0);
 
-  const sizeValue = SIZES[size] || SIZES.medium;
+  const sizeValue = COVER_SIZES[size] || COVER_SIZES.medium;
   const isArtistCover = imageCoverType === IMAGE_COVER_TYPE.ARTIST;
   
   // Auto-determine circular: true for artists, false for albums (unless explicitly set)
@@ -437,7 +439,7 @@ const CoverArt = memo(function CoverArt({
     };
   }, [artist, album, libraryPath, isArtistCover, reloadCount]);
 
-  const containerStyle = {
+  const containerStyle = fill ? undefined : {
     width: sizeValue,
     height: sizeValue,
     minWidth: sizeValue,
@@ -447,6 +449,7 @@ const CoverArt = memo(function CoverArt({
   const containerClass = [
     styles.container,
     styles[size],
+    fill ? styles.fill : '',
     isCircular ? styles.circular : '',
     !borderRadius ? styles.noRadius : '',
     className,

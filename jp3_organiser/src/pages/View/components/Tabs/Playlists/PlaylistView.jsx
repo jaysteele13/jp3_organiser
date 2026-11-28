@@ -2,7 +2,7 @@
  * PlaylistView Component
  * 
  * Displays playlists in a card grid format.
- * Each card shows playlist name and song count.
+ * Each card shows the playlist picture, name and song count.
  * Cards are expandable to show the list of songs.
  * Playlist names are clickable links that navigate to the Player playlist detail page.
  * "Manage" button navigates to the PlaylistEdit page.
@@ -20,7 +20,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loadPlaylist } from '../../../../../services/libraryService';
-import { FilterBar, QueryFilterBar } from '../../../../../components';
+import { FilterBar, PlaylistCover, QueryFilterBar } from '../../../../../components';
 import { useTextFilter } from '../../../../../hooks';
 import { TABS } from '../../../../../utils/enums';
 import { filterPlaylistsByQuery } from '../../../../../utils/songFilter';
@@ -95,6 +95,12 @@ function PlaylistCard({ playlist, songLookup, libraryPath, onManage, onPlaylistC
     return songIds.filter(id => songLookup.has(id));
   }, [songIds, songLookup]);
 
+  // Songs for the playlist picture, known without expanding the card
+  const coverSongs = useMemo(
+    () => (playlist.songIds || []).map(id => songLookup.get(id)).filter(Boolean),
+    [playlist.songIds, songLookup]
+  );
+
   // Calculate actual song count (excluding orphaned IDs)
   const actualSongCount = validSongIds?.length ?? playlist.songCount;
 
@@ -102,7 +108,7 @@ function PlaylistCard({ playlist, songLookup, libraryPath, onManage, onPlaylistC
     <div className={styles.card}>
       <div className={styles.cardHeader}>
         <div className={styles.cardInfo} onClick={toggleExpand}>
-          <span className={styles.cardIcon}>☰</span>
+          <PlaylistCover playlistId={playlist.id} songs={coverSongs} libraryPath={libraryPath} size="medium" />
           <div className={styles.cardText}>
             <span
               className={styles.cardTitleLink}

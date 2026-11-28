@@ -170,6 +170,23 @@ export async function getArtistCoverBlobUrl(basePath, artist) {
 }
 
 /**
+ * Create a blob URL for any kind of cover that is saved in the library.
+ *
+ * @param {string} basePath - Library base path
+ * @param {'album'|'artist'|'playlist'} kind - Which kind of cover to read
+ * @param {string} artist - Artist name, or the playlist ID for playlists
+ * @param {string|null} [album=null] - Album name (albums only)
+ * @returns {Promise<string|null>} Blob URL or null if there is no cover
+ */
+export async function getCoverBlobUrl(basePath, kind, artist, album = null) {
+  try {
+    return bytesToBlobUrl(await invoke('read_cover', { basePath, kind, artist, album }));
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Convert raw bytes to a blob URL
  * @param {Uint8Array|number[]} bytes - Image bytes
  * @returns {string|null} Blob URL or null if conversion fails
@@ -219,11 +236,11 @@ export async function setCoverFromUrl(basePath, kind, artist, album, url) {
 
 /**
  * Save image bytes as the cover, replacing the current one.
- * Used for the placeholder images bundled with the app, which have no web address.
+ * Used for images that have no web address: the placeholders bundled with the app and uploaded images.
  *
  * @param {string} basePath - Library base path
- * @param {'album'|'artist'} kind - Which kind of cover to set
- * @param {string} artist - Artist name
+ * @param {'album'|'artist'|'playlist'} kind - Which kind of cover to set
+ * @param {string} artist - Artist name, or the playlist ID for playlists
  * @param {string|null} album - Album name (albums only)
  * @param {number[]} bytes - The image file's contents
  * @returns {Promise<void>}
@@ -246,7 +263,7 @@ export async function removeCover(basePath, kind, artist, album) {
 }
 
 /**
- * Clear all cached cover art for albums and artists.
+ * Clear all cached cover art for albums and artists, and uploaded playlist pictures.
  * 
  * Removes all cached .jpg files from the jp3/assets/albums/ and jp3/assets/artists/ directories.
  * The directories are preserved (only files are deleted).

@@ -41,7 +41,8 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1rem;
+  /* Only right padding, so the playlist picture touches the card's top, left and bottom border */
+  padding: 0 1rem 0 0;
   background-color: var(--sketch-bg-fade);
 }
 
@@ -74,11 +75,6 @@
 
 .cardInfo:hover .cardTitle {
   text-decoration: underline;
-}
-
-.cardIcon {
-  font-size: 1.25rem;
-  opacity: 0.7;
 }
 
 .cardText {

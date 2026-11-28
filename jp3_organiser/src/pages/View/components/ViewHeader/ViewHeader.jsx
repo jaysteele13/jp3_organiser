@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { clearCoverCache } from '../../../../services/coverArtService';
 import { clearNotFoundCache } from '../../../../services/coverArtNotFoundStore';
 import { clearCoverArtCache } from '../../../../components/CoverArt/CoverArt';
+import { clearPlaylistCoverCache } from '../../../../components/PlaylistCover';
 import { useToast } from '../../../../hooks/useToast';
 import styles from './ViewHeader.module.css'
 import { clearMbids } from '../../../../services';
@@ -41,6 +42,7 @@ export default function ViewHeader({
 
       // Flush in-memory blob URL cache so covers re-fetch on next render
       clearCoverArtCache();
+      clearPlaylistCoverCache();
 
       if (result.success) {
         const totalCleared = result.albumsCleared + result.artistsCleared;

@@ -2,7 +2,8 @@
  * PlaylistEdit Page
  * 
  * Full-page editor for managing playlist contents.
- * Shows current songs with remove buttons, and a song picker to add new songs.
+ * Shows the playlist picture (right-click to change it), current songs with
+ * remove buttons, and a song picker to add new songs.
  * Uses two-column layout for better use of screen space.
  * 
  * Route: /playlist/:id
@@ -18,6 +19,7 @@ import { LoadingState, ErrorState, EmptyState, ConfirmModal, SongQueryInput } fr
 import { TABS, UPLOAD_MODE } from '../../utils/enums';
 import { filterSongsByText } from '../../utils/songFilter';
 import usePlaylistEdit from './usePlaylistEdit';
+import PlaylistCoverEditor from './components/PlaylistCoverEditor';
 import styles from './PlaylistEdit.module.css';
 
 /**
@@ -309,32 +311,35 @@ export default function PlaylistEdit() {
           <button className={styles.backBtn} onClick={handleBack}>
             ← Back
           </button>
-          <div className={styles.headerInfo}>
-            <div className={styles.titleRow}>
-              <h1 className={styles.title}>{playlist?.name}</h1>
-              <button
-                className={styles.editNameBtn}
-                onClick={handleRenameClick}
-                title="Rename playlist"
-              >
-                <svg 
-                  width="16" 
-                  height="16" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
+          <div className={styles.playlistCard}>
+            <PlaylistCoverEditor playlist={playlist} songs={currentSongs} libraryPath={libraryPath} />
+            <div className={styles.headerInfo}>
+              <div className={styles.titleRow}>
+                <h1 className={styles.title}>{playlist?.name}</h1>
+                <button
+                  className={styles.editNameBtn}
+                  onClick={handleRenameClick}
+                  title="Rename playlist"
                 >
-                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                  <path d="m15 5 4 4" />
-                </svg>
-              </button>
+                  <svg 
+                    width="16" 
+                    height="16" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  >
+                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                    <path d="m15 5 4 4" />
+                  </svg>
+                </button>
+              </div>
+              <span className={styles.subtitle}>
+                {currentSongs.length} song{currentSongs.length !== 1 ? 's' : ''} in playlist
+              </span>
             </div>
-            <span className={styles.subtitle}>
-              {currentSongs.length} song{currentSongs.length !== 1 ? 's' : ''} in playlist
-            </span>
           </div>
         </div>
         <div className={styles.headerActions}>

@@ -1,7 +1,7 @@
 /**
  * useCoverActions Hook
  *
- * Opens the "Edit Cover Art" picker for an album or artist and reacts to its outcome:
+ * Opens the "Edit Cover Art" picker for an album, artist or playlist and reacts to its outcome:
  * redraws the cover and shows a toast.
  *
  * @param {string} libraryPath - Base library path
@@ -11,10 +11,11 @@
 import { useCallback } from 'react';
 import { useEntityModal } from './useEntityModal';
 import { refreshCover } from '../components/CoverArt';
+import { refreshPlaylistCover } from '../components/PlaylistCover';
 import { COVER_KIND } from '../utils/enums';
 
 export function useCoverActions(libraryPath, toast) {
-  // The item is the picker's target: { kind, artist, album }
+  // The item is the picker's target: { kind, artist, album }, plus the name for a playlist
   const { item: coverTarget, open, close } = useEntityModal();
 
   const handleEditAlbumCoverRequest = useCallback(
@@ -27,8 +28,18 @@ export function useCoverActions(libraryPath, toast) {
     [open]
   );
 
+  // A playlist's cover is saved under its ID, which is passed where the artist name goes
+  const handleEditPlaylistCoverRequest = useCallback(
+    (playlist) => open({ kind: COVER_KIND.PLAYLIST, artist: String(playlist.id), album: null, name: playlist.name }),
+    [open]
+  );
+
   const handleCoverSaved = useCallback(() => {
-    refreshCover(libraryPath, coverTarget.artist, coverTarget.album);
+    if (coverTarget.kind === COVER_KIND.PLAYLIST) {
+      refreshPlaylistCover(libraryPath, coverTarget.artist);
+    } else {
+      refreshCover(libraryPath, coverTarget.artist, coverTarget.album);
+    }
     close();
     toast.showToast('Cover art updated', 'success');
   }, [libraryPath, coverTarget, close, toast]);
@@ -45,6 +56,7 @@ export function useCoverActions(libraryPath, toast) {
     coverTarget,
     handleEditAlbumCoverRequest,
     handleEditArtistCoverRequest,
+    handleEditPlaylistCoverRequest,
     handleCoverSaved,
     handleCoverError,
     handleCancelCoverEdit: close,

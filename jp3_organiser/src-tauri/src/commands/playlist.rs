@@ -8,6 +8,7 @@ use std::fs::{self};
 use std::io::{Read, Write};
 use std::path::Path;
 
+use crate::services::cover_art_service::{remove_cover, CoverKind};
 use crate::models::{
     AudioMetadata, CreatePlaylistResult, DeletePlaylistResult, ParsedPlaylist, PlaylistHeader,
     PlaylistSummary, SaveToPlaylistResult, PLAYLIST_HEADER_SIZE,
@@ -227,6 +228,11 @@ pub fn delete_playlist_by_name(
         if playlist.name == playlist_name {
             fs::remove_file(&entry.path())
                 .map_err(|e| format!("Failed to delete playlist file: {}", e))?;
+            // Playlist IDs are reused, so an uploaded cover left behind would show on a later playlist
+            let cover = CoverKind::Playlist.cover_path(base, &playlist_id.to_string(), "");
+            if let Err(e) = remove_cover(&cover) {
+                log::warn!("Failed to remove playlist cover: {}", e);
+            }
             return Ok(DeletePlaylistResult { deleted: true });
         }
     }
@@ -437,4 +443,24 @@ pub fn rename_playlist(
         old_name,
         new_name,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::services::cover_art_service::write_cover;
+
+    #[test]
+    fn deleting_a_playlist_removes_its_uploaded_cover() {
+        let library = tempfile::tempdir().unwrap();
+        let base_path = library.path().to_string_lossy().to_string();
+        let created = create_playlist(base_path.clone(), "Road trip".into(), vec![]).unwrap();
+        let cover = CoverKind::Playlist.cover_path(library.path(), &created.playlist_id.to_string(), "");
+        write_cover(&cover, b"jpg").unwrap();
+
+        let result = delete_playlist_by_name(base_path, "Road trip".into()).unwrap();
+
+        assert!(result.deleted);
+        assert!(!cover.exists());
+    }
 }

@@ -12,7 +12,7 @@ import React, { useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useLibraryConfig } from '../../../../hooks';
 import { useLibrary } from '../../../../hooks/useLibrary';
-import { LoadingState, ErrorState, EmptyState } from '../../../../components';
+import { LoadingState, ErrorState, EmptyState, PlaylistCover } from '../../../../components';
 import DetailView from '../DetailView';
 import { formatDuration } from '../../../../utils/formatters';
 import { TABS } from '../../../../utils/enums';
@@ -76,6 +76,10 @@ export default function PlaylistDetail() {
     }
   }, [navigate, location.key]);
 
+  const renderCoverArt = useCallback(() => (
+    <PlaylistCover playlistId={playlistId} songs={playlistSongs} libraryPath={libraryPath} size="xlarge" />
+  ), [playlistId, playlistSongs, libraryPath]);
+
   if (isLoading) {
     return <LoadingState message="Loading playlist..." />;
   }
@@ -109,6 +113,7 @@ export default function PlaylistDetail() {
       songs={playlistSongs}
       colorVariant={getPlaylistColorVariant(index)}
       onBack={handleBack}
+      renderCoverArt={renderCoverArt}
     />
   );
 }

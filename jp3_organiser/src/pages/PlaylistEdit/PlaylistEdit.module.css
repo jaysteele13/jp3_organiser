@@ -79,6 +79,15 @@
   background-color: var(--tertiary-hover);
 }
 
+/* Bordered box around the playlist picture, name and song count, like an album card in the Library */
+.playlistCard {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-right: 1rem;
+  border: 1px solid var(--primary);
+}
+
 .headerInfo {
   display: flex;
   flex-direction: column;

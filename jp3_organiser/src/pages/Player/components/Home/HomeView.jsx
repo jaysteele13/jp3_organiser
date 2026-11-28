@@ -128,6 +128,7 @@ export default function HomeView({ library, libraryPath }) {
           <RecentRow
             items={recentItems.slice(0, RECENTLY_PLAYED_LIMIT)}
             libraryPath={libraryPath}
+            songs={songs}
             onPlaySong={handlePlaySong}
             onPlayAlbum={handlePlayAlbum}
             onPlayArtist={handlePlayArtist}

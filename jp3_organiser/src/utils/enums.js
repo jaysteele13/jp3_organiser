@@ -113,6 +113,7 @@ export const UPLOAD_MODE = {
 export const COVER_KIND = {
   ALBUM: 'album',
   ARTIST: 'artist',
+  PLAYLIST: 'playlist',
 };
 
 export const IMAGE_COVER_TYPE = {

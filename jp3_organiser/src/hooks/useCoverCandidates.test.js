@@ -2,8 +2,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useCoverCandidates, SEARCH_STATUS, NO_COVER } from './useCoverCandidates';
+import { readFile } from '@tauri-apps/plugin-fs';
 import { searchCoverCandidates, setCoverFromUrl, setCoverFromBytes, removeCover } from '../services/coverArtService';
-import { removeAlbumNotFound, markAlbumCoverNotFound } from '../services/coverArtNotFoundStore';
+import { removeAlbumNotFound, removeArtistNotFound, markAlbumCoverNotFound } from '../services/coverArtNotFoundStore';
 import { COVER_KIND } from '../utils/enums';
 
 vi.mock('../services/coverArtService', () => ({
@@ -12,6 +13,8 @@ vi.mock('../services/coverArtService', () => ({
   setCoverFromBytes: vi.fn(),
   removeCover: vi.fn(),
 }));
+vi.mock('@tauri-apps/plugin-dialog', () => ({ open: vi.fn(async () => '/pictures/mix.png') }));
+vi.mock('@tauri-apps/plugin-fs', () => ({ readFile: vi.fn(async () => new Uint8Array([7, 8, 9])) }));
 vi.mock('../services/coverArtNotFoundStore', () => ({
   removeAlbumNotFound: vi.fn(),
   removeArtistNotFound: vi.fn(),
@@ -81,5 +84,36 @@ describe('useCoverCandidates', () => {
     expect(setCoverFromBytes).toHaveBeenCalledWith('/music', 'album', 'Radiohead', 'OK Computer', [1, 2, 3]);
     expect(setCoverFromUrl).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
+  });
+
+  it('saves an uploaded image for a playlist from its bytes, under the playlist ID', async () => {
+    searchCoverCandidates.mockResolvedValue([]);
+    vi.stubGlobal('URL', { createObjectURL: () => 'blob:uploaded' });
+    const playlist = { kind: COVER_KIND.PLAYLIST, artist: '3', album: null };
+    const { result } = renderHook(() => useCoverCandidates('/music', playlist));
+    await waitFor(() => expect(result.current.status).toBe(SEARCH_STATUS.READY));
+
+    await act(() => result.current.uploadImage());
+    expect(result.current.selected.thumbUrl).toBe('blob:uploaded');
+    await act(() => result.current.save());
+
+    expect(setCoverFromBytes).toHaveBeenCalledWith('/music', 'playlist', '3', null, [7, 8, 9]);
+    expect(removeAlbumNotFound).not.toHaveBeenCalled();
+    expect(removeArtistNotFound).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it('refuses an uploaded image over 5 MB and says why', async () => {
+    searchCoverCandidates.mockResolvedValue([]);
+    readFile.mockResolvedValueOnce(new Uint8Array(5 * 1024 * 1024 + 1));
+    const playlist = { kind: COVER_KIND.PLAYLIST, artist: '3', album: null };
+    const { result } = renderHook(() => useCoverCandidates('/music', playlist));
+    await waitFor(() => expect(result.current.status).toBe(SEARCH_STATUS.READY));
+
+    await act(() => result.current.uploadImage());
+
+    expect(result.current.uploadError).toMatch('5 MB');
+    expect(result.current.selected).toBeNull();
+    expect(result.current.candidates).toEqual([]);
   });
 });

@@ -238,6 +238,14 @@
   background-color: transparent;
   border: 1px solid var(--sketch-border);
   border-left: 4px groove var(--incomplete-status);
+  /* No side or top padding, so the playlist picture touches the card's border like album covers do */
+  padding: 0 0 1rem;
+}
+
+/* The text below the picture keeps its inset (the title already has its own) */
+.playlistCard .cardMeta,
+.playlistCard .cardActions {
+  padding: 0 1rem;
 }
 
 .playlistCard.color1 {
