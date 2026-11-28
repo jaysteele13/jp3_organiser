@@ -618,11 +618,12 @@ pub async fn fetch_and_save_deezer_album_cover(
 /// Most images the picker offers at once.
 const MAX_CANDIDATES: usize = 8;
 
-/// Whether a cover belongs to an album or an artist.
+/// Whether a cover belongs to an album, an artist or a playlist.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CoverKind {
     Album,
     Artist,
+    Playlist,
 }
 
 impl CoverKind {
@@ -630,16 +631,19 @@ impl CoverKind {
         match kind {
             "album" => Ok(Self::Album),
             "artist" => Ok(Self::Artist),
+            "playlist" => Ok(Self::Playlist),
             other => Err(format!("Unknown cover kind: {other}")),
         }
     }
 
-    /// Where this cover is cached: `{library}/jp3/assets/{albums|artists}/{hash}.jpg`.
+    /// Where this cover is cached: `{library}/jp3/assets/{albums|artists|playlists}/{hash}.jpg`.
     /// Artists are hashed against the literal "artist", like the automatic lookup.
+    /// For playlists `artist` is the playlist ID, which stays the same when the playlist is renamed.
     pub fn cover_path(self, library: &Path, artist: &str, album: &str) -> PathBuf {
         let (folder, key) = match self {
             Self::Album => ("albums", album),
             Self::Artist => ("artists", "artist"),
+            Self::Playlist => ("playlists", "playlist"),
         };
         library
             .join("jp3")
@@ -811,6 +815,8 @@ pub async fn search_cover_candidates(kind: CoverKind, artist: &str, album: &str)
                 fetch_candidates(&theaudiodb, parse_theaudiodb_artist).await,
             ]
         }
+        // A playlist cover is uploaded by the user, so there is nothing to search for
+        CoverKind::Playlist => Vec::new(),
     };
     merge_candidates(found)
 }
@@ -961,6 +967,7 @@ mod tests {
     fn cover_kind_is_album_or_artist_only() {
         assert_eq!(CoverKind::parse("album"), Ok(CoverKind::Album));
         assert_eq!(CoverKind::parse("artist"), Ok(CoverKind::Artist));
+        assert_eq!(CoverKind::parse("playlist"), Ok(CoverKind::Playlist));
         assert!(CoverKind::parse("song").is_err());
     }
 

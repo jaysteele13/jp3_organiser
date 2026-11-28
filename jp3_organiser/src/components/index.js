@@ -8,6 +8,7 @@ export { default as CardList } from './CardList';
 export { default as CommandBar } from './CommandBar';
 export { default as CoverArt, clearCoverArtCache, refreshCover } from './CoverArt';
 export { default as CoverArtPicker } from './CoverArtPicker';
+export { default as PlaylistCover, refreshPlaylistCover, clearPlaylistCoverCache } from './PlaylistCover';
 export { default as FilterBar } from './FilterBar';
 export { default as QueryFilterBar } from './FilterBar/QueryFilterBar';
 export { default as LoadingState } from './LoadingState';

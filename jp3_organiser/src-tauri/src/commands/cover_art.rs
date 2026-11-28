@@ -575,6 +575,24 @@ pub fn set_cover_from_bytes(
     cover_art_service::write_cover(&cover_path, &bytes).map_err(|e| e.to_string())
 }
 
+/// Read a cover's image bytes, for any kind of cover.
+///
+/// # Arguments
+/// * `base_path` - Library base path
+/// * `kind` - "album", "artist" or "playlist"
+/// * `artist` - Artist name, or the playlist ID for playlists
+/// * `album` - Album name (albums only)
+#[tauri::command]
+pub fn read_cover(
+    base_path: String,
+    kind: String,
+    artist: String,
+    album: Option<String>,
+) -> Result<Vec<u8>, String> {
+    let cover_path = cover_path(&base_path, &kind, &artist, album.as_deref())?;
+    std::fs::read(&cover_path).map_err(|e| format!("Failed to read cover: {}", e))
+}
+
 /// Remove the cover so the generic placeholder shows again ("No cover").
 ///
 /// # Arguments
@@ -593,11 +611,12 @@ pub fn remove_cover(
     cover_art_service::remove_cover(&cover_path).map_err(|e| e.to_string())
 }
 
-/// Clear all cached cover art for albums and artists.
+/// Clear all cached cover art for albums and artists, and uploaded playlist pictures.
 ///
 /// This safely removes all cached cover images from:
 /// - {library_path}/jp3/assets/albums/
 /// - {library_path}/jp3/assets/artists/
+/// - {library_path}/jp3/assets/playlists/ (not counted in the result)
 ///
 /// The directories are preserved (only .jpg files are deleted).
 /// This is useful when API keys were incorrect or corrupted cache needs clearing.
@@ -706,6 +725,17 @@ pub fn clear_cover_cache(base_path: String) -> ClearCoverCacheResult {
         log::info!("Artists directory does not exist: {:?}", artists_dir);
     }
 
+    // Uploaded playlist pictures are cleared too, so playlists go back to their song covers
+    let playlists_dir = Path::new(&base_path).join("jp3").join("assets").join("playlists");
+    for entry in std::fs::read_dir(&playlists_dir).into_iter().flatten().flatten() {
+        let path = entry.path();
+        if path.extension().is_some_and(|extension| extension == "jpg") {
+            if let Err(e) = std::fs::remove_file(&path) {
+                log::warn!("Failed to remove playlist cover {:?}: {}", path, e);
+            }
+        }
+    }
+
     let total_cleared = albums_cleared + artists_cleared;
     log::info!("Cover cache clear complete: {} total files cleared", total_cleared);
 
@@ -714,5 +744,22 @@ pub fn clear_cover_cache(base_path: String) -> ClearCoverCacheResult {
         albums_cleared,
         artists_cleared,
         error: None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn clearing_the_cover_cache_also_removes_uploaded_playlist_pictures() {
+        let library = tempfile::tempdir().unwrap();
+        let cover = CoverKind::Playlist.cover_path(library.path(), "1", "");
+        cover_art_service::write_cover(&cover, b"jpg").unwrap();
+
+        let result = clear_cover_cache(library.path().to_string_lossy().to_string());
+
+        assert!(result.success);
+        assert!(!cover.exists());
     }
 }

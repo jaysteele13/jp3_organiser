@@ -5,9 +5,9 @@
   font-size: 0.9rem;
 }
 
-/* "Show fun avatars", offered once the search has finished */
+/* "Show fun avatars", offered once the search has finished, and "Upload image" for playlists */
 .avatarsBtn {
-  margin-bottom: 0.75rem;
+  margin: 0 0.5rem 0.75rem 0;
   padding: 0.4em 0.9em;
   background: transparent;
   border: 1px solid var(--primary);

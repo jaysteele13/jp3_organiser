@@ -3,11 +3,12 @@
  * 
  * Horizontal scrollable carousel showing recently played content.
  * Supports songs, albums, artists, and playlists with distinct styling.
- * Songs and albums display album cover art; artists and playlists use icons.
+ * Songs and albums display album cover art, artists their image and playlists their playlist picture.
  * 
  * Props:
  * - items: array - recently played items { type, item, playedAt }
  * - libraryPath: string - base library path for cover art loading
+ * - songs: array - all library songs (for playlist pictures)
  * - onPlaySong: function - play a song
  * - onPlayAlbum: function - play an album
  * - onPlayArtist: function - play an artist
@@ -15,17 +16,11 @@
  * - onNavigate: function - navigate to detail view (album, artist, playlist)
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { RECENT_TYPE } from '../../../../hooks/useRecents';
 import { IMAGE_COVER_TYPE } from '../../../../utils/enums';
-import { CoverArt, ScrollingText } from '../../../../components';
-import playlistPlaceholder from '../../../../assets/icon_placeholder/playlist_placeholder.png';
+import { CoverArt, PlaylistCover, ScrollingText } from '../../../../components';
 import styles from './RecentRow.module.css';
-
-// Icons for content types without album art
-const TYPE_ICONS = {
-  [RECENT_TYPE.PLAYLIST]: playlistPlaceholder,
-};
 
 // Get card style class based on type
 function getCardClass(type) {
@@ -80,12 +75,15 @@ function getDisplayInfo(type, item) {
 export default function RecentRow({
   items = [],
   libraryPath,
+  songs = [],
   onPlaySong,
   onPlayAlbum,
   onPlayArtist,
   onPlayPlaylist,
   onNavigate,
 }) {
+  const songMap = useMemo(() => new Map(songs.map((song) => [song.id, song])), [songs]);
+
   if (items.length === 0) {
     return null;
   }
@@ -123,9 +121,8 @@ export default function RecentRow({
     <div className={styles.container}>
       <div className={styles.scrollContainer}>
         {items.map(({ type, item, playedAt }) => {
-          const { title, subtitle, typeLabel } = getDisplayInfo(type, item);
+          const { title, subtitle } = getDisplayInfo(type, item);
           const cardClass = getCardClass(type);
-          const icon = TYPE_ICONS[type];
           
           // Determine cover art props for songs and albums
           const hasCoverArt = type === RECENT_TYPE.SONG || type === RECENT_TYPE.ALBUM || type === RECENT_TYPE.ARTIST;
@@ -141,8 +138,6 @@ export default function RecentRow({
           const coverArtProps = type === RECENT_TYPE.ARTIST 
             ? { artist: coverArtist, album: null, fallbackIcon: "🎤", imageCoverType: IMAGE_COVER_TYPE.ARTIST }
             : { artist: coverArtist, album: coverAlbum, fallbackIcon: type === RECENT_TYPE.SONG ? "🎵" : "💿" };
-
-          const isImageIcon = typeof icon === 'string' && (icon.endsWith('.png') || icon.endsWith('.jpg') || icon.endsWith('.jpeg') || icon.endsWith('.svg'));
           
           return (
             <div
@@ -157,13 +152,12 @@ export default function RecentRow({
                   size="medium"
                 />
               ) : (
-                <div className={styles.cardIcon}>
-                  {isImageIcon ? (
-                    <img src={icon} alt={typeLabel} />
-                  ) : (
-                    icon
-                  )}
-                </div>
+                <PlaylistCover
+                  playlistId={item.id}
+                  songs={(item.songIds || []).map((id) => songMap.get(id)).filter(Boolean)}
+                  libraryPath={libraryPath}
+                  size="medium"
+                />
               )}
               <div className={styles.cardInfo}>
                 <ScrollingText className={styles.title}>

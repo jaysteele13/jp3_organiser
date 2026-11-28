@@ -1,2 +1,2 @@
 export { default } from './CoverArt';
-export { clearCoverArtCache, refreshCover } from './CoverArt';
+export { clearCoverArtCache, refreshCover, COVER_SIZES } from './CoverArt';

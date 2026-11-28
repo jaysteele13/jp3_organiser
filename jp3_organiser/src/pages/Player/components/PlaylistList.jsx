@@ -1,7 +1,7 @@
 /**
  * PlaylistList Component
  * 
- * Displays playlists as cards in a flex grid layout.
+ * Displays playlists as cards in a flex grid layout, each with its playlist picture.
  * Clicking a card navigates to the playlist detail page.
  * Right-click shows context menu with "View in Library" option.
  * Uses secondary (lime) color scheme.
@@ -10,7 +10,7 @@
 import React, { useMemo, useState, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlayer } from '../../../hooks';
-import { ContextMenu } from '../../../components';
+import { ContextMenu, PlaylistCover } from '../../../components';
 import { addToRecents, RECENT_TYPE } from '../../../services/recentsService';
 import { TABS } from '../../../utils/enums';
 import styles from './ListStyles.module.css';
@@ -27,6 +27,7 @@ const getColorVariant = (index) => {
 const PlaylistCard = memo(function PlaylistCard({
   playlist,
   playlistSongs,
+  libraryPath,
   cardColor,
   onCardClick,
   onPlayPlaylist,
@@ -52,6 +53,7 @@ const PlaylistCard = memo(function PlaylistCard({
         onClick={() => onCardClick(playlist)}
         onContextMenu={handleContextMenu}
       >
+        <PlaylistCover playlistId={playlist.id} songs={playlistSongs} libraryPath={libraryPath} />
         <span className={styles.cardTitle}>{playlist.name}</span>
         <span className={styles.cardMeta}>
           {playlistSongs.length} songs
@@ -86,7 +88,7 @@ const PlaylistCard = memo(function PlaylistCard({
   );
 });
 
-export default function PlaylistList({ playlists, songs }) {
+export default function PlaylistList({ playlists, songs, libraryPath }) {
   const navigate = useNavigate();
   const { playTrack, addToQueue } = usePlayer();
 
@@ -150,6 +152,7 @@ export default function PlaylistList({ playlists, songs }) {
             key={playlist.id}
             playlist={playlist}
             playlistSongs={playlistSongs}
+            libraryPath={libraryPath}
             cardColor={getColorVariant(index)}
             onCardClick={handleCardClick}
             onPlayPlaylist={handlePlayPlaylist}
